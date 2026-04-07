@@ -17,6 +17,14 @@ type Job = {
   description: string;
 };
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function Home() {
   const [keyword, setKeyword] = useState("");
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -199,7 +207,9 @@ export default function Home() {
                     </span>
                   )}
                 </div>
-                <p className="text-gray-400 text-sm mt-3">{job.description}</p>
+                <p className="text-gray-400 text-sm mt-3">
+                  {stripHtml(job.description).substring(0, 200)}
+                </p>
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-xs text-gray-500">
                     {job.postedDate} · {job.jobType}
