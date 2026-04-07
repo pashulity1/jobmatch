@@ -42,7 +42,16 @@ export default function Home() {
   const handleSearch = async () => {
     setLoading(true);
     setError("");
-    setJobs([]);
+    const cleanedJobs = (data.jobs || []).map((job: Job) => ({
+  ...job,
+  description: job.description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 200),
+}));
+setJobs(cleanedJobs);
     const location = selectedLocations.join(", ") || "USA";
     const jobType = selectedTypes[0] || "";
     try {
