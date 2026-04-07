@@ -42,16 +42,7 @@ export default function Home() {
   const handleSearch = async () => {
     setLoading(true);
     setError("");
-    const cleanedJobs = (data.jobs || []).map((job: Job) => ({
-  ...job,
-  description: job.description
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&[a-z]+;/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .substring(0, 200),
-}));
-setJobs(cleanedJobs);
+    setJobs([]);
     const location = selectedLocations.join(", ") || "USA";
     const jobType = selectedTypes[0] || "";
     try {
@@ -62,7 +53,11 @@ setJobs(cleanedJobs);
       if (data.error) {
         setError("Failed to load jobs. Please try again.");
       } else {
-        setJobs(data.jobs || []);
+        const cleanedJobs = (data.jobs || []).map((job: Job) => ({
+          ...job,
+          description: stripHtml(job.description).substring(0, 200),
+        }));
+        setJobs(cleanedJobs);
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -216,9 +211,7 @@ setJobs(cleanedJobs);
                     </span>
                   )}
                 </div>
-                <p className="text-gray-400 text-sm mt-3">
-                  {stripHtml(job.description).substring(0, 200)}
-                </p>
+                <p className="text-gray-400 text-sm mt-3">{job.description}</p>
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-xs text-gray-500">
                     {job.postedDate} · {job.jobType}
