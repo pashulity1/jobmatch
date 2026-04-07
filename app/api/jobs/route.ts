@@ -1,34 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&[a-z]+;/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Greenhouse companies
 const GREENHOUSE_COMPANIES = [
-  "anthropic", "notion", "figma", "linear", "vercel", "stripe",
+  "anthropic", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
   "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
   "discord", "duolingo", "robinhood", "coinbase", "brex", "rippling",
-  "databricks", "scale", "openai", "cursor", "replit", "midjourney"
+  "databricks", "openai", "replit"
 ];
 
-// Ashby companies
 const ASHBY_COMPANIES = [
-  "linear", "retool", "dbt", "ramp", "deel", "mercury",
-  "loom", "pitch", "monzo", "calm", "superhuman", "vanta",
-  "census", "hightouch", "metabase", "airplane", "dagster"
+  "linear", "retool", "ramp", "deel", "mercury",
+  "loom", "monzo", "superhuman", "vanta", "metabase",
+  "dagster", "hightouch", "census", "pitch", "dbt"
 ];
 
 async function fetchGreenhouse(company: string, keyword: string): Promise<any[]> {
   try {
     const res = await fetch(
-      `https://boards-api.greenhouse.io/v1/boards/${company}/jobs?content=true`,
+      `https://boards-api.greenhouse.io/v1/boards/${company}/jobs`,
       { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];
@@ -52,8 +42,7 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
           ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
           : "",
         applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-        description: stripHtml(job.content || "").substring(0, 200),
-        source: "Greenhouse",
+        description: "Click Apply to view full job description.",
       }));
   } catch {
     return [];
@@ -87,8 +76,7 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
           ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
           : "",
         applyUrl: job.applyUrl || job.jobUrl || `https://jobs.ashbyhq.com/${company}`,
-        description: (job.descriptionPlain || "").substring(0, 200),
-        source: "Ashby",
+        description: (job.descriptionPlain || "").substring(0, 220) + "...",
       }));
   } catch {
     return [];
@@ -105,11 +93,10 @@ export async function GET(req: NextRequest) {
   ]);
 
   const allJobs = [
-    ...greenhouseResults.flat(),
     ...ashbyResults.flat(),
+    ...greenhouseResults.flat(),
   ];
 
-  // Remove duplicates by title+company
   const seen = new Set<string>();
   const uniqueJobs = allJobs.filter((job) => {
     const key = `${job.title}_${job.company}`.toLowerCase();
