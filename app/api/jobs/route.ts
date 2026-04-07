@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const keyword = (searchParams.get("keyword") || "designer").toLowerCase();
 
-  // List of companies using Greenhouse ATS
   const companies = [
     "anthropic", "notion", "figma", "linear", "vercel", "stripe",
     "airbnb", "pinterest", "reddit", "twitch", "shopify", "dropbox",
@@ -32,6 +44,9 @@ export async function GET(req: NextRequest) {
         });
 
         filtered.forEach((job: any) => {
+          const rawDescription = job.content || "";
+          const cleanDescription = stripHtml(rawDescription).substring(0, 200) + "...";
+
           allJobs.push({
             id: String(job.id),
             title: job.title || "",
@@ -46,9 +61,7 @@ export async function GET(req: NextRequest) {
                 })
               : "",
             applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-            description: job.content
-              ? job.content.replace(/<[^>]*>/g, "").substring(0, 200) + "..."
-              : "No description available.",
+            description: cleanDescription,
           });
         });
       } catch {
