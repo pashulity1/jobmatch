@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
+function clean(text: string): string {
+  return text
+    .replace(/<[^>]*>/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&nbsp;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const companies = [
     "anthropic", "notion", "figma", "linear", "vercel", "stripe",
-    "airbnb", "pinterest", "reddit", "twitch", "shopify", "dropbox",
+    "airbnb", "pinterest", "reddit", "shopify", "dropbox",
     "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
     "discord", "duolingo", "robinhood", "coinbase", "brex", "rippling"
   ];
@@ -44,13 +44,8 @@ export async function GET(req: NextRequest) {
         });
 
         filtered.forEach((job: any) => {
-          const rawDescription = job.content || job.description || "";
-         const cleanDescription = rawDescription
-  .replace(/<[^>]*>/gi, " ")
-  .replace(/&[a-z]+;/gi, " ")
-  .replace(/\s+/g, " ")
-  .trim()
-  .substring(0, 200) + "...";
+          const raw = job.content || job.description || "";
+          const description = clean(raw).substring(0, 220) + "...";
 
           allJobs.push({
             id: String(job.id),
@@ -66,11 +61,11 @@ export async function GET(req: NextRequest) {
                 })
               : "",
             applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-            description: cleanDescription,
+            description,
           });
         });
       } catch {
-        // Skip companies that don't respond
+        // skip
       }
     })
   );
