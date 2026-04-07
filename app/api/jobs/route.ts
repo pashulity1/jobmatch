@@ -2,45 +2,60 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const keyword = searchParams.get("keyword") || "designer";
+  const keyword = (searchParams.get("keyword") || "designer").toLowerCase();
 
-  try {
-    const response = await fetch(
-      `https://remoteok.com/api?tag=${encodeURIComponent(keyword)}`,
-      {
-        headers: {
-          "User-Agent": "JobMatch App/1.0",
-        },
+  // List of companies using Greenhouse ATS
+  const companies = [
+    "anthropic", "notion", "figma", "linear", "vercel", "stripe",
+    "airbnb", "pinterest", "reddit", "twitch", "shopify", "dropbox",
+    "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
+    "discord", "duolingo", "robinhood", "coinbase", "brex", "rippling"
+  ];
+
+  const allJobs: any[] = [];
+
+  await Promise.all(
+    companies.map(async (company) => {
+      try {
+        const res = await fetch(
+          `https://boards-api.greenhouse.io/v1/boards/${company}/jobs?content=true`,
+          { signal: AbortSignal.timeout(5000) }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.jobs) return;
+
+        const filtered = data.jobs.filter((job: any) => {
+          const title = (job.title || "").toLowerCase();
+          const dept = (job.departments?.[0]?.name || "").toLowerCase();
+          return title.includes(keyword) || dept.includes(keyword);
+        });
+
+        filtered.forEach((job: any) => {
+          allJobs.push({
+            id: String(job.id),
+            title: job.title || "",
+            company: company.charAt(0).toUpperCase() + company.slice(1),
+            location: job.location?.name || "Remote",
+            salary: "",
+            jobType: "Full-time",
+            postedDate: job.updated_at
+              ? new Date(job.updated_at).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })
+              : "",
+            applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
+            description: job.content
+              ? job.content.replace(/<[^>]*>/g, "").substring(0, 200) + "..."
+              : "No description available.",
+          });
+        });
+      } catch {
+        // Skip companies that don't respond
       }
-    );
+    })
+  );
 
-    const data = await response.json();
-
-    // RemoteOK returns array where first item is a legal notice object
-    const rawJobs = data.filter((item: any) => item.id && item.company);
-
-    const jobs = rawJobs.slice(0, 10).map((job: any) => ({
-      id: String(job.id),
-      title: job.position || "Unknown Position",
-      company: job.company || "Unknown Company",
-      location: job.location || "Remote",
-      salary: job.salary || "",
-      jobType: "Full-time",
-      postedDate: job.date
-        ? new Date(job.date).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })
-        : "",
-      applyUrl: job.url || `https://remoteok.com/remote-jobs/${job.id}`,
-      description: job.description
-        ? job.description.replace(/<[^>]*>/g, "").substring(0, 200) + "..."
-        : "Remote position available.",
-    }));
-
-    return NextResponse.json({ jobs });
-  } catch (error) {
-    console.error("RemoteOK error:", error);
-    return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
-  }
+  return NextResponse.json({ jobs: allJobs.slice(0, 20) });
 }
