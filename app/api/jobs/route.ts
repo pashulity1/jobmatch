@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
         });
 
         filtered.forEach((job: any) => {
-          const rawDescription = job.content || "";
-          const cleanDescription = stripHtml(rawDescription).substring(0, 200) + "...";
+          const rawDescription = job.content || job.description || "";
+          const cleanDescription = stripHtml(rawDescription).substring(0, 250) + "...";
 
           allJobs.push({
             id: String(job.id),
