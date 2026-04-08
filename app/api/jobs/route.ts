@@ -122,7 +122,7 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
       .filter((job: any) => {
         const title = (job.title || "").toLowerCase();
         const dept = (job.departments?.[0]?.name || "").toLowerCase();
-        return title.includes(keyword) || dept.includes(keyword);
+        return title.includes(keyword);
       })
       .map((job: any) => ({
         id: `gh_${job.id}`,
@@ -155,7 +155,7 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
       .filter((job: any) => {
         const title = (job.title || "").toLowerCase();
         const dept = (job.department || "").toLowerCase();
-        return title.includes(keyword) || dept.includes(keyword);
+        return title.includes(keyword);
       })
       .map((job: any) => ({
         id: `ash_${job.id}`,
