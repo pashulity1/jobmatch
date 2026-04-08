@@ -7,102 +7,93 @@ export async function GET(req: NextRequest) {
   const keyword = (searchParams.get("keyword") || "").toLowerCase().trim();
   const location = searchParams.get("location") || "";
   const jobType = searchParams.get("jobType") || "";
-  const limit = parseInt(searchParams.get("limit") || "50");
+  const limit = parseInt(searchParams.get("limit") || "20");
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  const supabase = getSupabaseAdmin();
-  let query = supabase.from("jobs").select("*", { count: "exact" });
+  try {
+    const supabase = getSupabaseAdmin();
+    let query = supabase.from("jobs").select("*", { count: "exact" });
 
-  // Поиск по keyword — каждое слово должно быть в title
-  if (keyword) {
-    const words = keyword.split(/\s+/).filter(Boolean);
-    for (const word of words) {
-      query = query.ilike("title", `%${word}%`);
-    }
-  }
-
-  // Фильтр по location
-  if (location) {
-    const locs = location.split(",").map((l) => l.trim().toLowerCase());
-    const orParts: string[] = [];
-    for (const loc of locs) {
-      if (loc === "remote") orParts.push("location.ilike.%remote%");
-      else if (loc === "usa") {
-        orParts.push(
-          "location.ilike.%United States%",
-          "location.ilike.%USA%",
-          "location.ilike.%New York%",
-          "location.ilike.%San Francisco%",
-          "location.ilike.%Seattle%",
-          "location.ilike.%, CA%",
-          "location.ilike.%, NY%",
-          "location.ilike.%, WA%",
-          "location.ilike.%, TX%"
-        );
-      } else if (loc === "europe") {
-        orParts.push(
-          "location.ilike.%London%",
-          "location.ilike.%Berlin%",
-          "location.ilike.%Paris%",
-          "location.ilike.%Amsterdam%",
-          "location.ilike.%Europe%",
-          "location.ilike.%UK%",
-          "location.ilike.%EMEA%"
-        );
-      } else if (loc === "latam") {
-        orParts.push(
-          "location.ilike.%Brazil%",
-          "location.ilike.%Argentina%",
-          "location.ilike.%Mexico%",
-          "location.ilike.%Colombia%",
-          "location.ilike.%LATAM%"
-        );
-      } else {
-        orParts.push(`location.ilike.%${loc}%`);
+    // Keyword filter — each word must appear in title
+    if (keyword) {
+      const words = keyword.split(/\s+/).filter(Boolean);
+      for (const word of words) {
+        query = query.ilike("title", `%${word}%`);
       }
     }
-    if (orParts.length > 0) query = query.or(orParts.join(","));
-  }
 
-  // Фильтр по job type
-  if (jobType) {
-    query = query.ilike("job_type", `%${jobType}%`);
-  }
+    // Location filter — simple approach, one condition at a time
+    if (location) {
+      const locs = location.split(",").map((l) => l.trim().toLowerCase());
+      
+      // Build location keywords to match against
+      const locationKeywords: string[] = [];
+      for (const loc of locs) {
+        if (loc === "remote") locationKeywords.push("remote");
+        if (loc === "usa") {
+          locationKeywords.push("United States", "USA", "New York", "San Francisco", 
+            "Seattle", "Los Angeles", "Chicago", "Boston", "Austin", "Denver",
+            "Atlanta", "Miami", "Washington", ", CA", ", NY", ", WA", ", TX", ", FL");
+        }
+        if (loc === "europe") {
+          locationKeywords.push("London", "Berlin", "Paris", "Amsterdam", "Europe",
+            "UK", "Dublin", "Lisbon", "Barcelona", "Warsaw", "EMEA", "Zurich");
+        }
+        if (loc === "latam") {
+          locationKeywords.push("Brazil", "Argentina", "Mexico", "Colombia", 
+            "LATAM", "Buenos Aires", "São Paulo", "Bogotá");
+        }
+      }
 
-  // Сортировка и пагинация
-  query = query
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+      if (locationKeywords.length > 0) {
+        // Use OR with ilike for each keyword
+        const orCondition = locationKeywords
+          .map((kw) => `location.ilike.%${kw}%`)
+          .join(",");
+        query = query.or(orCondition);
+      }
+    }
 
-  const { data: jobs, error, count } = await query;
+    // Job type filter
+    if (jobType) {
+      query = query.ilike("job_type", `%${jobType}%`);
+    }
 
-  if (error) {
-    console.error("Supabase error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    // Sort and paginate
+    const { data: jobs, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-  if (!jobs || jobs.length === 0) {
+    if (error) {
+      console.error("Supabase query error:", JSON.stringify(error));
+      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+    }
+
+    const normalized = (jobs || []).map((job: any) => ({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      salary: job.salary || "",
+      jobType: job.job_type,
+      source: job.source,
+      postedDate: job.posted_date,
+      applyUrl: job.apply_url,
+      description: job.description,
+    }));
+
     return NextResponse.json({
-      jobs: [],
-      meta: { total: 0, returned: 0, message: "No jobs found. Run /api/sync first." },
+      jobs: normalized,
+      meta: {
+        total: count || 0,
+        returned: normalized.length,
+        offset,
+        limit,
+      },
     });
+
+  } catch (e: any) {
+    console.error("Jobs route error:", e.message);
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
-
-  const normalized = jobs.map((job: any) => ({
-    id: job.id,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    salary: job.salary || "",
-    jobType: job.job_type,
-    source: job.source,
-    postedDate: job.posted_date,
-    applyUrl: job.apply_url,
-    description: job.description,
-  }));
-
-  return NextResponse.json({
-    jobs: normalized,
-    meta: { total: count || 0, returned: normalized.length, offset, limit },
-  });
 }
