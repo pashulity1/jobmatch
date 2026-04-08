@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
@@ -7,13 +7,13 @@ export async function GET(req: NextRequest) {
   const keyword = (searchParams.get("keyword") || "").toLowerCase().trim();
   const location = searchParams.get("location") || "";
   const jobType = searchParams.get("jobType") || "";
-  const datePosted = searchParams.get("datePosted") || "";
   const limit = parseInt(searchParams.get("limit") || "50");
   const offset = parseInt(searchParams.get("offset") || "0");
 
-  let query = supabaseAdmin.from("jobs").select("*", { count: "exact" });
+  const supabase = getSupabaseAdmin();
+  let query = supabase.from("jobs").select("*", { count: "exact" });
 
-  // Поиск по keyword в title (каждое слово должно быть в названии)
+  // Поиск по keyword — каждое слово должно быть в title
   if (keyword) {
     const words = keyword.split(/\s+/).filter(Boolean);
     for (const word of words) {
@@ -24,14 +24,44 @@ export async function GET(req: NextRequest) {
   // Фильтр по location
   if (location) {
     const locs = location.split(",").map((l) => l.trim().toLowerCase());
-    const locationConditions = locs.map((loc) => {
-      if (loc === "remote") return `location.ilike.%remote%`;
-      if (loc === "usa") return `location.ilike.%united states%,location.ilike.%USA%,location.ilike.%New York%,location.ilike.%San Francisco%,location.ilike.%Seattle%,location.ilike.%, CA%,location.ilike.%, NY%,location.ilike.%, WA%`;
-      if (loc === "europe") return `location.ilike.%London%,location.ilike.%Berlin%,location.ilike.%Paris%,location.ilike.%Amsterdam%,location.ilike.%Europe%,location.ilike.%UK%`;
-      if (loc === "latam") return `location.ilike.%Brazil%,location.ilike.%Argentina%,location.ilike.%Mexico%,location.ilike.%Colombia%,location.ilike.%LATAM%`;
-      return `location.ilike.%${loc}%`;
-    });
-    query = query.or(locationConditions.join(","));
+    const orParts: string[] = [];
+    for (const loc of locs) {
+      if (loc === "remote") orParts.push("location.ilike.%remote%");
+      else if (loc === "usa") {
+        orParts.push(
+          "location.ilike.%United States%",
+          "location.ilike.%USA%",
+          "location.ilike.%New York%",
+          "location.ilike.%San Francisco%",
+          "location.ilike.%Seattle%",
+          "location.ilike.%, CA%",
+          "location.ilike.%, NY%",
+          "location.ilike.%, WA%",
+          "location.ilike.%, TX%"
+        );
+      } else if (loc === "europe") {
+        orParts.push(
+          "location.ilike.%London%",
+          "location.ilike.%Berlin%",
+          "location.ilike.%Paris%",
+          "location.ilike.%Amsterdam%",
+          "location.ilike.%Europe%",
+          "location.ilike.%UK%",
+          "location.ilike.%EMEA%"
+        );
+      } else if (loc === "latam") {
+        orParts.push(
+          "location.ilike.%Brazil%",
+          "location.ilike.%Argentina%",
+          "location.ilike.%Mexico%",
+          "location.ilike.%Colombia%",
+          "location.ilike.%LATAM%"
+        );
+      } else {
+        orParts.push(`location.ilike.%${loc}%`);
+      }
+    }
+    if (orParts.length > 0) query = query.or(orParts.join(","));
   }
 
   // Фильтр по job type
@@ -51,20 +81,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Проверяем есть ли вакансии в БД — если нет, запускаем синхронизацию
   if (!jobs || jobs.length === 0) {
     return NextResponse.json({
       jobs: [],
-      meta: {
-        total: 0,
-        returned: 0,
-        message: "Database is empty. Please run /api/sync to populate.",
-      },
+      meta: { total: 0, returned: 0, message: "No jobs found. Run /api/sync first." },
     });
   }
 
-  // Маппим поля из БД в формат фронтенда
-  const normalized = (jobs || []).map((job: any) => ({
+  const normalized = jobs.map((job: any) => ({
     id: job.id,
     title: job.title,
     company: job.company,
@@ -79,11 +103,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     jobs: normalized,
-    meta: {
-      total: count || 0,
-      returned: normalized.length,
-      offset,
-      limit,
-    },
+    meta: { total: count || 0, returned: normalized.length, offset, limit },
   });
 }

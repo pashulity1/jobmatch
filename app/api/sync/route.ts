@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 минут — Railway позволяет
 
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
   const BATCH_SIZE = 100;
   for (let i = 0; i < allJobs.length; i += BATCH_SIZE) {
     const batch = allJobs.slice(i, i + BATCH_SIZE);
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from("jobs")
       .upsert(batch, { onConflict: "id" });
     if (error) {
@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
   // Удаляем старые вакансии (старше 60 дней)
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("jobs")
     .delete()
     .lt("updated_at", sixtyDaysAgo.toISOString());
