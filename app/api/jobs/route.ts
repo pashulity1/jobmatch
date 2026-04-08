@@ -51,8 +51,7 @@ const SMARTRECRUITERS_COMPANIES = [
 
 const BREEZY_COMPANIES = [
   "yallaplay", "talentc", "gen-tech",
-  "later", "hootsuite",
-  "moonpay",
+  "later", "hootsuite", "moonpay",
 ];
 
 const WORKABLE_COMPANIES = [
@@ -60,7 +59,7 @@ const WORKABLE_COMPANIES = [
   "hotjar", "workable", "personio", "factorial",
 ];
 
-// ─── Filters ──────────────────────────────────────────────────────────────────
+// ─── Location / Date / JobType filters (server-side) ─────────────────────────
 
 function matchesLocation(jobLocation: string, filter: string): boolean {
   if (!filter) return true;
@@ -108,19 +107,9 @@ function matchesJobType(jobType: string, filter: string): boolean {
   return jobType.toLowerCase().includes(filter.toLowerCase());
 }
 
-// keyword: разбиваем на слова, каждое слово ищем как подстроку в title
-// "motion designer" → ищем "motion" AND "designer" в названии
-function matchesKeyword(title: string, keyword: string): boolean {
-  const t = title.toLowerCase();
-  const words = keyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return true;
-  // каждое слово должно встречаться в названии как подстрока
-  return words.every((word) => t.includes(word));
-}
+// ─── Fetchers — NO keyword filter, return ALL jobs ────────────────────────────
 
-// ─── Fetchers ─────────────────────────────────────────────────────────────────
-
-async function fetchGreenhouse(company: string, keyword: string): Promise<any[]> {
+async function fetchGreenhouse(company: string): Promise<any[]> {
   try {
     const res = await fetch(
       `https://boards-api.greenhouse.io/v1/boards/${company}/jobs`,
@@ -129,27 +118,25 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs) return [];
-    return data.jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
-      .map((job: any) => ({
-        id: `gh_${job.id}`,
-        title: job.title || "",
-        company: formatSlug(company),
-        location: job.location?.name || "Remote",
-        salary: "",
-        jobType: "Full-time",
-        source: "Greenhouse",
-        postedDate: job.updated_at || "",
-        postedDateDisplay: job.updated_at
-          ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
-        applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-        description: "Click Apply to view full job description.",
-      }));
+    return data.jobs.map((job: any) => ({
+      id: `gh_${job.id}`,
+      title: job.title || "",
+      company: formatSlug(company),
+      location: job.location?.name || "Remote",
+      salary: "",
+      jobType: "Full-time",
+      source: "Greenhouse",
+      postedDate: job.updated_at || "",
+      postedDateDisplay: job.updated_at
+        ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      applyUrl: job.absolute_url || `https://boards.greenhouse.io/${company}`,
+      description: "Click Apply to view full job description.",
+    }));
   } catch { return []; }
 }
 
-async function fetchAshby(company: string, keyword: string): Promise<any[]> {
+async function fetchAshby(company: string): Promise<any[]> {
   try {
     const res = await fetch(
       `https://api.ashbyhq.com/posting-api/job-board/${company}`,
@@ -158,92 +145,87 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs) return [];
-    return data.jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
-      .map((job: any) => ({
-        id: `ash_${job.id}`,
-        title: job.title || "",
-        company: formatSlug(company),
-        location: job.location || job.address?.postalAddress?.addressCountry || "Remote",
-        salary: "",
-        jobType: job.employmentType === "FullTime" ? "Full-time" : job.employmentType || "Full-time",
-        source: "Ashby",
-        postedDate: job.publishedAt || "",
-        postedDateDisplay: job.publishedAt
-          ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
-        applyUrl: job.applyUrl || job.jobUrl || `https://jobs.ashbyhq.com/${company}`,
-        description: (job.descriptionPlain || "").substring(0, 220) + "...",
-      }));
+    return data.jobs.map((job: any) => ({
+      id: `ash_${job.id}`,
+      title: job.title || "",
+      company: formatSlug(company),
+      location: job.location || job.address?.postalAddress?.addressCountry || "Remote",
+      salary: "",
+      jobType: job.employmentType === "FullTime" ? "Full-time" : job.employmentType || "Full-time",
+      source: "Ashby",
+      postedDate: job.publishedAt || "",
+      postedDateDisplay: job.publishedAt
+        ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      applyUrl: job.applyUrl || job.jobUrl || `https://jobs.ashbyhq.com/${company}`,
+      description: (job.descriptionPlain || "").substring(0, 220) + "...",
+    }));
   } catch { return []; }
 }
 
-async function fetchLever(company: string, keyword: string): Promise<any[]> {
+async function fetchLever(company: string): Promise<any[]> {
   try {
     const res = await fetch(
-      `https://api.lever.co/v0/postings/${company}?mode=json&limit=50`,
+      `https://api.lever.co/v0/postings/${company}?mode=json&limit=100`,
       { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data)) return [];
-    return data
-      .filter((job: any) => matchesKeyword(job.text || "", keyword))
-      .map((job: any) => ({
-        id: `lv_${job.id}`,
-        title: job.text || "",
-        company: formatSlug(company),
-        location: job.categories?.location || job.categories?.allLocations?.[0] || "Remote",
-        salary: "",
-        jobType: job.categories?.commitment || "Full-time",
-        source: "Lever",
-        postedDate: job.createdAt ? new Date(job.createdAt).toISOString() : "",
-        postedDateDisplay: job.createdAt
-          ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
-        applyUrl: job.hostedUrl || `https://jobs.lever.co/${company}`,
-        description: job.descriptionPlain
-          ? job.descriptionPlain.substring(0, 220) + "..."
-          : "Click Apply to view full job description.",
-      }));
+    return data.map((job: any) => ({
+      id: `lv_${job.id}`,
+      title: job.text || "",
+      company: formatSlug(company),
+      location: job.categories?.location || job.categories?.allLocations?.[0] || "Remote",
+      salary: "",
+      jobType: job.categories?.commitment || "Full-time",
+      source: "Lever",
+      postedDate: job.createdAt ? new Date(job.createdAt).toISOString() : "",
+      postedDateDisplay: job.createdAt
+        ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      applyUrl: job.hostedUrl || `https://jobs.lever.co/${company}`,
+      description: job.descriptionPlain
+        ? job.descriptionPlain.substring(0, 220) + "..."
+        : "Click Apply to view full job description.",
+    }));
   } catch { return []; }
 }
 
 async function fetchSmartRecruiters(company: string, keyword: string): Promise<any[]> {
   try {
+    const q = keyword ? `?q=${encodeURIComponent(keyword)}&limit=20` : "?limit=20";
     const res = await fetch(
-      `https://api.smartrecruiters.com/v1/companies/${company}/postings?q=${encodeURIComponent(keyword)}&limit=20`,
+      `https://api.smartrecruiters.com/v1/companies/${company}/postings${q}`,
       { signal: AbortSignal.timeout(6000) }
     );
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.content || [];
-    return jobs
-      .filter((job: any) => matchesKeyword(job.name || "", keyword))
-      .map((job: any) => {
-        const loc = job.location || {};
-        const locationStr = [loc.city, loc.region, loc.country]
-          .filter(Boolean).join(", ") || (loc.remote ? "Remote" : "See listing");
-        return {
-          id: `sr_${job.uuid || job.id}`,
-          title: job.name || "",
-          company: job.company?.name || formatSlug(company),
-          location: locationStr,
-          salary: "",
-          jobType: job.typeOfEmployment?.label || "Full-time",
-          source: "SmartRecruiters",
-          postedDate: job.releasedDate || "",
-          postedDateDisplay: job.releasedDate
-            ? new Date(job.releasedDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-            : "",
-          applyUrl: `https://jobs.smartrecruiters.com/${company}/${job.id}`,
-          description: "Click Apply to view full job description.",
-        };
-      });
+    return jobs.map((job: any) => {
+      const loc = job.location || {};
+      const locationStr = [loc.city, loc.region, loc.country]
+        .filter(Boolean).join(", ") || (loc.remote ? "Remote" : "See listing");
+      return {
+        id: `sr_${job.uuid || job.id}`,
+        title: job.name || "",
+        company: job.company?.name || formatSlug(company),
+        location: locationStr,
+        salary: "",
+        jobType: job.typeOfEmployment?.label || "Full-time",
+        source: "SmartRecruiters",
+        postedDate: job.releasedDate || "",
+        postedDateDisplay: job.releasedDate
+          ? new Date(job.releasedDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        applyUrl: `https://jobs.smartrecruiters.com/${company}/${job.id}`,
+        description: "Click Apply to view full job description.",
+      };
+    });
   } catch { return []; }
 }
 
-async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
+async function fetchBreezy(company: string): Promise<any[]> {
   try {
     const res = await fetch(
       `https://api.breezy.hr/v3/company/${company}/positions?state=published`,
@@ -252,23 +234,21 @@ async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data)) return [];
-    return data
-      .filter((job: any) => matchesKeyword(job.name || "", keyword))
-      .map((job: any) => ({
-        id: `br_${job._id}`,
-        title: job.name || "",
-        company: job.company?.name || formatSlug(company),
-        location: job.location?.name || (job.location?.is_remote ? "Remote" : "See listing"),
-        salary: "",
-        jobType: job.type?.name || "Full-time",
-        source: "Breezy",
-        postedDate: job.creation_date || "",
-        postedDateDisplay: job.creation_date
-          ? new Date(job.creation_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
-        applyUrl: `https://${company}.breezy.hr/p/${job._id}`,
-        description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 220) + "...",
-      }));
+    return data.map((job: any) => ({
+      id: `br_${job._id}`,
+      title: job.name || "",
+      company: job.company?.name || formatSlug(company),
+      location: job.location?.name || (job.location?.is_remote ? "Remote" : "See listing"),
+      salary: "",
+      jobType: job.type?.name || "Full-time",
+      source: "Breezy",
+      postedDate: job.creation_date || "",
+      postedDateDisplay: job.creation_date
+        ? new Date(job.creation_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      applyUrl: `https://${company}.breezy.hr/p/${job._id}`,
+      description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 220) + "...",
+    }));
   } catch { return []; }
 }
 
@@ -279,30 +259,28 @@ async function fetchWorkable(company: string, keyword: string): Promise<any[]> {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: keyword, limit: 20 }),
+        body: JSON.stringify({ query: keyword || "", limit: 20 }),
         signal: AbortSignal.timeout(6000),
       }
     );
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.results || [];
-    return jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
-      .map((job: any) => ({
-        id: `wk_${job.shortcode || job.id}`,
-        title: job.title || "",
-        company: job.account?.name || formatSlug(company),
-        location: job.location || (job.remote ? "Remote" : "See listing"),
-        salary: "",
-        jobType: job.employment_type || "Full-time",
-        source: "Workable",
-        postedDate: job.published_on || "",
-        postedDateDisplay: job.published_on
-          ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
-        applyUrl: `https://apply.workable.com/${company}/j/${job.shortcode}/`,
-        description: "Click Apply to view full job description.",
-      }));
+    return jobs.map((job: any) => ({
+      id: `wk_${job.shortcode || job.id}`,
+      title: job.title || "",
+      company: job.account?.name || formatSlug(company),
+      location: job.location || (job.remote ? "Remote" : "See listing"),
+      salary: "",
+      jobType: job.employment_type || "Full-time",
+      source: "Workable",
+      postedDate: job.published_on || "",
+      postedDateDisplay: job.published_on
+        ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      applyUrl: `https://apply.workable.com/${company}/j/${job.shortcode}/`,
+      description: "Click Apply to view full job description.",
+    }));
   } catch { return []; }
 }
 
@@ -317,19 +295,19 @@ function formatSlug(slug: string): string {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const keyword = (searchParams.get("keyword") || "engineer").toLowerCase();
+  const keyword = (searchParams.get("keyword") || "").toLowerCase();
   const location = searchParams.get("location") || "";
   const jobType = searchParams.get("jobType") || "";
   const datePosted = searchParams.get("datePosted") || "";
-  const limit = parseInt(searchParams.get("limit") || "20");
+  const limit = parseInt(searchParams.get("limit") || "50");
 
   const [ghResults, ashbyResults, leverResults, srResults, breezyResults, workableResults] =
     await Promise.all([
-      Promise.all(GREENHOUSE_COMPANIES.map((c) => fetchGreenhouse(c, keyword))),
-      Promise.all(ASHBY_COMPANIES.map((c) => fetchAshby(c, keyword))),
-      Promise.all(LEVER_COMPANIES.map((c) => fetchLever(c, keyword))),
+      Promise.all(GREENHOUSE_COMPANIES.map((c) => fetchGreenhouse(c))),
+      Promise.all(ASHBY_COMPANIES.map((c) => fetchAshby(c))),
+      Promise.all(LEVER_COMPANIES.map((c) => fetchLever(c))),
       Promise.all(SMARTRECRUITERS_COMPANIES.map((c) => fetchSmartRecruiters(c, keyword))),
-      Promise.all(BREEZY_COMPANIES.map((c) => fetchBreezy(c, keyword))),
+      Promise.all(BREEZY_COMPANIES.map((c) => fetchBreezy(c))),
       Promise.all(WORKABLE_COMPANIES.map((c) => fetchWorkable(c, keyword))),
     ]);
 
@@ -342,6 +320,7 @@ export async function GET(req: NextRequest) {
     ...ghResults.flat(),
   ];
 
+  // Deduplicate
   const seen = new Set<string>();
   const uniqueJobs = allJobs.filter((job) => {
     const key = `${job.title}_${job.company}`.toLowerCase().replace(/\s+/g, "");
@@ -350,12 +329,23 @@ export async function GET(req: NextRequest) {
     return true;
   });
 
-  const filtered = uniqueJobs.filter((job) =>
+  // Filter by keyword (title contains ALL words from keyword)
+  const keywordFiltered = keyword
+    ? uniqueJobs.filter((job) => {
+        const title = job.title.toLowerCase();
+        const words = keyword.trim().split(/\s+/).filter(Boolean);
+        return words.every((w) => title.includes(w));
+      })
+    : uniqueJobs;
+
+  // Filter by location / jobType / date
+  const filtered = keywordFiltered.filter((job) =>
     matchesLocation(job.location, location) &&
     matchesJobType(job.jobType, jobType) &&
     matchesDate(job.postedDate, datePosted)
   );
 
+  // Sort: most recent first
   filtered.sort((a, b) => {
     if (!a.postedDate && !b.postedDate) return 0;
     if (!a.postedDate) return 1;
