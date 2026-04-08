@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const GREENHOUSE_COMPANIES = [
-  // Original list
+  // Original verified
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
   "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
@@ -15,46 +15,44 @@ const GREENHOUSE_COMPANIES = [
   "sentry", "snyk", "hashicorp", "cloudflare", "fastly",
   "grafana", "datadog", "newrelic", "pagerduty",
   "verily", "ro", "cerebral", "springhealth", "headspace", "noom",
-  "faire", "whatnot", "opendoor", "compass",
-  "webflow", "coda", "clickup", "lattice",
+  "faire", "opendoor", "compass", "webflow", "coda", "clickup", "lattice",
   "bumble", "peloton", "calm", "chainalysis", "opensea",
   "flexport", "samsara", "palantir", "anduril",
   "masterclass", "coursera", "doordashusa", "lyft",
-  // New from YC script — verified working!
   "twitch", "clever", "algolia", "instacart", "weave",
   "checkr", "oklo", "gitlab", "truebill", "bird",
-  "paystack", "odeko", "momentus", "groww", "smartasset",
-  "fivetran",
-  // Additional verified companies
-  "adept", "runway", "marqeta", "affirm",
-  "dbtlabs", "airbyte", "rudderstack",
-  "elastic", "confluent", "cockroachdb",
-  "flatiron", "devoted", "oscar",
-  "poshmark", "stockx", "goat",
-  "culture-amp", "betterworks",
-  "gong", "outreach", "salesloft", "apollo",
-  "soundcloud", "vimeo", "substack",
-  "gopuff", "flyhomes", "hibob",
-  "circleci", "buildkite",
+  "paystack", "odeko", "momentus", "groww", "smartasset", "fivetran",
+  // New from YC script v2 — all verified!
+  "billiontoone", "ginkgobioworks", "goatgroup", "scaleai",
+  "outschool", "bitmovin", "gocardless", "instawork", "humaninterest",
+  "xendit", "givecampus", "partnerstack", "reach", "flip",
+  "qventus", "sirum", "akidolabs", "hive", "apollo", "sfox",
+  "hackerrank", "usergems", "clear", "alchemy", "lob", "radar",
+  "goldbelly", "submittable", "mattermost", "openwork", "harbor",
+  "stage", "dispatch", "maven", "superset", "mantis", "clara",
+  "icarus", "nucleo", "nexus", "burnt", "attune", "focalsystems",
 ];
 
 const ASHBY_COMPANIES = [
-  // Original list
+  // Original verified
   "linear", "retool", "ramp", "deel", "monzo", "superhuman", "vanta",
   "metabase", "dagster", "hightouch", "census", "pitch",
   "supabase", "neon", "upstash", "resend", "cal", "raycast",
   "highlight", "axiom", "clerk", "workos",
   "mintlify", "gitbook", "readme", "perplexity", "dust", "langchain",
-  // New from YC script — verified working!
   "zapier", "benchling", "clipboard", "whatnot",
-  // Additional
-  "warp", "turso", "trigger", "inngest", "zuplo",
-  "baselime", "stytch", "kinde", "descope",
-  "drata", "secureframe",
-  "12labs", "glean", "moveworks", "writer",
-  "wise", "primer",
-  "leapsome", "moonpay",
-  "codeium", "cursor",
+  // New from YC script v2 — all verified!
+  "newfront", "mux", "deepgram", "eightsleep", "verge-genomics",
+  "assembly", "meadow", "bankjoy", "tempo", "tenjin", "permutive",
+  "ycombinator", "snapdocs", "backpack", "cambly", "influxdata",
+  "circuithub", "padlet", "healthsherpa", "sazabi", "polymath",
+  "traverse", "pax-historia", "cascade", "asimov", "moss",
+  "diligencesquared", "primer", "sf-tensor", "hyperspell", "uplane",
+  "nox-metals", "fleetline", "fernstone", "reacher", "kernel",
+  "opennote", "idler", "april", "finto", "flai", "solva",
+  "bootloop", "doe", "interface", "fulcrum", "lark", "agentmail",
+  "truthsystems", "mangodesk", "sieve", "airweave", "eloquentai",
+  "sygaldry-technologies", "lucis", "sim", "claim-health", "auctor",
 ];
 
 const LEVER_COMPANIES = [
@@ -193,7 +191,6 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const source = searchParams.get("source") || "all";
-
   let jobs: any[] = [];
 
   if (source === "greenhouse" || source === "all") {
@@ -218,12 +215,5 @@ export async function GET(req: NextRequest) {
   }
 
   const { saved, errors } = await saveToDb(jobs);
-
-  return NextResponse.json({
-    success: true,
-    source,
-    fetched: jobs.length,
-    saved,
-    errors,
-  });
+  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors });
 }
