@@ -27,22 +27,16 @@ const GREENHOUSE_COMPANIES = [
 const ASHBY_COMPANIES = [
   "linear", "retool", "ramp", "deel", "monzo", "superhuman", "vanta",
   "metabase", "dagster", "hightouch", "census", "pitch",
-  "supabase", "neon", "upstash",
-  "resend", "cal",
-  "raycast",
-  "highlight", "axiom",
-  "clerk", "workos",
+  "supabase", "neon", "upstash", "resend", "cal", "raycast",
+  "highlight", "axiom", "clerk", "workos",
   "mintlify", "gitbook", "readme",
   "perplexity", "dust", "langchain",
 ];
 
-// Lever slugs — verified working
 const LEVER_COMPANIES = [
   "Academy", "cognite", "ivo", "iru", "pano",
   "mercury", "watershed", "gem", "loom", "miro",
-  "verkada", "hex",
-  "descript",
-  "modal", "together",
+  "verkada", "hex", "descript", "modal", "together",
   "plaid", "chime", "marqeta",
   "benchling", "ginkgo", "recursion",
   "flexport", "project44",
@@ -56,29 +50,23 @@ const LEVER_COMPANIES = [
   "enablecomp",
 ];
 
-// Workday — each company has its own subdomain
-// Format: [subdomain, tenant] e.g. ibotta.wd1 → subdomain=ibotta, tenant=wd1
-const WORKDAY_COMPANIES: { name: string; subdomain: string; tenant: string }[] = [
-  { name: "Ibotta", subdomain: "ibotta", tenant: "wd1" },
-  { name: "Nike", subdomain: "nike", tenant: "wd1" },
-  { name: "Target", subdomain: "target", tenant: "wd5" },
-  { name: "Walmart", subdomain: "walmart", tenant: "wd5" },
-  { name: "Salesforce", subdomain: "salesforce", tenant: "wd1" },
-  { name: "Workday", subdomain: "workday", tenant: "wd5" },
-  { name: "Adobe", subdomain: "adobe", tenant: "wd5" },
-  { name: "Autodesk", subdomain: "autodesk", tenant: "wd1" },
-  { name: "Spotify", subdomain: "spotify", tenant: "wd1" },
-  { name: "Twitter", subdomain: "twitter", tenant: "wd5" },
-  { name: "Snap", subdomain: "snap", tenant: "wd1" },
-  { name: "Lyft", subdomain: "lyft", tenant: "wd5" },
-  { name: "Instacart", subdomain: "instacart", tenant: "wd1" },
-  { name: "Squarespace", subdomain: "squarespace", tenant: "wd5" },
-  { name: "Box", subdomain: "box", tenant: "wd1" },
-  { name: "Splunk", subdomain: "splunk", tenant: "wd5" },
-  { name: "Okta", subdomain: "okta", tenant: "wd1" },
-  { name: "Twilio", subdomain: "twilio", tenant: "wd1" },
-  { name: "Zoom", subdomain: "zoom", tenant: "wd5" },
-  { name: "HubSpot", subdomain: "hubspot", tenant: "wd1" },
+// Workday — tenant, wdServer и siteId взяты из реальных URL вакансий
+const WORKDAY_COMPANIES = [
+  { name: "Adobe",          tenant: "adobe",          wd: "wd5", site: "external_experienced" },
+  { name: "Warner Bros",    tenant: "warnerbros",      wd: "wd5", site: "global" },
+  { name: "General Motors", tenant: "generalmotors",   wd: "wd5", site: "Careers_GM" },
+  { name: "Ibotta",         tenant: "ibotta",          wd: "wd1", site: "Ibotta" },
+  { name: "Salesforce",     tenant: "salesforce",      wd: "wd1", site: "External_Career_Site" },
+  { name: "Autodesk",       tenant: "autodesk",        wd: "wd1", site: "Ext" },
+  { name: "Workday",        tenant: "workday",         wd: "wd5", site: "Workday" },
+  { name: "Box",            tenant: "box",             wd: "wd1", site: "BoxExternalCareerSite" },
+  { name: "Okta",           tenant: "okta",            wd: "wd1", site: "OktaCareerSite" },
+  { name: "Twilio",         tenant: "twilio",          wd: "wd1", site: "Twilio" },
+  { name: "Zoom",           tenant: "zoom",            wd: "wd5", site: "Zoom" },
+  { name: "Splunk",         tenant: "splunk",          wd: "wd5", site: "SplunkCareers" },
+  { name: "Squarespace",    tenant: "squarespace",     wd: "wd5", site: "Squarespace" },
+  { name: "Target",         tenant: "target",          wd: "wd5", site: "careerBuilderTarget" },
+  { name: "Walmart",        tenant: "walmart",         wd: "wd5", site: "WalmartExternal" },
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -93,9 +81,11 @@ function matchesLocation(jobLocation: string, filter: string): boolean {
       loc.includes("usa") || loc.includes("united states") ||
       loc.includes(", ny") || loc.includes(", ca") || loc.includes(", wa") ||
       loc.includes(", tx") || loc.includes(", fl") || loc.includes(", co") ||
+      loc.includes(", mi") || loc.includes(", il") ||
       loc.includes("north america") || loc.includes("new york") ||
       loc.includes("san francisco") || loc.includes("seattle") ||
-      loc.includes("los angeles") || loc.includes("chicago") || loc.includes("denver")
+      loc.includes("los angeles") || loc.includes("chicago") ||
+      loc.includes("warren") || loc.includes("san jose")
     );
     if (f === "europe") return (
       loc.includes("europe") || loc.includes("uk") || loc.includes("london") ||
@@ -196,14 +186,13 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return [];
     const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return [];
-    // Filter by keyword in title only
+    if (!Array.isArray(data)) return [];
     return data
       .filter((job: any) => (job.text || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `lv_${job.id}`,
         title: job.text || "",
-        company: formatSlug(company), // use slug, not team name
+        company: formatSlug(company),
         location: job.categories?.location || job.categories?.allLocations?.[0] || "Remote",
         salary: "",
         jobType: job.categories?.commitment || "Full-time",
@@ -221,42 +210,53 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
 }
 
 async function fetchWorkday(
-  company: { name: string; subdomain: string; tenant: string },
+  company: { name: string; tenant: string; wd: string; site: string },
   keyword: string
 ): Promise<any[]> {
   try {
-    const url = `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com/wday/cxs/${company.subdomain}/External_Career_Site/jobs`;
+    const host = `${company.tenant}.${company.wd}.myworkdayjobs.com`;
+    const url = `https://${host}/wday/cxs/${company.tenant}/${company.site}/jobs`;
+
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer": `https://${host}/${company.site}/`,
+        "Origin": `https://${host}`,
+        "Accept-Language": "en-US,en;q=0.9",
+      },
       body: JSON.stringify({
         appliedFacets: {},
         limit: 20,
         offset: 0,
         searchText: keyword,
       }),
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(8000),
     });
+
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.jobPostings || [];
+
     return jobs
       .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
-        id: `wd_${job.bulletFields?.[0] || job.title?.replace(/\s+/g, "_")}`,
+        id: `wd_${job.bulletFields?.[0] || Math.random().toString(36).slice(2)}`,
         title: job.title || "",
         company: company.name,
-        location: job.locationsText || job.location || "See listing",
+        location: job.locationsText || "See listing",
         salary: "",
         jobType: "Full-time",
         source: "Workday",
-        postedDate: job.postedOn || "",
+        postedDate: job.postedOn ? new Date(job.postedOn).toISOString() : "",
         postedDateDisplay: job.postedOn
           ? new Date(job.postedOn).toLocaleDateString("en-US", { month: "long", year: "numeric" })
           : "",
         applyUrl: job.externalPath
-          ? `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com${job.externalPath}`
-          : `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com`,
+          ? `https://${host}${job.externalPath}`
+          : `https://${host}/${company.site}`,
         description: "Click Apply to view full job description.",
       }));
   } catch { return []; }
@@ -287,13 +287,13 @@ export async function GET(req: NextRequest) {
   ]);
 
   const allJobs = [
-    ...leverResults.flat(),
     ...workdayResults.flat(),
+    ...leverResults.flat(),
     ...ashbyResults.flat(),
     ...greenhouseResults.flat(),
   ];
 
-  // Deduplicate by title + company
+  // Deduplicate
   const seen = new Set<string>();
   const uniqueJobs = allJobs.filter((job) => {
     const key = `${job.title}_${job.company}`.toLowerCase().replace(/\s+/g, "");
