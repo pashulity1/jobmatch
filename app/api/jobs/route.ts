@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     let query = supabase.from("jobs").select("*", { count: "exact" });
 
-    // Keyword filter — each word must appear in title
+    // Keyword filter
     if (keyword) {
       const words = keyword.split(/\s+/).filter(Boolean);
       for (const word of words) {
@@ -22,35 +22,63 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Location filter — simple approach, one condition at a time
+    // Location filter — NO commas in patterns (breaks Supabase OR parser)
     if (location) {
       const locs = location.split(",").map((l) => l.trim().toLowerCase());
-      
-      // Build location keywords to match against
-      const locationKeywords: string[] = [];
+      const patterns: string[] = [];
+
       for (const loc of locs) {
-        if (loc === "remote") locationKeywords.push("remote");
+        if (loc === "remote") {
+          patterns.push("location.ilike.%Remote%");
+        }
         if (loc === "usa") {
-          locationKeywords.push("United States", "USA", "New York", "San Francisco", 
-            "Seattle", "Los Angeles", "Chicago", "Boston", "Austin", "Denver",
-            "Atlanta", "Miami", "Washington", ", CA", ", NY", ", WA", ", TX", ", FL");
+          patterns.push(
+            "location.ilike.%United States%",
+            "location.ilike.%New York%",
+            "location.ilike.%San Francisco%",
+            "location.ilike.%Seattle%",
+            "location.ilike.%Los Angeles%",
+            "location.ilike.%Chicago%",
+            "location.ilike.%Boston%",
+            "location.ilike.%Austin%",
+            "location.ilike.%Denver%",
+            "location.ilike.%Atlanta%",
+            "location.ilike.%Miami%",
+            "location.ilike.% CA%",
+            "location.ilike.% NY%",
+            "location.ilike.% WA%",
+            "location.ilike.% TX%",
+            "location.ilike.% FL%"
+          );
         }
         if (loc === "europe") {
-          locationKeywords.push("London", "Berlin", "Paris", "Amsterdam", "Europe",
-            "UK", "Dublin", "Lisbon", "Barcelona", "Warsaw", "EMEA", "Zurich");
+          patterns.push(
+            "location.ilike.%London%",
+            "location.ilike.%Berlin%",
+            "location.ilike.%Paris%",
+            "location.ilike.%Amsterdam%",
+            "location.ilike.%Dublin%",
+            "location.ilike.%Lisbon%",
+            "location.ilike.%Barcelona%",
+            "location.ilike.%Warsaw%",
+            "location.ilike.%Zurich%",
+            "location.ilike.%EMEA%",
+            "location.ilike.%Europe%"
+          );
         }
         if (loc === "latam") {
-          locationKeywords.push("Brazil", "Argentina", "Mexico", "Colombia", 
-            "LATAM", "Buenos Aires", "São Paulo", "Bogotá");
+          patterns.push(
+            "location.ilike.%Brazil%",
+            "location.ilike.%Argentina%",
+            "location.ilike.%Mexico%",
+            "location.ilike.%Colombia%",
+            "location.ilike.%LATAM%"
+          );
         }
       }
 
-      if (locationKeywords.length > 0) {
-        // Use OR with ilike for each keyword
-        const orCondition = locationKeywords
-          .map((kw) => `location.ilike.%${kw}%`)
-          .join(",");
-        query = query.or(orCondition);
+      if (patterns.length > 0) {
+        query = query.or(patterns.join(","));
       }
     }
 
@@ -59,14 +87,13 @@ export async function GET(req: NextRequest) {
       query = query.ilike("job_type", `%${jobType}%`);
     }
 
-    // Sort and paginate
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error("Supabase query error:", JSON.stringify(error));
-      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+      console.error("Supabase error:", error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     const normalized = (jobs || []).map((job: any) => ({
@@ -84,12 +111,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       jobs: normalized,
-      meta: {
-        total: count || 0,
-        returned: normalized.length,
-        offset,
-        limit,
-      },
+      meta: { total: count || 0, returned: normalized.length, offset, limit },
     });
 
   } catch (e: any) {
