@@ -4,113 +4,55 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const GREENHOUSE_COMPANIES = [
-  // AI / ML
-  "anthropic", "openai", "cohere", "scale", "adept", "inflection",
-  "characterai", "perplexityai", "elevenLabs", "runway", "midjourney",
-  "huggingface", "together", "modal", "replicate",
-  // Big Tech adjacent
-  "notion", "figma", "vercel", "stripe", "airbnb", "pinterest",
-  "reddit", "shopify", "dropbox", "hubspot", "intercom", "zendesk",
-  "asana", "airtable", "canva", "discord", "duolingo", "robinhood",
-  "coinbase", "brex", "rippling", "databricks", "replit",
-  // Fintech
-  "gusto", "pilot", "moderntreasury", "lithic", "unit", "mercury",
-  "ramp", "mainstreet", "capchase", "pipe", "clearco", "capixa",
-  "placid", "column", "synapse", "marqeta", "adyen", "checkout",
-  "affirm", "klarna", "afterpay", "sezzle", "paidy",
-  // Dev tools / infra
+  "anthropic", "openai", "notion", "figma", "vercel", "stripe",
+  "airbnb", "pinterest", "reddit", "shopify", "dropbox",
+  "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
+  "discord", "duolingo", "robinhood", "coinbase", "brex", "rippling",
+  "databricks", "replit", "scale", "cohere",
+  "gusto", "pilot", "moderntreasury", "lithic", "unit",
   "segment", "amplitude", "mixpanel", "posthog", "launchdarkly",
   "sentry", "snyk", "hashicorp", "cloudflare", "fastly",
-  "grafana", "datadog", "newrelic", "pagerduty", "atlassian",
-  "gitlab", "circleci", "buildkite", "dbtlabs", "fivetran",
-  "airbyte", "hightouch", "census", "rudderstack",
-  "elastic", "confluent", "cockroachdb", "planetscale",
-  "neon", "supabase", "railway", "render",
-  "vercel", "netlify", "cloudflare",
-  // Security
-  "crowdstrike", "sentinelone", "lacework", "orca",
-  "wiz", "snyk", "aquasec", "sysdig",
-  // Healthcare
+  "grafana", "datadog", "newrelic", "pagerduty",
   "verily", "ro", "cerebral", "springhealth", "headspace", "noom",
-  "omada", "virta", "livongo", "hims", "tempus", "flatiron",
-  "cityblock", "bright", "devoted", "oscar",
-  // E-commerce / marketplace
-  "faire", "whatnot", "opendoor", "compass", "offerUp",
-  "poshmark", "stockx", "goat", "thredUp",
-  // SaaS / productivity
-  "webflow", "coda", "clickup", "lattice", "culture-amp",
-  "leapsome", "betterworks", "15five", "reflektive",
-  "workramp", "lessonly", "seismic", "highspot",
-  "gong", "chorus", "clari", "outreach", "salesloft",
-  "apollo", "zoominfo", "clearbit",
-  // Consumer
-  "bumble", "peloton", "calm", "headspace", "noom",
-  "duolingo", "masterclass", "coursera", "udemy", "kahoot",
-  // Crypto / Web3
-  "coinbase", "chainalysis", "opensea", "consensys",
-  "alchemy", "figment", "anchorage",
-  // Climate / sustainability
-  "watershed", "arcadia", "pachama", "climateai",
-  // Logistics / ops
-  "flexport", "samsara", "motive", "project44", "shipbob",
-  "loadsmart", "transfix", "convoy",
-  // Defense / deep tech
-  "palantir", "anduril", "shieldai", "joby", "archer",
-  "relativityspace", "astra",
-  // Media / content
-  "spotify", "soundcloud", "vimeo", "loom",
-  "substack", "beehiiv", "ghost",
-  // Food / delivery
-  "doordashusa", "instacart", "gopuff",
-  // Real estate / proptech
-  "opendoor", "compass", "orchard", "knock", "flyhomes",
-  // HR tech
-  "rippling", "gusto", "lattice", "hibob", "personio",
-  "workday", "greenhouse", "lever",
-  // Other notable
-  "lyft", "cruise", "waymo", "zoox",
-  "figma", "miro", "notion", "coda",
-  "brex", "ramp", "expensify",
+  "faire", "whatnot", "opendoor", "compass",
+  "webflow", "coda", "clickup", "lattice", "bumble", "peloton", "calm",
+  "chainalysis", "opensea", "flexport", "samsara", "palantir", "anduril",
+  "masterclass", "coursera", "doordashusa", "lyft",
+  // Additional companies
+  "adept", "inflection", "runway", "replicate",
+  "marqeta", "affirm", "capchase", "column",
+  "dbtlabs", "fivetran", "airbyte", "rudderstack",
+  "elastic", "confluent", "cockroachdb",
+  "lacework", "wiz", "aquasec",
+  "flatiron", "cityblock", "devoted", "oscar",
+  "poshmark", "stockx", "goat",
+  "culture-amp", "betterworks", "15five",
+  "gong", "outreach", "salesloft", "apollo",
+  "joby", "archer", "relativityspace",
+  "soundcloud", "vimeo", "substack",
+  "instacart", "gopuff",
+  "orchard", "flyhomes",
+  "hibob", "personio",
+  "gitlab", "circleci", "buildkite",
 ];
-
-// Remove duplicates
-const GREENHOUSE_COMPANIES_UNIQUE = [...new Set(GREENHOUSE_COMPANIES)];
 
 const ASHBY_COMPANIES = [
-  // Dev tools / infra
-  "linear", "retool", "raycast", "fig", "warp",
-  "supabase", "neon", "upstash", "planetscale", "turso",
-  "resend", "cal", "trigger", "inngest", "zuplo",
-  "highlight", "baselime", "axiom", "groundcover",
-  "mintlify", "gitbook", "readme",
-  // Auth / security
-  "clerk", "stytch", "workos", "kinde", "descope",
-  "vanta", "drata", "secureframe", "scytale",
-  // AI / ML
-  "perplexity", "dust", "langchain", "weights-biases",
-  "comet", "neptune", "labelbox", "scale",
+  "linear", "retool", "ramp", "deel", "monzo", "superhuman", "vanta",
+  "metabase", "dagster", "hightouch", "census", "pitch",
+  "supabase", "neon", "upstash", "resend", "cal", "raycast",
+  "highlight", "axiom", "clerk", "workos",
+  "mintlify", "gitbook", "readme", "perplexity", "dust", "langchain",
+  // Additional
+  "fig", "warp", "planetscale", "turso", "trigger", "inngest", "zuplo",
+  "baselime", "groundcover", "stytch", "kinde", "descope",
+  "drata", "secureframe", "scytale",
   "12labs", "glean", "moveworks", "writer",
-  // Fintech
-  "ramp", "deel", "mercury", "pilot", "brex",
-  "monzo", "revolut", "wise", "n26",
-  "stripe", "adyen", "checkout", "primer",
-  // Productivity / collab
-  "superhuman", "pitch", "loom", "miro",
-  "coda", "notion", "craft", "obsidian",
-  // Data
-  "metabase", "dagster", "hightouch", "census",
-  "airbyte", "fivetran", "dbtlabs",
-  // HR / people
-  "leapsome", "lattice", "culture-amp", "betterworks",
-  // Other
-  "moonpay", "opensea", "alchemy",
-  "vercel", "netlify", "railway",
+  "n26", "wise", "primer",
+  "craft", "loom", "miro",
+  "leapsome",
+  "moonpay", "figment", "anchorage",
   "replit", "codeium", "cursor",
-  "farcaster", "lens", "privy",
-  "thirdweb", "alchemy", "quicknode",
 ];
-
-const ASHBY_COMPANIES_UNIQUE = [...new Set(ASHBY_COMPANIES)];
 
 const LEVER_COMPANIES = [
   "Academy", "cognite", "ivo", "iru", "pano",
@@ -120,38 +62,26 @@ const LEVER_COMPANIES = [
   "flexport", "project44", "faire", "whatnot",
   "hightouch", "airbyte", "cortex", "rootly",
   "lumos", "drata", "primer", "sardine", "replit", "codeium", "enablecomp",
-  // Additional verified Lever companies
-  "figma", "notion", "airtable", "lattice",
-  "duolingo", "coursera", "masterclass",
-  "stripe", "brex", "ramp",
-  "doordash", "instacart", "gopuff",
-  "coinbase", "opensea", "alchemy",
-  "cloudflare", "datadog", "grafana",
-  "hubspot", "intercom", "zendesk",
 ];
 
-const LEVER_COMPANIES_UNIQUE = [...new Set(LEVER_COMPANIES)];
-
 const SMARTRECRUITERS_COMPANIES = [
-  // Verified working slugs
-  "Filmless",
-  // Media / entertainment
-  "WarnerBrosDiscovery", "NBCUniversal", "Paramount",
-  "SonyPictures", "AMCNetworks",
-  // Advertising / marketing
+  "Filmless", "Warner-Bros-Discovery", "NBCUniversal",
   "Publicis", "WPP", "Dentsu", "BBDO", "Ogilvy", "McCann",
-  "Havas", "IPG", "Grey",
-  // Gaming
-  "Ubisoft", "ElectronicArts", "RiotGames", "EpicGames",
-  "Activision", "2K", "Scopely",
-  // Retail / e-commerce
-  "Zalando", "ASOS", "Farfetch",
-  // Fintech EU
-  "Klarna", "Revolut", "N26", "SumUp", "Mollie",
-  // Food delivery EU
-  "DeliveryHero", "Wolt", "Glovo",
-  // Tech EU
-  "Delivery-Hero", "Personio", "Celonis", "Contentful",
+  "Ubisoft", "ElectronicArts", "RiotGames",
+  "Zalando", "Klarna", "Revolut", "N26", "SumUp",
+  "Delivery-Hero", "Wolt", "Personio",
+];
+
+// Recruitee — публичный API без авторизации
+const RECRUITEE_COMPANIES = [
+  "gitlab", "remote", "hotjar", "typeform", "pitch",
+  "contentful", "personio", "pipefy", "getstream",
+  "loom", "miro", "airtable",
+  "factorial", "kenjo", "hibob",
+  "taxfix", "n26", "sumup", "wolt",
+  "ecosia", "blinkist", "wooga",
+  "omio", "tier", "gorillas",
+  "moonpay", "bitwarden", "1password",
 ];
 
 function formatSlug(slug: string): string {
@@ -232,6 +162,28 @@ async function fetchSmartRecruiters(company: string): Promise<any[]> {
   } catch { return []; }
 }
 
+// Recruitee — публичный API без ключей
+async function fetchRecruitee(company: string): Promise<any[]> {
+  try {
+    const res = await fetch(`https://${company}.recruitee.com/api/offers/`,
+      { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const offers = data.offers || [];
+    return offers.map((job: any) => ({
+      id: `rc_${job.id}`, title: job.title || "",
+      company: job.company_name || formatSlug(company),
+      location: job.city ? `${job.city}${job.country_code ? ", " + job.country_code : ""}` : "Remote",
+      salary: "",
+      job_type: job.employment_type_id === 1 ? "Full-time" : job.employment_type_id === 2 ? "Part-time" : "Full-time",
+      source: "Recruitee",
+      posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.careers_url || `https://${company}.recruitee.com/o/${job.slug}`,
+      description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 500),
+    }));
+  } catch { return []; }
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
   let saved = 0, errors = 0;
@@ -250,19 +202,23 @@ export async function GET(req: NextRequest) {
   let jobs: any[] = [];
 
   if (source === "greenhouse" || source === "all") {
-    const results = await Promise.all(GREENHOUSE_COMPANIES_UNIQUE.map(fetchGreenhouse));
+    const results = await Promise.all(GREENHOUSE_COMPANIES.map(fetchGreenhouse));
     jobs.push(...results.flat());
   }
   if (source === "ashby" || source === "all") {
-    const results = await Promise.all(ASHBY_COMPANIES_UNIQUE.map(fetchAshby));
+    const results = await Promise.all(ASHBY_COMPANIES.map(fetchAshby));
     jobs.push(...results.flat());
   }
   if (source === "lever" || source === "all") {
-    const results = await Promise.all(LEVER_COMPANIES_UNIQUE.map(fetchLever));
+    const results = await Promise.all(LEVER_COMPANIES.map(fetchLever));
     jobs.push(...results.flat());
   }
   if (source === "smartrecruiters" || source === "all") {
     const results = await Promise.all(SMARTRECRUITERS_COMPANIES.map(fetchSmartRecruiters));
+    jobs.push(...results.flat());
+  }
+  if (source === "recruitee" || source === "all") {
+    const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
     jobs.push(...results.flat());
   }
 
