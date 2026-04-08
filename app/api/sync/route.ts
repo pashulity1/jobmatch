@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const GREENHOUSE_COMPANIES = [
+  // Original list
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
   "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
@@ -15,43 +16,45 @@ const GREENHOUSE_COMPANIES = [
   "grafana", "datadog", "newrelic", "pagerduty",
   "verily", "ro", "cerebral", "springhealth", "headspace", "noom",
   "faire", "whatnot", "opendoor", "compass",
-  "webflow", "coda", "clickup", "lattice", "bumble", "peloton", "calm",
-  "chainalysis", "opensea", "flexport", "samsara", "palantir", "anduril",
+  "webflow", "coda", "clickup", "lattice",
+  "bumble", "peloton", "calm", "chainalysis", "opensea",
+  "flexport", "samsara", "palantir", "anduril",
   "masterclass", "coursera", "doordashusa", "lyft",
-  // Additional companies
-  "adept", "inflection", "runway", "replicate",
-  "marqeta", "affirm", "capchase", "column",
-  "dbtlabs", "fivetran", "airbyte", "rudderstack",
+  // New from YC script — verified working!
+  "twitch", "clever", "algolia", "instacart", "weave",
+  "checkr", "oklo", "gitlab", "truebill", "bird",
+  "paystack", "odeko", "momentus", "groww", "smartasset",
+  "fivetran",
+  // Additional verified companies
+  "adept", "runway", "marqeta", "affirm",
+  "dbtlabs", "airbyte", "rudderstack",
   "elastic", "confluent", "cockroachdb",
-  "lacework", "wiz", "aquasec",
-  "flatiron", "cityblock", "devoted", "oscar",
+  "flatiron", "devoted", "oscar",
   "poshmark", "stockx", "goat",
-  "culture-amp", "betterworks", "15five",
+  "culture-amp", "betterworks",
   "gong", "outreach", "salesloft", "apollo",
-  "joby", "archer", "relativityspace",
   "soundcloud", "vimeo", "substack",
-  "instacart", "gopuff",
-  "orchard", "flyhomes",
-  "hibob", "personio",
-  "gitlab", "circleci", "buildkite",
+  "gopuff", "flyhomes", "hibob",
+  "circleci", "buildkite",
 ];
 
 const ASHBY_COMPANIES = [
+  // Original list
   "linear", "retool", "ramp", "deel", "monzo", "superhuman", "vanta",
   "metabase", "dagster", "hightouch", "census", "pitch",
   "supabase", "neon", "upstash", "resend", "cal", "raycast",
   "highlight", "axiom", "clerk", "workos",
   "mintlify", "gitbook", "readme", "perplexity", "dust", "langchain",
+  // New from YC script — verified working!
+  "zapier", "benchling", "clipboard", "whatnot",
   // Additional
-  "fig", "warp", "planetscale", "turso", "trigger", "inngest", "zuplo",
-  "baselime", "groundcover", "stytch", "kinde", "descope",
-  "drata", "secureframe", "scytale",
+  "warp", "turso", "trigger", "inngest", "zuplo",
+  "baselime", "stytch", "kinde", "descope",
+  "drata", "secureframe",
   "12labs", "glean", "moveworks", "writer",
-  "n26", "wise", "primer",
-  "craft", "loom", "miro",
-  "leapsome",
-  "moonpay", "figment", "anchorage",
-  "replit", "codeium", "cursor",
+  "wise", "primer",
+  "leapsome", "moonpay",
+  "codeium", "cursor",
 ];
 
 const LEVER_COMPANIES = [
@@ -72,16 +75,12 @@ const SMARTRECRUITERS_COMPANIES = [
   "Delivery-Hero", "Wolt", "Personio",
 ];
 
-// Recruitee — публичный API без авторизации
 const RECRUITEE_COMPANIES = [
   "gitlab", "remote", "hotjar", "typeform", "pitch",
   "contentful", "personio", "pipefy", "getstream",
-  "loom", "miro", "airtable",
-  "factorial", "kenjo", "hibob",
-  "taxfix", "n26", "sumup", "wolt",
-  "ecosia", "blinkist", "wooga",
-  "omio", "tier", "gorillas",
-  "moonpay", "bitwarden", "1password",
+  "factorial", "kenjo", "taxfix", "n26", "sumup",
+  "ecosia", "blinkist", "wooga", "omio", "tier",
+  "moonpay", "bitwarden",
 ];
 
 function formatSlug(slug: string): string {
@@ -162,21 +161,17 @@ async function fetchSmartRecruiters(company: string): Promise<any[]> {
   } catch { return []; }
 }
 
-// Recruitee — публичный API без ключей
 async function fetchRecruitee(company: string): Promise<any[]> {
   try {
     const res = await fetch(`https://${company}.recruitee.com/api/offers/`,
       { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
-    const offers = data.offers || [];
-    return offers.map((job: any) => ({
+    return (data.offers || []).map((job: any) => ({
       id: `rc_${job.id}`, title: job.title || "",
       company: job.company_name || formatSlug(company),
       location: job.city ? `${job.city}${job.country_code ? ", " + job.country_code : ""}` : "Remote",
-      salary: "",
-      job_type: job.employment_type_id === 1 ? "Full-time" : job.employment_type_id === 2 ? "Part-time" : "Full-time",
-      source: "Recruitee",
+      salary: "", job_type: "Full-time", source: "Recruitee",
       posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
       apply_url: job.careers_url || `https://${company}.recruitee.com/o/${job.slug}`,
       description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 500),
