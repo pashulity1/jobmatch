@@ -41,32 +41,38 @@ const LEVER_COMPANIES = [
   "benchling", "ginkgo", "recursion",
   "flexport", "project44",
   "faire", "whatnot",
-  "privy", "thirdweb", "alchemy",
-  "hightouch", "airbyte",
-  "cortex", "rootly",
-  "lumos", "drata",
-  "primer", "sardine",
-  "replit", "codeium",
-  "enablecomp",
+  "hightouch", "airbyte", "cortex", "rootly",
+  "lumos", "drata", "primer", "sardine",
+  "replit", "codeium", "enablecomp",
 ];
 
-// Workday — tenant, wdServer и siteId взяты из реальных URL вакансий
-const WORKDAY_COMPANIES = [
-  { name: "Adobe",          tenant: "adobe",          wd: "wd5", site: "external_experienced" },
-  { name: "Warner Bros",    tenant: "warnerbros",      wd: "wd5", site: "global" },
-  { name: "General Motors", tenant: "generalmotors",   wd: "wd5", site: "Careers_GM" },
-  { name: "Ibotta",         tenant: "ibotta",          wd: "wd1", site: "Ibotta" },
-  { name: "Salesforce",     tenant: "salesforce",      wd: "wd1", site: "External_Career_Site" },
-  { name: "Autodesk",       tenant: "autodesk",        wd: "wd1", site: "Ext" },
-  { name: "Workday",        tenant: "workday",         wd: "wd5", site: "Workday" },
-  { name: "Box",            tenant: "box",             wd: "wd1", site: "BoxExternalCareerSite" },
-  { name: "Okta",           tenant: "okta",            wd: "wd1", site: "OktaCareerSite" },
-  { name: "Twilio",         tenant: "twilio",          wd: "wd1", site: "Twilio" },
-  { name: "Zoom",           tenant: "zoom",            wd: "wd5", site: "Zoom" },
-  { name: "Splunk",         tenant: "splunk",          wd: "wd5", site: "SplunkCareers" },
-  { name: "Squarespace",    tenant: "squarespace",     wd: "wd5", site: "Squarespace" },
-  { name: "Target",         tenant: "target",          wd: "wd5", site: "careerBuilderTarget" },
-  { name: "Walmart",        tenant: "walmart",         wd: "wd5", site: "WalmartExternal" },
+// SmartRecruiters — публичный API, поиск по компании
+const SMARTRECRUITERS_COMPANIES = [
+  "Filmless", "IKEA", "Lidl", "Bosch", "Siemens",
+  "Delivery-Hero", "Zalando", "Klarna", "Revolut",
+  "N26", "SumUp", "Wolt", "Gorillas",
+  "McDonald", "Hilton", "Marriott",
+  "Ubisoft", "EA", "Riot-Games", "Epic-Games",
+  "Warner-Bros-Discovery", "NBCUniversal", "Viacom",
+  "Publicis", "WPP", "Dentsu",
+  "BBDO", "Ogilvy", "McCann",
+];
+
+// Breezy HR — публичный API по subdomain компании
+const BREEZY_COMPANIES = [
+  "yallaplay", "talentc", "gen-tech",
+  "frameio", "descript", "loom",
+  "later", "hootsuite", "sprout",
+  "canva-team", "figma-team",
+  "moonpay", "opensea-team",
+];
+
+// Workable — публичный API по subdomain компании
+const WORKABLE_COMPANIES = [
+  "careersactivatetalent", "remote", "deel-team",
+  "typeform", "hotjar", "beat",
+  "workable", "personio", "factorial",
+  "skroutz", "blueground",
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -81,11 +87,9 @@ function matchesLocation(jobLocation: string, filter: string): boolean {
       loc.includes("usa") || loc.includes("united states") ||
       loc.includes(", ny") || loc.includes(", ca") || loc.includes(", wa") ||
       loc.includes(", tx") || loc.includes(", fl") || loc.includes(", co") ||
-      loc.includes(", mi") || loc.includes(", il") ||
       loc.includes("north america") || loc.includes("new york") ||
       loc.includes("san francisco") || loc.includes("seattle") ||
-      loc.includes("los angeles") || loc.includes("chicago") ||
-      loc.includes("warren") || loc.includes("san jose")
+      loc.includes("los angeles") || loc.includes("chicago")
     );
     if (f === "europe") return (
       loc.includes("europe") || loc.includes("uk") || loc.includes("london") ||
@@ -96,8 +100,7 @@ function matchesLocation(jobLocation: string, filter: string): boolean {
     if (f === "latam") return (
       loc.includes("latam") || loc.includes("latin america") ||
       loc.includes("brazil") || loc.includes("argentina") ||
-      loc.includes("mexico") || loc.includes("colombia") ||
-      loc.includes("buenos aires") || loc.includes("são paulo")
+      loc.includes("mexico") || loc.includes("colombia")
     );
     return loc.includes(f);
   });
@@ -182,8 +185,10 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
 
 async function fetchLever(company: string, keyword: string): Promise<any[]> {
   try {
-    const url = `https://api.lever.co/v0/postings/${company}?mode=json&limit=50`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(
+      `https://api.lever.co/v0/postings/${company}?mode=json&limit=50`,
+      { signal: AbortSignal.timeout(5000) }
+    );
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data)) return [];
@@ -209,54 +214,101 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
-async function fetchWorkday(
-  company: { name: string; tenant: string; wd: string; site: string },
-  keyword: string
-): Promise<any[]> {
+// SmartRecruiters — полностью публичный API без авторизации
+async function fetchSmartRecruiters(company: string, keyword: string): Promise<any[]> {
   try {
-    const host = `${company.tenant}.${company.wd}.myworkdayjobs.com`;
-    const url = `https://${host}/wday/cxs/${company.tenant}/${company.site}/jobs`;
-
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": `https://${host}/${company.site}/`,
-        "Origin": `https://${host}`,
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      body: JSON.stringify({
-        appliedFacets: {},
-        limit: 20,
-        offset: 0,
-        searchText: keyword,
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-
+    const res = await fetch(
+      `https://api.smartrecruiters.com/v1/companies/${company}/postings?q=${encodeURIComponent(keyword)}&limit=20`,
+      { signal: AbortSignal.timeout(6000) }
+    );
     if (!res.ok) return [];
     const data = await res.json();
-    const jobs = data.jobPostings || [];
+    const jobs = data.content || [];
+    return jobs
+      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
+      .map((job: any) => {
+        const loc = job.location || {};
+        const locationStr = [loc.city, loc.region, loc.country]
+          .filter(Boolean).join(", ") || (loc.remote ? "Remote" : "See listing");
+        return {
+          id: `sr_${job.uuid || job.id}`,
+          title: job.name || "",
+          company: job.company?.name || formatSlug(company),
+          location: locationStr,
+          salary: "",
+          jobType: job.typeOfEmployment?.label || "Full-time",
+          source: "SmartRecruiters",
+          postedDate: job.releasedDate || "",
+          postedDateDisplay: job.releasedDate
+            ? new Date(job.releasedDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+            : "",
+          applyUrl: `https://jobs.smartrecruiters.com/${company}/${job.id}`,
+          description: "Click Apply to view full job description.",
+        };
+      });
+  } catch { return []; }
+}
 
+// Breezy HR — публичный API
+async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
+  try {
+    const res = await fetch(
+      `https://api.breezy.hr/v3/company/${company}/positions?state=published`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
+      .map((job: any) => ({
+        id: `br_${job._id}`,
+        title: job.name || "",
+        company: job.company?.name || formatSlug(company),
+        location: job.location?.name || (job.location?.is_remote ? "Remote" : "See listing"),
+        salary: "",
+        jobType: job.type?.name || "Full-time",
+        source: "Breezy",
+        postedDate: job.creation_date || "",
+        postedDateDisplay: job.creation_date
+          ? new Date(job.creation_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        applyUrl: `https://${company}.breezy.hr/p/${job._id}`,
+        description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 220) + "...",
+      }));
+  } catch { return []; }
+}
+
+// Workable — публичный API
+async function fetchWorkable(company: string, keyword: string): Promise<any[]> {
+  try {
+    const res = await fetch(
+      `https://apply.workable.com/api/v3/accounts/${company}/jobs`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: keyword, limit: 20 }),
+        signal: AbortSignal.timeout(6000),
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.results || [];
     return jobs
       .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
-        id: `wd_${job.bulletFields?.[0] || Math.random().toString(36).slice(2)}`,
+        id: `wk_${job.shortcode || job.id}`,
         title: job.title || "",
-        company: company.name,
-        location: job.locationsText || "See listing",
+        company: job.account?.name || formatSlug(company),
+        location: job.location || (job.remote ? "Remote" : "See listing"),
         salary: "",
-        jobType: "Full-time",
-        source: "Workday",
-        postedDate: job.postedOn ? new Date(job.postedOn).toISOString() : "",
-        postedDateDisplay: job.postedOn
-          ? new Date(job.postedOn).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        jobType: job.employment_type || "Full-time",
+        source: "Workable",
+        postedDate: job.published_on || "",
+        postedDateDisplay: job.published_on
+          ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" })
           : "",
-        applyUrl: job.externalPath
-          ? `https://${host}${job.externalPath}`
-          : `https://${host}/${company.site}`,
+        applyUrl: `https://apply.workable.com/${company}/j/${job.shortcode}/`,
         description: "Click Apply to view full job description.",
       }));
   } catch { return []; }
@@ -279,18 +331,23 @@ export async function GET(req: NextRequest) {
   const datePosted = searchParams.get("datePosted") || "";
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  const [greenhouseResults, ashbyResults, leverResults, workdayResults] = await Promise.all([
-    Promise.all(GREENHOUSE_COMPANIES.map((c) => fetchGreenhouse(c, keyword))),
-    Promise.all(ASHBY_COMPANIES.map((c) => fetchAshby(c, keyword))),
-    Promise.all(LEVER_COMPANIES.map((c) => fetchLever(c, keyword))),
-    Promise.all(WORKDAY_COMPANIES.map((c) => fetchWorkday(c, keyword))),
-  ]);
+  const [ghResults, ashbyResults, leverResults, srResults, breezyResults, workableResults] =
+    await Promise.all([
+      Promise.all(GREENHOUSE_COMPANIES.map((c) => fetchGreenhouse(c, keyword))),
+      Promise.all(ASHBY_COMPANIES.map((c) => fetchAshby(c, keyword))),
+      Promise.all(LEVER_COMPANIES.map((c) => fetchLever(c, keyword))),
+      Promise.all(SMARTRECRUITERS_COMPANIES.map((c) => fetchSmartRecruiters(c, keyword))),
+      Promise.all(BREEZY_COMPANIES.map((c) => fetchBreezy(c, keyword))),
+      Promise.all(WORKABLE_COMPANIES.map((c) => fetchWorkable(c, keyword))),
+    ]);
 
   const allJobs = [
-    ...workdayResults.flat(),
+    ...srResults.flat(),
+    ...breezyResults.flat(),
+    ...workableResults.flat(),
     ...leverResults.flat(),
     ...ashbyResults.flat(),
-    ...greenhouseResults.flat(),
+    ...ghResults.flat(),
   ];
 
   // Deduplicate
@@ -328,10 +385,12 @@ export async function GET(req: NextRequest) {
       total: filtered.length,
       returned: Math.min(filtered.length, limit),
       sources: {
-        greenhouse: greenhouseResults.flat().length,
+        greenhouse: ghResults.flat().length,
         ashby: ashbyResults.flat().length,
         lever: leverResults.flat().length,
-        workday: workdayResults.flat().length,
+        smartrecruiters: srResults.flat().length,
+        breezy: breezyResults.flat().length,
+        workable: workableResults.flat().length,
       },
     },
   });
