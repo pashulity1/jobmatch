@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
-// ─── Company lists ────────────────────────────────────────────────────────────
-
 const GREENHOUSE_COMPANIES = [
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
@@ -16,12 +14,9 @@ const GREENHOUSE_COMPANIES = [
   "verily", "ro", "cerebral", "springhealth", "headspace", "noom",
   "faire", "whatnot", "opendoor", "compass",
   "webflow", "coda", "clickup", "lattice",
-  "bumble", "peloton", "calm",
-  "chainalysis", "opensea",
-  "flexport", "samsara",
-  "palantir", "anduril",
-  "masterclass", "coursera",
-  "doordashusa", "lyft",
+  "bumble", "peloton", "calm", "chainalysis", "opensea",
+  "flexport", "samsara", "palantir", "anduril",
+  "masterclass", "coursera", "doordashusa", "lyft",
 ];
 
 const ASHBY_COMPANIES = [
@@ -39,40 +34,30 @@ const LEVER_COMPANIES = [
   "verkada", "hex", "descript", "modal", "together",
   "plaid", "chime", "marqeta",
   "benchling", "ginkgo", "recursion",
-  "flexport", "project44",
-  "faire", "whatnot",
+  "flexport", "project44", "faire", "whatnot",
   "hightouch", "airbyte", "cortex", "rootly",
   "lumos", "drata", "primer", "sardine",
   "replit", "codeium", "enablecomp",
 ];
 
-// SmartRecruiters — публичный API, поиск по компании
 const SMARTRECRUITERS_COMPANIES = [
   "Filmless", "IKEA", "Lidl", "Bosch", "Siemens",
   "Delivery-Hero", "Zalando", "Klarna", "Revolut",
-  "N26", "SumUp", "Wolt", "Gorillas",
-  "McDonald", "Hilton", "Marriott",
+  "N26", "SumUp", "Wolt",
   "Ubisoft", "EA", "Riot-Games", "Epic-Games",
-  "Warner-Bros-Discovery", "NBCUniversal", "Viacom",
-  "Publicis", "WPP", "Dentsu",
-  "BBDO", "Ogilvy", "McCann",
+  "Warner-Bros-Discovery", "NBCUniversal",
+  "Publicis", "WPP", "Dentsu", "BBDO", "Ogilvy", "McCann",
 ];
 
-// Breezy HR — публичный API по subdomain компании
 const BREEZY_COMPANIES = [
   "yallaplay", "talentc", "gen-tech",
-  "frameio", "descript", "loom",
-  "later", "hootsuite", "sprout",
-  "canva-team", "figma-team",
-  "moonpay", "opensea-team",
+  "later", "hootsuite",
+  "moonpay",
 ];
 
-// Workable — публичный API по subdomain компании
 const WORKABLE_COMPANIES = [
-  "careersactivatetalent", "remote", "deel-team",
-  "typeform", "hotjar", "beat",
-  "workable", "personio", "factorial",
-  "skroutz", "blueground",
+  "careersactivatetalent", "remote", "typeform",
+  "hotjar", "workable", "personio", "factorial",
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -123,6 +108,16 @@ function matchesJobType(jobType: string, filter: string): boolean {
   return jobType.toLowerCase().includes(filter.toLowerCase());
 }
 
+// keyword: разбиваем на слова, каждое слово ищем как подстроку в title
+// "motion designer" → ищем "motion" AND "designer" в названии
+function matchesKeyword(title: string, keyword: string): boolean {
+  const t = title.toLowerCase();
+  const words = keyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  // каждое слово должно встречаться в названии как подстрока
+  return words.every((word) => t.includes(word));
+}
+
 // ─── Fetchers ─────────────────────────────────────────────────────────────────
 
 async function fetchGreenhouse(company: string, keyword: string): Promise<any[]> {
@@ -135,7 +130,7 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.title || "", keyword))
       .map((job: any) => ({
         id: `gh_${job.id}`,
         title: job.title || "",
@@ -164,7 +159,7 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.title || "", keyword))
       .map((job: any) => ({
         id: `ash_${job.id}`,
         title: job.title || "",
@@ -193,7 +188,7 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!Array.isArray(data)) return [];
     return data
-      .filter((job: any) => (job.text || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.text || "", keyword))
       .map((job: any) => ({
         id: `lv_${job.id}`,
         title: job.text || "",
@@ -214,7 +209,6 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
-// SmartRecruiters — полностью публичный API без авторизации
 async function fetchSmartRecruiters(company: string, keyword: string): Promise<any[]> {
   try {
     const res = await fetch(
@@ -225,7 +219,7 @@ async function fetchSmartRecruiters(company: string, keyword: string): Promise<a
     const data = await res.json();
     const jobs = data.content || [];
     return jobs
-      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.name || "", keyword))
       .map((job: any) => {
         const loc = job.location || {};
         const locationStr = [loc.city, loc.region, loc.country]
@@ -249,7 +243,6 @@ async function fetchSmartRecruiters(company: string, keyword: string): Promise<a
   } catch { return []; }
 }
 
-// Breezy HR — публичный API
 async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
   try {
     const res = await fetch(
@@ -260,7 +253,7 @@ async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!Array.isArray(data)) return [];
     return data
-      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.name || "", keyword))
       .map((job: any) => ({
         id: `br_${job._id}`,
         title: job.name || "",
@@ -279,7 +272,6 @@ async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
-// Workable — публичный API
 async function fetchWorkable(company: string, keyword: string): Promise<any[]> {
   try {
     const res = await fetch(
@@ -295,7 +287,7 @@ async function fetchWorkable(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     const jobs = data.results || [];
     return jobs
-      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
+      .filter((job: any) => matchesKeyword(job.title || "", keyword))
       .map((job: any) => ({
         id: `wk_${job.shortcode || job.id}`,
         title: job.title || "",
@@ -350,7 +342,6 @@ export async function GET(req: NextRequest) {
     ...ghResults.flat(),
   ];
 
-  // Deduplicate
   const seen = new Set<string>();
   const uniqueJobs = allJobs.filter((job) => {
     const key = `${job.title}_${job.company}`.toLowerCase().replace(/\s+/g, "");
@@ -359,14 +350,12 @@ export async function GET(req: NextRequest) {
     return true;
   });
 
-  // Apply filters
   const filtered = uniqueJobs.filter((job) =>
     matchesLocation(job.location, location) &&
     matchesJobType(job.jobType, jobType) &&
     matchesDate(job.postedDate, datePosted)
   );
 
-  // Sort: most recent first
   filtered.sort((a, b) => {
     if (!a.postedDate && !b.postedDate) return 0;
     if (!a.postedDate) return 1;
