@@ -34,30 +34,51 @@ const ASHBY_COMPANIES = [
   "clerk", "workos",
   "mintlify", "gitbook", "readme",
   "perplexity", "dust", "langchain",
-  "onyx%20games%20llc",
 ];
 
-// Lever slugs — verified working (case-sensitive!)
+// Lever slugs — verified working
 const LEVER_COMPANIES = [
-  "Academy", "Superhuman", "cognite", "ivo", "iru", "pano",
+  "Academy", "cognite", "ivo", "iru", "pano",
   "mercury", "watershed", "gem", "loom", "miro",
-  "verkada", "scale", "lattice", "hex",
-  "descript", "weights-biases", "modal",
-  "figma", "retool", "rippling", "brex",
+  "verkada", "hex",
+  "descript",
+  "modal", "together",
   "plaid", "chime", "marqeta",
   "benchling", "ginkgo", "recursion",
   "flexport", "project44",
-  "anduril", "shield-ai",
-  "duolingo", "kahoot",
   "faire", "whatnot",
   "privy", "thirdweb", "alchemy",
-  "hightouch", "census", "airbyte",
-  "cortex", "incident-io", "rootly",
-  "lumos", "vanta", "drata",
-  "primer", "sardine", "unit21",
-  "replit", "codeium", "cursor",
-  "perplexity", "cohere", "together",
-  "enablecomp", "pibenchmark",
+  "hightouch", "airbyte",
+  "cortex", "rootly",
+  "lumos", "drata",
+  "primer", "sardine",
+  "replit", "codeium",
+  "enablecomp",
+];
+
+// Workday — each company has its own subdomain
+// Format: [subdomain, tenant] e.g. ibotta.wd1 → subdomain=ibotta, tenant=wd1
+const WORKDAY_COMPANIES: { name: string; subdomain: string; tenant: string }[] = [
+  { name: "Ibotta", subdomain: "ibotta", tenant: "wd1" },
+  { name: "Nike", subdomain: "nike", tenant: "wd1" },
+  { name: "Target", subdomain: "target", tenant: "wd5" },
+  { name: "Walmart", subdomain: "walmart", tenant: "wd5" },
+  { name: "Salesforce", subdomain: "salesforce", tenant: "wd1" },
+  { name: "Workday", subdomain: "workday", tenant: "wd5" },
+  { name: "Adobe", subdomain: "adobe", tenant: "wd5" },
+  { name: "Autodesk", subdomain: "autodesk", tenant: "wd1" },
+  { name: "Spotify", subdomain: "spotify", tenant: "wd1" },
+  { name: "Twitter", subdomain: "twitter", tenant: "wd5" },
+  { name: "Snap", subdomain: "snap", tenant: "wd1" },
+  { name: "Lyft", subdomain: "lyft", tenant: "wd5" },
+  { name: "Instacart", subdomain: "instacart", tenant: "wd1" },
+  { name: "Squarespace", subdomain: "squarespace", tenant: "wd5" },
+  { name: "Box", subdomain: "box", tenant: "wd1" },
+  { name: "Splunk", subdomain: "splunk", tenant: "wd5" },
+  { name: "Okta", subdomain: "okta", tenant: "wd1" },
+  { name: "Twilio", subdomain: "twilio", tenant: "wd1" },
+  { name: "Zoom", subdomain: "zoom", tenant: "wd5" },
+  { name: "HubSpot", subdomain: "hubspot", tenant: "wd1" },
 ];
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -71,14 +92,16 @@ function matchesLocation(jobLocation: string, filter: string): boolean {
     if (f === "usa") return (
       loc.includes("usa") || loc.includes("united states") ||
       loc.includes(", ny") || loc.includes(", ca") || loc.includes(", wa") ||
-      loc.includes(", tx") || loc.includes(", fl") || loc.includes("north america") ||
-      loc.includes("new york") || loc.includes("san francisco") || loc.includes("seattle")
+      loc.includes(", tx") || loc.includes(", fl") || loc.includes(", co") ||
+      loc.includes("north america") || loc.includes("new york") ||
+      loc.includes("san francisco") || loc.includes("seattle") ||
+      loc.includes("los angeles") || loc.includes("chicago") || loc.includes("denver")
     );
     if (f === "europe") return (
       loc.includes("europe") || loc.includes("uk") || loc.includes("london") ||
       loc.includes("berlin") || loc.includes("paris") || loc.includes("amsterdam") ||
       loc.includes("zurich") || loc.includes("dublin") || loc.includes("lisbon") ||
-      loc.includes("emea")
+      loc.includes("emea") || loc.includes("warsaw") || loc.includes("barcelona")
     );
     if (f === "latam") return (
       loc.includes("latam") || loc.includes("latin america") ||
@@ -119,11 +142,7 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => {
-        const title = (job.title || "").toLowerCase();
-        const dept = (job.departments?.[0]?.name || "").toLowerCase();
-        return title.includes(keyword);
-      })
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `gh_${job.id}`,
         title: job.title || "",
@@ -152,11 +171,7 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => {
-        const title = (job.title || "").toLowerCase();
-        const dept = (job.department || "").toLowerCase();
-        return title.includes(keyword);
-      })
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `ash_${job.id}`,
         title: job.title || "",
@@ -177,28 +192,73 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
 
 async function fetchLever(company: string, keyword: string): Promise<any[]> {
   try {
-    const url = `https://api.lever.co/v0/postings/${company}?mode=json&text=${encodeURIComponent(keyword)}&limit=25`;
+    const url = `https://api.lever.co/v0/postings/${company}?mode=json&limit=50`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return [];
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) return [];
-    return data.map((job: any) => ({
-      id: `lv_${job.id}`,
-      title: job.text || "",
-      company: job.categories?.team || formatSlug(company),
-      location: job.categories?.location || "Remote",
-      salary: "",
-      jobType: job.categories?.commitment || "Full-time",
-      source: "Lever",
-      postedDate: job.createdAt ? new Date(job.createdAt).toISOString() : "",
-      postedDateDisplay: job.createdAt
-        ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : "",
-      applyUrl: job.hostedUrl || `https://jobs.lever.co/${company}`,
-      description: job.descriptionPlain
-        ? job.descriptionPlain.substring(0, 220) + "..."
-        : "Click Apply to view full job description.",
-    }));
+    // Filter by keyword in title only
+    return data
+      .filter((job: any) => (job.text || "").toLowerCase().includes(keyword))
+      .map((job: any) => ({
+        id: `lv_${job.id}`,
+        title: job.text || "",
+        company: formatSlug(company), // use slug, not team name
+        location: job.categories?.location || job.categories?.allLocations?.[0] || "Remote",
+        salary: "",
+        jobType: job.categories?.commitment || "Full-time",
+        source: "Lever",
+        postedDate: job.createdAt ? new Date(job.createdAt).toISOString() : "",
+        postedDateDisplay: job.createdAt
+          ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        applyUrl: job.hostedUrl || `https://jobs.lever.co/${company}`,
+        description: job.descriptionPlain
+          ? job.descriptionPlain.substring(0, 220) + "..."
+          : "Click Apply to view full job description.",
+      }));
+  } catch { return []; }
+}
+
+async function fetchWorkday(
+  company: { name: string; subdomain: string; tenant: string },
+  keyword: string
+): Promise<any[]> {
+  try {
+    const url = `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com/wday/cxs/${company.subdomain}/External_Career_Site/jobs`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        appliedFacets: {},
+        limit: 20,
+        offset: 0,
+        searchText: keyword,
+      }),
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobPostings || [];
+    return jobs
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
+      .map((job: any) => ({
+        id: `wd_${job.bulletFields?.[0] || job.title?.replace(/\s+/g, "_")}`,
+        title: job.title || "",
+        company: company.name,
+        location: job.locationsText || job.location || "See listing",
+        salary: "",
+        jobType: "Full-time",
+        source: "Workday",
+        postedDate: job.postedOn || "",
+        postedDateDisplay: job.postedOn
+          ? new Date(job.postedOn).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        applyUrl: job.externalPath
+          ? `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com${job.externalPath}`
+          : `https://${company.subdomain}.${company.tenant}.myworkdayjobs.com`,
+        description: "Click Apply to view full job description.",
+      }));
   } catch { return []; }
 }
 
@@ -219,19 +279,21 @@ export async function GET(req: NextRequest) {
   const datePosted = searchParams.get("datePosted") || "";
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  const [greenhouseResults, ashbyResults, leverResults] = await Promise.all([
+  const [greenhouseResults, ashbyResults, leverResults, workdayResults] = await Promise.all([
     Promise.all(GREENHOUSE_COMPANIES.map((c) => fetchGreenhouse(c, keyword))),
     Promise.all(ASHBY_COMPANIES.map((c) => fetchAshby(c, keyword))),
     Promise.all(LEVER_COMPANIES.map((c) => fetchLever(c, keyword))),
+    Promise.all(WORKDAY_COMPANIES.map((c) => fetchWorkday(c, keyword))),
   ]);
 
   const allJobs = [
     ...leverResults.flat(),
+    ...workdayResults.flat(),
     ...ashbyResults.flat(),
     ...greenhouseResults.flat(),
   ];
 
-  // Deduplicate
+  // Deduplicate by title + company
   const seen = new Set<string>();
   const uniqueJobs = allJobs.filter((job) => {
     const key = `${job.title}_${job.company}`.toLowerCase().replace(/\s+/g, "");
@@ -269,6 +331,7 @@ export async function GET(req: NextRequest) {
         greenhouse: greenhouseResults.flat().length,
         ashby: ashbyResults.flat().length,
         lever: leverResults.flat().length,
+        workday: workdayResults.flat().length,
       },
     },
   });
