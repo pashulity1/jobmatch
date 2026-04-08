@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
-// Smart keyword matcher:
-// Short keywords (≤3 chars like "HR", "AI", "UX") → match as whole word
-// Long keywords → match as substring (e.g. "designer" matches "motion designer")
-function matchesKeyword(text: string, keyword: string): boolean {
-  const t = text.toLowerCase();
-  const k = keyword.toLowerCase();
-  if (k.length <= 3) {
-    // Short keywords (HR, UX, AI): match at word start only
-    // HR → matches: HR Manager, HRIS, HRM
-    // HR → skips: Threat, Thread, Architect
-    return new RegExp("(?<![a-zA-Z])" + k).test(t);
-  }
-  return t.includes(k);
-}
-
-
 // ─── Company lists ────────────────────────────────────────────────────────────
 
 const GREENHOUSE_COMPANIES = [
@@ -151,7 +135,7 @@ async function fetchGreenhouse(company: string, keyword: string): Promise<any[]>
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `gh_${job.id}`,
         title: job.title || "",
@@ -180,7 +164,7 @@ async function fetchAshby(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `ash_${job.id}`,
         title: job.title || "",
@@ -209,7 +193,7 @@ async function fetchLever(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!Array.isArray(data)) return [];
     return data
-      .filter((job: any) => matchesKeyword(job.text || "", keyword))
+      .filter((job: any) => (job.text || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `lv_${job.id}`,
         title: job.text || "",
@@ -241,7 +225,7 @@ async function fetchSmartRecruiters(company: string, keyword: string): Promise<a
     const data = await res.json();
     const jobs = data.content || [];
     return jobs
-      .filter((job: any) => matchesKeyword(job.name || "", keyword))
+      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
       .map((job: any) => {
         const loc = job.location || {};
         const locationStr = [loc.city, loc.region, loc.country]
@@ -276,7 +260,7 @@ async function fetchBreezy(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     if (!Array.isArray(data)) return [];
     return data
-      .filter((job: any) => matchesKeyword(job.name || "", keyword))
+      .filter((job: any) => (job.name || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `br_${job._id}`,
         title: job.name || "",
@@ -311,7 +295,7 @@ async function fetchWorkable(company: string, keyword: string): Promise<any[]> {
     const data = await res.json();
     const jobs = data.results || [];
     return jobs
-      .filter((job: any) => matchesKeyword(job.title || "", keyword))
+      .filter((job: any) => (job.title || "").toLowerCase().includes(keyword))
       .map((job: any) => ({
         id: `wk_${job.shortcode || job.id}`,
         title: job.title || "",
