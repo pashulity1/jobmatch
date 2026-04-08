@@ -14,15 +14,26 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     let query = supabase.from("jobs").select("*", { count: "exact" });
 
-    // Keyword filter
+    // Keyword filter — word boundary aware
+    // For short words (<=3 chars): search as whole word with spaces or at start/end
+    // For longer words: regular contains search
     if (keyword) {
       const words = keyword.split(/\s+/).filter(Boolean);
       for (const word of words) {
-        query = query.ilike("title", `%${word}%`);
+        if (word.length <= 3) {
+          // Short words: match as whole word only
+          // Pattern: space+word+space OR word at start OR word at end
+          query = query.or(
+            `title.ilike.% ${word} %,title.ilike.${word} %,title.ilike.% ${word},title.ilike.${word}`
+          );
+        } else {
+          // Longer words: regular contains (safe enough)
+          query = query.ilike("title", `%${word}%`);
+        }
       }
     }
 
-    // Location filter — NO commas in patterns (breaks Supabase OR parser)
+    // Location filter
     if (location) {
       const locs = location.split(",").map((l) => l.trim().toLowerCase());
       const patterns: string[] = [];
