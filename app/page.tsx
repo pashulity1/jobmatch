@@ -5,6 +5,8 @@ const LOCATIONS = ["Remote", "USA", "Europe", "LATAM"];
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Freelance"];
 const DATE_OPTIONS = ["Last 24h", "3 days", "Week", "Month"];
 
+const PAGE_SIZE = 20;
+
 type Job = {
   id: string;
   title: string;
@@ -12,6 +14,7 @@ type Job = {
   location: string;
   salary: string;
   jobType: string;
+  source: string;
   postedDate: string;
   applyUrl: string;
   description: string;
@@ -32,38 +35,82 @@ export default function Home() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [totalFound, setTotalFound] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   const toggle = (value: string, list: string[], setList: (v: string[]) => void) => {
     setList(list.includes(value) ? list.filter((i) => i !== value) : [...list, value]);
+  };
+
+  const buildUrl = (pageNum: number) => {
+    const location = selectedLocations.join(",") || "";
+    const jobType = selectedTypes[0] || "";
+    const limit = pageNum * PAGE_SIZE;
+    const params = new URLSearchParams({
+      keyword: keyword || "engineer",
+      limit: String(limit),
+      ...(location && { location }),
+      ...(jobType && { jobType }),
+      ...(selectedDate && { datePosted: selectedDate }),
+    });
+    return `/api/jobs?${params.toString()}`;
   };
 
   const handleSearch = async () => {
     setLoading(true);
     setError("");
     setJobs([]);
-    const location = selectedLocations.join(", ") || "USA";
-    const jobType = selectedTypes[0] || "";
+    setPage(1);
+    setTotalFound(0);
     try {
-      const res = await fetch(
-        `/api/jobs?keyword=${encodeURIComponent(keyword || "designer")}&location=${encodeURIComponent(location)}&jobType=${encodeURIComponent(jobType)}&datePosted=${encodeURIComponent(selectedDate)}`
-      );
+      const res = await fetch(buildUrl(1));
       const data = await res.json();
       if (data.error) {
         setError("Failed to load jobs. Please try again.");
       } else {
-        const cleanedJobs = (data.jobs || []).map((job: Job) => ({
+        const cleaned = (data.jobs || []).map((job: Job) => ({
           ...job,
           description: stripHtml(job.description).substring(0, 200),
         }));
-        setJobs(cleanedJobs);
+        setJobs(cleaned);
+        setTotalFound(data.meta?.total || cleaned.length);
+        setHasMore((data.meta?.total || 0) > PAGE_SIZE);
       }
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(buildUrl(nextPage));
+      const data = await res.json();
+      if (!data.error) {
+        const cleaned = (data.jobs || []).map((job: Job) => ({
+          ...job,
+          description: stripHtml(job.description).substring(0, 200),
+        }));
+        setJobs(cleaned); // replace with full list up to nextPage * PAGE_SIZE
+        setPage(nextPage);
+        setHasMore((data.meta?.total || 0) > nextPage * PAGE_SIZE);
+      }
+    } catch {
+      // silent fail on load more
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
@@ -85,6 +132,7 @@ export default function Home() {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="e.g. Motion Designer, Video Editor"
               className="w-full bg-gray-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
             />
@@ -196,12 +244,19 @@ export default function Home() {
 
         {jobs.length > 0 && (
           <div className="mt-6 space-y-4">
-            <p className="text-gray-400 text-sm">{jobs.length} jobs found</p>
+            <p className="text-gray-400 text-sm">
+              Showing <span className="text-white font-medium">{jobs.length}</span> of{" "}
+              <span className="text-white font-medium">{totalFound.toLocaleString()}</span> jobs found
+            </p>
+
             {jobs.map((job) => (
-              <div key={job.id} className="bg-gray-900 rounded-2xl p-5 hover:bg-gray-800 transition-colors">
+              <div
+                key={job.id}
+                className="bg-gray-900 rounded-2xl p-5 hover:bg-gray-800 transition-colors"
+              >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">{job.title}</h2>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold text-white leading-tight">{job.title}</h2>
                     <p className="text-blue-400 text-sm mt-1">{job.company}</p>
                     <p className="text-gray-400 text-sm">{job.location}</p>
                   </div>
@@ -211,11 +266,18 @@ export default function Home() {
                     </span>
                   )}
                 </div>
-                <p className="text-gray-400 text-sm mt-3">{job.description}</p>
+                <p className="text-gray-400 text-sm mt-3 leading-relaxed">{job.description}</p>
                 <div className="flex justify-between items-center mt-4">
-                  <span className="text-xs text-gray-500">
-                    {job.postedDate} · {job.jobType}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      {job.postedDate} · {job.jobType}
+                    </span>
+                    {job.source && (
+                      <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">
+                        {job.source}
+                      </span>
+                    )}
+                  </div>
                   <a
                     href={job.applyUrl}
                     target="_blank"
@@ -227,6 +289,16 @@ export default function Home() {
                 </div>
               </div>
             ))}
+
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="w-full bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 font-medium py-4 rounded-xl transition-colors"
+              >
+                {loadingMore ? "Loading..." : `Load more jobs`}
+              </button>
+            )}
           </div>
         )}
 
