@@ -108,7 +108,7 @@ async function fetchGreenhouse(company: string): Promise<any[]> {
         .replace(/&[a-z0-9#]+;/gi, " ")
         .replace(/\s+/g, " ")
         .trim()
-        .substring(0, 1000);
+        .substring(0, 3000);
       return {
         id: `gh_${job.id}`, title: job.title || "",
         company: formatSlug(company), location: job.location?.name || "Remote",

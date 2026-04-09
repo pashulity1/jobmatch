@@ -26,65 +26,70 @@ export function calculateMatchScore(profile: ResumeProfile, job: Job): number {
   if (!profile || !profile.keywords?.length) return 0;
 
   const jobText = `${job.title} ${job.description}`.toLowerCase();
+  const jobTitle = job.title.toLowerCase();
+  const profileTitle = (profile.title || "").toLowerCase();
   const profileKeywords = profile.keywords.map((k) => k.toLowerCase());
   const profileSkills = profile.skills.map((s) => s.toLowerCase());
 
   // 1. Title match (40% weight)
-  let titleScore = 0;
-  const profileTitle = profile.title.toLowerCase();
-  const jobTitle = job.title.toLowerCase();
+  // Extract core words from title — ignore level words like senior/junior/lead/staff
+  const LEVEL_WORDS = ["senior", "junior", "lead", "staff", "principal", "associate",
+    "sr", "jr", "mid", "entry", "head", "chief", "vp", "director", "manager"];
 
-  // Exact title match
+  const coreWords = (title: string) =>
+    title.split(/\s+/).filter(w => w.length > 2 && !LEVEL_WORDS.includes(w));
+
+  const profileCoreWords = coreWords(profileTitle);
+  const jobCoreWords = coreWords(jobTitle);
+
+  let titleScore = 0;
+  if (profileCoreWords.length > 0 && jobCoreWords.length > 0) {
+    // How many profile core words appear in job title
+    const matched = profileCoreWords.filter(w =>
+      jobCoreWords.some(jw => jw.includes(w) || w.includes(jw))
+    );
+    titleScore = matched.length / profileCoreWords.length;
+  }
+
+  // Boost if titles are very similar (e.g. "Motion Designer" in "Senior Motion Designer")
   if (jobTitle.includes(profileTitle) || profileTitle.includes(jobTitle)) {
-    titleScore = 1;
-  } else {
-    // Partial title match - check individual words
-    const titleWords = profileTitle.split(/\s+/).filter((w) => w.length > 2);
-    const matchedTitleWords = titleWords.filter((w) => jobTitle.includes(w));
-    titleScore = titleWords.length > 0 ? matchedTitleWords.length / titleWords.length : 0;
+    titleScore = Math.max(titleScore, 0.9);
   }
 
   // 2. Skills match (35% weight)
   let skillScore = 0;
   if (profileSkills.length > 0) {
-    const matchedSkills = profileSkills.filter((skill) => jobText.includes(skill));
-    skillScore = matchedSkills.length / Math.min(profileSkills.length, 10);
-    skillScore = Math.min(skillScore, 1);
+    const matchedSkills = profileSkills.filter(skill => jobText.includes(skill));
+    skillScore = Math.min(matchedSkills.length / Math.min(profileSkills.length, 10), 1);
   }
 
   // 3. Keywords match (25% weight)
   let keywordScore = 0;
   if (profileKeywords.length > 0) {
-    const matchedKeywords = profileKeywords.filter((kw) => jobText.includes(kw));
-    keywordScore = matchedKeywords.length / Math.min(profileKeywords.length, 20);
-    keywordScore = Math.min(keywordScore, 1);
+    const matchedKeywords = profileKeywords.filter(kw => jobText.includes(kw));
+    keywordScore = Math.min(matchedKeywords.length / Math.min(profileKeywords.length, 20), 1);
   }
 
-  // Level match bonus
+  // Level match bonus (+5%)
   let levelBonus = 0;
-  const level = profile.level?.toLowerCase() || "";
-  const jobLower = job.title.toLowerCase();
+  const level = (profile.level || "").toLowerCase();
   if (
-    (level.includes("senior") && jobLower.includes("senior")) ||
-    (level.includes("junior") && jobLower.includes("junior")) ||
-    (level.includes("lead") && jobLower.includes("lead")) ||
-    (level.includes("manager") && jobLower.includes("manager")) ||
-    (level.includes("director") && jobLower.includes("director"))
+    (level.includes("senior") && jobTitle.includes("senior")) ||
+    (level.includes("junior") && jobTitle.includes("junior")) ||
+    (level.includes("lead") && (jobTitle.includes("lead") || jobTitle.includes("staff"))) ||
+    (level.includes("manager") && jobTitle.includes("manager"))
   ) {
     levelBonus = 0.05;
   }
 
-  // Calculate final score
   const score = titleScore * 0.4 + skillScore * 0.35 + keywordScore * 0.25 + levelBonus;
-
-  // Convert to percentage (0-100)
   return Math.round(Math.min(score * 100, 99));
 }
 
 export function getMatchColor(score: number): string {
-  if (score >= 70) return "#22c55e"; // green
-  if (score >= 40) return "#f59e0b"; // yellow
-  return "#ef4444"; // red
+  if (score >= 70) return "#22c55e";
+  if (score >= 40) return "#f59e0b";
+  return "#ef4444";
 }
 
 export function getMatchLabel(score: number): string {
