@@ -88,19 +88,28 @@ function formatSlug(slug: string): string {
 
 async function fetchGreenhouse(company: string): Promise<any[]> {
   try {
-    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${company}/jobs`,
-      { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${company}/jobs?content=true`,
+      { signal: AbortSignal.timeout(15000) });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs) return [];
-    return data.jobs.map((job: any) => ({
-      id: `gh_${job.id}`, title: job.title || "",
-      company: formatSlug(company), location: job.location?.name || "Remote",
-      salary: "", job_type: "Full-time", source: "Greenhouse",
-      posted_date: job.updated_at ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-      description: "Click Apply to view full job description.",
-    }));
+    return data.jobs.map((job: any) => {
+      const rawContent = job.content || "";
+      const cleanDesc = rawContent
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&[a-z]+;/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .substring(0, 1000);
+      return {
+        id: `gh_${job.id}`, title: job.title || "",
+        company: formatSlug(company), location: job.location?.name || "Remote",
+        salary: "", job_type: "Full-time", source: "Greenhouse",
+        posted_date: job.updated_at ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.absolute_url || `https://boards.greenhouse.io/${company}`,
+        description: cleanDesc || "Click Apply to view full job description.",
+      };
+    });
   } catch { return []; }
 }
 
