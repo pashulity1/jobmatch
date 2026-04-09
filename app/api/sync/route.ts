@@ -31,6 +31,8 @@ const GREENHOUSE_COMPANIES = [
   "goldbelly", "submittable", "mattermost", "openwork", "harbor",
   "stage", "dispatch", "maven", "superset", "mantis", "clara",
   "icarus", "nucleo", "nexus", "burnt", "attune", "focalsystems",
+  // Large companies from scan
+  "twilio", "okta", "affirm", "betterment", "sofi", "oscar", "tripadvisor", "skyscanner", "waymo", "udemy", "sweetgreen", "stockx",
 ];
 
 const ASHBY_COMPANIES = [
