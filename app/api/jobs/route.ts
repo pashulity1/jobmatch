@@ -62,28 +62,9 @@ export async function GET(req: NextRequest) {
     }
 
     if (keyword) {
-      // Use PostgreSQL FTS but ONLY match against title (weight A)
-      // This ensures "HR Generalist" doesn't match "Tech Ops Builder (Generalist)"
-      const { data: jobs, error } = await supabase.rpc("search_jobs_title_first", {
-        query_text: keyword,
-        loc_patterns: locationPatterns.length > 0 ? locationPatterns.join(",") : null,
-        job_type_filter: jobType || null,
-        lim: limit,
-        off: offset,
-      });
-
-      if (error) {
-        console.error("RPC error, using fallback:", error.message);
-        return titleSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
-      }
-
-      const total = jobs?.[0]?.total_count || 0;
-      const normalized = (jobs || []).map(normalizeJob);
-
-      return NextResponse.json({
-        jobs: normalized,
-        meta: { total, returned: normalized.length, offset, limit },
-      });
+      // Always search title-only — reliable and precise
+      // FTS on description causes too many false positives ("HR" in "Threat Detection" description)
+      return titleSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
     } else {
       // No keyword — return latest jobs with optional filters
       let query = supabase.from("jobs").select("*", { count: "exact" });
@@ -107,14 +88,32 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Fast title-based search fallback
+// Smart title-based search
 async function titleSearch(supabase: any, keyword: string, locationPatterns: string[], jobType: string, limit: number, offset: number) {
+  const LEVEL_WORDS = new Set(["senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head", "manager", "director"]);
   const words = keyword.split(/\s+/).filter(w => w.length > 1);
+  // Core words = without level words
+  const coreWords = words.filter(w => !LEVEL_WORDS.has(w));
+  const searchWords = coreWords.length > 0 ? coreWords : words;
+
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
-  // All words must be in title
-  for (const word of words) {
-    query = query.ilike("title", `%${word}%`);
+  if (searchWords.length === 1) {
+    // Single word — exact match in title
+    const w = searchWords[0];
+    if (w.length <= 3) {
+      // Short word like "HR", "UI" — whole word match
+      query = query.or(
+        `title.ilike.% ${w} %,title.ilike.${w} %,title.ilike.% ${w},title.ilike.${w}`
+      );
+    } else {
+      query = query.ilike("title", `%${w}%`);
+    }
+  } else {
+    // Multiple words — ALL must appear in title (AND)
+    for (const word of searchWords) {
+      query = query.ilike("title", `%${word}%`);
+    }
   }
 
   if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
