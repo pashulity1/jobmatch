@@ -1,0 +1,843 @@
+{
+  "greenhouse": [
+    "groww",
+    "oklo",
+    "pagerduty",
+    "billiontoone",
+    "amplitude",
+    "dropbox",
+    "coinbase",
+    "airbnb",
+    "instacart",
+    "gitlab",
+    "ginkgobioworks",
+    "weave",
+    "twitch",
+    "checkr",
+    "truebill",
+    "algolia",
+    "bird",
+    "brex",
+    "momentus",
+    "fivetran",
+    "reddit",
+    "clever",
+    "flexport",
+    "goatgroup",
+    "faire",
+    "gusto",
+    "odeko",
+    "mixpanel",
+    "paystack",
+    "smartasset",
+    "stripe",
+    "focalsystems",
+    "scaleai",
+    "webflow",
+    "outschool",
+    "lattice",
+    "bitmovin",
+    "gocardless",
+    "instawork",
+    "humaninterest",
+    "xendit",
+    "givecampus",
+    "partnerstack",
+    "reach",
+    "flip",
+    "qventus",
+    "sirum",
+    "akidolabs",
+    "hive",
+    "apollo",
+    "sfox",
+    "hackerrank",
+    "usergems",
+    "clear",
+    "alchemy",
+    "42",
+    "lob",
+    "radar",
+    "goldbelly",
+    "submittable",
+    "mattermost",
+    "openwork",
+    "alchemy",
+    "harbor",
+    "stage",
+    "dispatch",
+    "maven",
+    "superset",
+    "mantis",
+    "clara",
+    "icarus",
+    "nucleo",
+    "nexus",
+    "burnt",
+    "attune"
+  ],
+  "ashby": [
+    "benchling",
+    "clipboard",
+    "newfront",
+    "zapier",
+    "whatnot",
+    "mux",
+    "deepgram",
+    "eightsleep",
+    "verge-genomics",
+    "assembly",
+    "meadow",
+    "bankjoy",
+    "readme",
+    "tempo",
+    "tenjin",
+    "permutive",
+    "ycombinator",
+    "snapdocs",
+    "backpack",
+    "cambly",
+    "influxdata",
+    "circuithub",
+    "padlet",
+    "healthsherpa",
+    "sazabi",
+    "polymath",
+    "traverse",
+    "pax-historia",
+    "cascade",
+    "asimov",
+    "moss",
+    "diligencesquared",
+    "primer",
+    "sf-tensor",
+    "hyperspell",
+    "uplane",
+    "nox-metals",
+    "fleetline",
+    "fernstone",
+    "reacher",
+    "kernel",
+    "opennote",
+    "idler",
+    "april",
+    "finto",
+    "flai",
+    "solva",
+    "bootloop",
+    "doe",
+    "interface",
+    "fulcrum",
+    "lark",
+    "agentmail",
+    "truthsystems",
+    "mangodesk",
+    "sieve",
+    "airweave",
+    "eloquentai",
+    "sygaldry-technologies",
+    "lucis",
+    "sim",
+    "claim-health",
+    "auctor"
+  ],
+  "greenhouse_details": [
+    {
+      "slug": "groww",
+      "jobs": 15,
+      "name": "Groww"
+    },
+    {
+      "slug": "oklo",
+      "jobs": 58,
+      "name": "Oklo"
+    },
+    {
+      "slug": "pagerduty",
+      "jobs": 48,
+      "name": "PagerDuty"
+    },
+    {
+      "slug": "billiontoone",
+      "jobs": 129,
+      "name": "BillionToOne"
+    },
+    {
+      "slug": "amplitude",
+      "jobs": 39,
+      "name": "Amplitude"
+    },
+    {
+      "slug": "dropbox",
+      "jobs": 101,
+      "name": "Dropbox"
+    },
+    {
+      "slug": "coinbase",
+      "jobs": 165,
+      "name": "Coinbase"
+    },
+    {
+      "slug": "airbnb",
+      "jobs": 239,
+      "name": "Airbnb"
+    },
+    {
+      "slug": "instacart",
+      "jobs": 129,
+      "name": "Instacart"
+    },
+    {
+      "slug": "gitlab",
+      "jobs": 180,
+      "name": "GitLab"
+    },
+    {
+      "slug": "ginkgobioworks",
+      "jobs": 11,
+      "name": "Ginkgo Bioworks"
+    },
+    {
+      "slug": "weave",
+      "jobs": 12,
+      "name": "Weave"
+    },
+    {
+      "slug": "twitch",
+      "jobs": 71,
+      "name": "Twitch"
+    },
+    {
+      "slug": "checkr",
+      "jobs": 61,
+      "name": "Checkr"
+    },
+    {
+      "slug": "truebill",
+      "jobs": 24,
+      "name": "Truebill"
+    },
+    {
+      "slug": "algolia",
+      "jobs": 36,
+      "name": "Algolia"
+    },
+    {
+      "slug": "bird",
+      "jobs": 50,
+      "name": "Bird"
+    },
+    {
+      "slug": "brex",
+      "jobs": 252,
+      "name": "Brex"
+    },
+    {
+      "slug": "momentus",
+      "jobs": 7,
+      "name": "Momentus"
+    },
+    {
+      "slug": "fivetran",
+      "jobs": 160,
+      "name": "Fivetran"
+    },
+    {
+      "slug": "reddit",
+      "jobs": 164,
+      "name": "Reddit"
+    },
+    {
+      "slug": "clever",
+      "jobs": 4,
+      "name": "Clever"
+    },
+    {
+      "slug": "flexport",
+      "jobs": 128,
+      "name": "Flexport"
+    },
+    {
+      "slug": "goatgroup",
+      "jobs": 28,
+      "name": "GOAT Group"
+    },
+    {
+      "slug": "faire",
+      "jobs": 75,
+      "name": "Faire"
+    },
+    {
+      "slug": "gusto",
+      "jobs": 79,
+      "name": "Gusto"
+    },
+    {
+      "slug": "odeko",
+      "jobs": 13,
+      "name": "Odeko"
+    },
+    {
+      "slug": "mixpanel",
+      "jobs": 51,
+      "name": "Mixpanel"
+    },
+    {
+      "slug": "paystack",
+      "jobs": 5,
+      "name": "Paystack"
+    },
+    {
+      "slug": "smartasset",
+      "jobs": 8,
+      "name": "SmartAsset"
+    },
+    {
+      "slug": "stripe",
+      "jobs": 493,
+      "name": "Stripe"
+    },
+    {
+      "slug": "focalsystems",
+      "jobs": 1,
+      "name": "Focal Systems"
+    },
+    {
+      "slug": "scaleai",
+      "jobs": 167,
+      "name": "Scale AI"
+    },
+    {
+      "slug": "webflow",
+      "jobs": 46,
+      "name": "Webflow"
+    },
+    {
+      "slug": "outschool",
+      "jobs": 4,
+      "name": "Outschool"
+    },
+    {
+      "slug": "lattice",
+      "jobs": 13,
+      "name": "Lattice"
+    },
+    {
+      "slug": "bitmovin",
+      "jobs": 16,
+      "name": "Bitmovin"
+    },
+    {
+      "slug": "gocardless",
+      "jobs": 46,
+      "name": "GoCardless"
+    },
+    {
+      "slug": "instawork",
+      "jobs": 63,
+      "name": "Instawork"
+    },
+    {
+      "slug": "humaninterest",
+      "jobs": 63,
+      "name": "Human Interest"
+    },
+    {
+      "slug": "xendit",
+      "jobs": 16,
+      "name": "Xendit"
+    },
+    {
+      "slug": "givecampus",
+      "jobs": 15,
+      "name": "GiveCampus"
+    },
+    {
+      "slug": "partnerstack",
+      "jobs": 1,
+      "name": "PartnerStack"
+    },
+    {
+      "slug": "reach",
+      "jobs": 3,
+      "name": "Reach"
+    },
+    {
+      "slug": "flip",
+      "jobs": 17,
+      "name": "Flip"
+    },
+    {
+      "slug": "qventus",
+      "jobs": 15,
+      "name": "Qventus"
+    },
+    {
+      "slug": "sirum",
+      "jobs": 2,
+      "name": "SIRUM"
+    },
+    {
+      "slug": "akidolabs",
+      "jobs": 49,
+      "name": "Akido Labs"
+    },
+    {
+      "slug": "hive",
+      "jobs": 15,
+      "name": "Hive"
+    },
+    {
+      "slug": "apollo",
+      "jobs": 3,
+      "name": "Apollo"
+    },
+    {
+      "slug": "sfox",
+      "jobs": 4,
+      "name": "SFOX"
+    },
+    {
+      "slug": "hackerrank",
+      "jobs": 34,
+      "name": "HackerRank"
+    },
+    {
+      "slug": "usergems",
+      "jobs": 3,
+      "name": "UserGems"
+    },
+    {
+      "slug": "clear",
+      "jobs": 49,
+      "name": "Clear"
+    },
+    {
+      "slug": "alchemy",
+      "jobs": 15,
+      "name": "Alchemy"
+    },
+    {
+      "slug": "42",
+      "jobs": 1,
+      "name": "42"
+    },
+    {
+      "slug": "lob",
+      "jobs": 4,
+      "name": "Lob"
+    },
+    {
+      "slug": "radar",
+      "jobs": 14,
+      "name": "RADAR"
+    },
+    {
+      "slug": "goldbelly",
+      "jobs": 1,
+      "name": "Goldbelly"
+    },
+    {
+      "slug": "submittable",
+      "jobs": 7,
+      "name": "Submittable"
+    },
+    {
+      "slug": "mattermost",
+      "jobs": 22,
+      "name": "Mattermost"
+    },
+    {
+      "slug": "openwork",
+      "jobs": 9,
+      "name": "OpenWork"
+    },
+    {
+      "slug": "alchemy",
+      "jobs": 15,
+      "name": "Alchemy"
+    },
+    {
+      "slug": "harbor",
+      "jobs": 1,
+      "name": "Harbor"
+    },
+    {
+      "slug": "stage",
+      "jobs": 113,
+      "name": "Stage"
+    },
+    {
+      "slug": "dispatch",
+      "jobs": 1,
+      "name": "Dispatch"
+    },
+    {
+      "slug": "maven",
+      "jobs": 1,
+      "name": "Maven"
+    },
+    {
+      "slug": "superset",
+      "jobs": 6,
+      "name": "Superset"
+    },
+    {
+      "slug": "mantis",
+      "jobs": 6,
+      "name": "Mantis"
+    },
+    {
+      "slug": "clara",
+      "jobs": 77,
+      "name": "Clara"
+    },
+    {
+      "slug": "icarus",
+      "jobs": 9,
+      "name": "Icarus"
+    },
+    {
+      "slug": "nucleo",
+      "jobs": 9,
+      "name": "Nucleo"
+    },
+    {
+      "slug": "nexus",
+      "jobs": 3,
+      "name": "Nexus"
+    },
+    {
+      "slug": "burnt",
+      "jobs": 8,
+      "name": "burnt"
+    },
+    {
+      "slug": "attune",
+      "jobs": 2,
+      "name": "Attune"
+    }
+  ],
+  "ashby_details": [
+    {
+      "slug": "benchling",
+      "jobs": 48,
+      "name": "Benchling"
+    },
+    {
+      "slug": "clipboard",
+      "jobs": 47,
+      "name": "Clipboard"
+    },
+    {
+      "slug": "newfront",
+      "jobs": 13,
+      "name": "Newfront"
+    },
+    {
+      "slug": "zapier",
+      "jobs": 19,
+      "name": "Zapier"
+    },
+    {
+      "slug": "whatnot",
+      "jobs": 206,
+      "name": "Whatnot"
+    },
+    {
+      "slug": "mux",
+      "jobs": 4,
+      "name": "Mux"
+    },
+    {
+      "slug": "deepgram",
+      "jobs": 58,
+      "name": "Deepgram"
+    },
+    {
+      "slug": "eightsleep",
+      "jobs": 36,
+      "name": "Eight Sleep"
+    },
+    {
+      "slug": "verge-genomics",
+      "jobs": 3,
+      "name": "Verge Genomics"
+    },
+    {
+      "slug": "assembly",
+      "jobs": 5,
+      "name": "Assembly"
+    },
+    {
+      "slug": "meadow",
+      "jobs": 1,
+      "name": "Meadow"
+    },
+    {
+      "slug": "bankjoy",
+      "jobs": 4,
+      "name": "Bankjoy"
+    },
+    {
+      "slug": "readme",
+      "jobs": 2,
+      "name": "ReadMe"
+    },
+    {
+      "slug": "tempo",
+      "jobs": 6,
+      "name": "Tempo"
+    },
+    {
+      "slug": "tenjin",
+      "jobs": 3,
+      "name": "Tenjin"
+    },
+    {
+      "slug": "permutive",
+      "jobs": 9,
+      "name": "Permutive"
+    },
+    {
+      "slug": "ycombinator",
+      "jobs": 7,
+      "name": "Y Combinator"
+    },
+    {
+      "slug": "snapdocs",
+      "jobs": 2,
+      "name": "Snapdocs"
+    },
+    {
+      "slug": "backpack",
+      "jobs": 8,
+      "name": "Backpack"
+    },
+    {
+      "slug": "cambly",
+      "jobs": 7,
+      "name": "Cambly"
+    },
+    {
+      "slug": "influxdata",
+      "jobs": 2,
+      "name": "InfluxData"
+    },
+    {
+      "slug": "circuithub",
+      "jobs": 8,
+      "name": "CircuitHub"
+    },
+    {
+      "slug": "padlet",
+      "jobs": 19,
+      "name": "Padlet"
+    },
+    {
+      "slug": "healthsherpa",
+      "jobs": 3,
+      "name": "HealthSherpa"
+    },
+    {
+      "slug": "sazabi",
+      "jobs": 8,
+      "name": "Sazabi"
+    },
+    {
+      "slug": "polymath",
+      "jobs": 2,
+      "name": "Polymath"
+    },
+    {
+      "slug": "traverse",
+      "jobs": 4,
+      "name": "Traverse"
+    },
+    {
+      "slug": "pax-historia",
+      "jobs": 4,
+      "name": "Pax Historia"
+    },
+    {
+      "slug": "cascade",
+      "jobs": 1,
+      "name": "Cascade"
+    },
+    {
+      "slug": "asimov",
+      "jobs": 4,
+      "name": "Asimov"
+    },
+    {
+      "slug": "moss",
+      "jobs": 34,
+      "name": "Moss"
+    },
+    {
+      "slug": "diligencesquared",
+      "jobs": 4,
+      "name": "DiligenceSquared"
+    },
+    {
+      "slug": "primer",
+      "jobs": 10,
+      "name": "Primer"
+    },
+    {
+      "slug": "sf-tensor",
+      "jobs": 4,
+      "name": "SF Tensor"
+    },
+    {
+      "slug": "hyperspell",
+      "jobs": 3,
+      "name": "Hyperspell"
+    },
+    {
+      "slug": "uplane",
+      "jobs": 4,
+      "name": "Uplane"
+    },
+    {
+      "slug": "nox-metals",
+      "jobs": 10,
+      "name": "Nox Metals"
+    },
+    {
+      "slug": "fleetline",
+      "jobs": 2,
+      "name": "Fleetline"
+    },
+    {
+      "slug": "fernstone",
+      "jobs": 1,
+      "name": "Fernstone"
+    },
+    {
+      "slug": "reacher",
+      "jobs": 8,
+      "name": "Reacher"
+    },
+    {
+      "slug": "kernel",
+      "jobs": 12,
+      "name": "KERNEL"
+    },
+    {
+      "slug": "opennote",
+      "jobs": 2,
+      "name": "Opennote"
+    },
+    {
+      "slug": "idler",
+      "jobs": 4,
+      "name": "Idler"
+    },
+    {
+      "slug": "april",
+      "jobs": 8,
+      "name": "April"
+    },
+    {
+      "slug": "finto",
+      "jobs": 8,
+      "name": "Finto"
+    },
+    {
+      "slug": "flai",
+      "jobs": 3,
+      "name": "Flai"
+    },
+    {
+      "slug": "solva",
+      "jobs": 4,
+      "name": "Solva"
+    },
+    {
+      "slug": "bootloop",
+      "jobs": 1,
+      "name": "BootLoop"
+    },
+    {
+      "slug": "doe",
+      "jobs": 3,
+      "name": "Doe"
+    },
+    {
+      "slug": "interface",
+      "jobs": 3,
+      "name": "Interface"
+    },
+    {
+      "slug": "fulcrum",
+      "jobs": 15,
+      "name": "Fulcrum"
+    },
+    {
+      "slug": "lark",
+      "jobs": 3,
+      "name": "Lark"
+    },
+    {
+      "slug": "agentmail",
+      "jobs": 2,
+      "name": "AgentMail"
+    },
+    {
+      "slug": "truthsystems",
+      "jobs": 4,
+      "name": "truthsystems"
+    },
+    {
+      "slug": "mangodesk",
+      "jobs": 1,
+      "name": "MangoDesk"
+    },
+    {
+      "slug": "sieve",
+      "jobs": 9,
+      "name": "sieve"
+    },
+    {
+      "slug": "airweave",
+      "jobs": 6,
+      "name": "Airweave"
+    },
+    {
+      "slug": "eloquentai",
+      "jobs": 12,
+      "name": "Eloquent AI"
+    },
+    {
+      "slug": "sygaldry-technologies",
+      "jobs": 7,
+      "name": "Sygaldry Technologies"
+    },
+    {
+      "slug": "lucis",
+      "jobs": 11,
+      "name": "Lucis"
+    },
+    {
+      "slug": "sim",
+      "jobs": 5,
+      "name": "Sim"
+    },
+    {
+      "slug": "claim-health",
+      "jobs": 2,
+      "name": "Claim Health"
+    },
+    {
+      "slug": "auctor",
+      "jobs": 7,
+      "name": "Auctor"
+    }
+  ],
+  "summary": {
+    "total_checked": 1000,
+    "greenhouse_found": 75,
+    "ashby_found": 63
+  }
+}

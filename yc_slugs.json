@@ -1,0 +1,220 @@
+{
+  "greenhouse": [
+    "pagerduty",
+    "amplitude",
+    "gusto",
+    "smartasset",
+    "clever",
+    "mixpanel",
+    "twitch",
+    "airbnb",
+    "stripe",
+    "dropbox",
+    "reddit",
+    "coinbase",
+    "webflow",
+    "instacart",
+    "algolia",
+    "fivetran",
+    "flexport",
+    "weave",
+    "truebill",
+    "oklo",
+    "gitlab",
+    "checkr",
+    "paystack",
+    "faire",
+    "bird",
+    "brex",
+    "momentus",
+    "groww",
+    "odeko"
+  ],
+  "ashby": [
+    "zapier",
+    "benchling",
+    "clipboard",
+    "deel",
+    "whatnot"
+  ],
+  "greenhouse_details": [
+    {
+      "slug": "pagerduty",
+      "jobs": 48,
+      "name": "PagerDuty"
+    },
+    {
+      "slug": "amplitude",
+      "jobs": 39,
+      "name": "Amplitude"
+    },
+    {
+      "slug": "gusto",
+      "jobs": 79,
+      "name": "Gusto"
+    },
+    {
+      "slug": "smartasset",
+      "jobs": 8,
+      "name": "SmartAsset"
+    },
+    {
+      "slug": "clever",
+      "jobs": 4,
+      "name": "Clever"
+    },
+    {
+      "slug": "mixpanel",
+      "jobs": 51,
+      "name": "Mixpanel"
+    },
+    {
+      "slug": "twitch",
+      "jobs": 71,
+      "name": "Twitch"
+    },
+    {
+      "slug": "airbnb",
+      "jobs": 240,
+      "name": "Airbnb"
+    },
+    {
+      "slug": "stripe",
+      "jobs": 493,
+      "name": "Stripe"
+    },
+    {
+      "slug": "dropbox",
+      "jobs": 101,
+      "name": "Dropbox"
+    },
+    {
+      "slug": "reddit",
+      "jobs": 164,
+      "name": "Reddit"
+    },
+    {
+      "slug": "coinbase",
+      "jobs": 165,
+      "name": "Coinbase"
+    },
+    {
+      "slug": "webflow",
+      "jobs": 47,
+      "name": "Webflow"
+    },
+    {
+      "slug": "instacart",
+      "jobs": 129,
+      "name": "Instacart"
+    },
+    {
+      "slug": "algolia",
+      "jobs": 36,
+      "name": "Algolia"
+    },
+    {
+      "slug": "fivetran",
+      "jobs": 160,
+      "name": "Fivetran"
+    },
+    {
+      "slug": "flexport",
+      "jobs": 128,
+      "name": "Flexport"
+    },
+    {
+      "slug": "weave",
+      "jobs": 12,
+      "name": "Weave"
+    },
+    {
+      "slug": "truebill",
+      "jobs": 24,
+      "name": "Truebill"
+    },
+    {
+      "slug": "oklo",
+      "jobs": 58,
+      "name": "Oklo"
+    },
+    {
+      "slug": "gitlab",
+      "jobs": 180,
+      "name": "GitLab"
+    },
+    {
+      "slug": "checkr",
+      "jobs": 61,
+      "name": "Checkr"
+    },
+    {
+      "slug": "paystack",
+      "jobs": 5,
+      "name": "Paystack"
+    },
+    {
+      "slug": "faire",
+      "jobs": 75,
+      "name": "Faire"
+    },
+    {
+      "slug": "bird",
+      "jobs": 50,
+      "name": "Bird"
+    },
+    {
+      "slug": "brex",
+      "jobs": 252,
+      "name": "Brex"
+    },
+    {
+      "slug": "momentus",
+      "jobs": 7,
+      "name": "Momentus"
+    },
+    {
+      "slug": "groww",
+      "jobs": 15,
+      "name": "Groww"
+    },
+    {
+      "slug": "odeko",
+      "jobs": 13,
+      "name": "Odeko"
+    }
+  ],
+  "ashby_details": [
+    {
+      "slug": "zapier",
+      "jobs": 18,
+      "name": "Zapier"
+    },
+    {
+      "slug": "benchling",
+      "jobs": 48,
+      "name": "Benchling"
+    },
+    {
+      "slug": "clipboard",
+      "jobs": 47,
+      "name": "Clipboard"
+    },
+    {
+      "slug": "deel",
+      "jobs": 272,
+      "name": "Deel"
+    },
+    {
+      "slug": "whatnot",
+      "jobs": 206,
+      "name": "Whatnot"
+    }
+  ],
+  "not_found": 57,
+  "summary": {
+    "total_checked": 91,
+    "greenhouse_found": 29,
+    "ashby_found": 5
+  }
+}
