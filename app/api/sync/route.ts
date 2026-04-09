@@ -96,8 +96,16 @@ async function fetchGreenhouse(company: string): Promise<any[]> {
     return data.jobs.map((job: any) => {
       const rawContent = job.content || "";
       const cleanDesc = rawContent
-        .replace(/<[^>]*>/g, " ")
-        .replace(/&[a-z]+;/gi, " ")
+        .replace(/<style[^>]*>.*?<\/style>/gis, " ")
+        .replace(/<script[^>]*>.*?<\/script>/gis, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&[a-z0-9#]+;/gi, " ")
         .replace(/\s+/g, " ")
         .trim()
         .substring(0, 1000);
