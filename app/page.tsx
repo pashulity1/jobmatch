@@ -146,33 +146,50 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const suggestTimeout = useRef<NodeJS.Timeout | null>(null);
+  const POPULAR_SEARCHES = [
+    // Design & Creative
+    "Motion Designer", "Senior Motion Designer", "Motion Graphic Designer",
+    "Video Editor", "Creative Director", "Art Director", "Graphic Designer",
+    "Brand Designer", "UI Designer", "UX Designer", "Product Designer",
+    "Visual Designer", "Illustrator", "Animator", "3D Artist",
+    // Engineering
+    "Software Engineer", "Senior Software Engineer", "Full Stack Developer",
+    "Frontend Engineer", "Backend Engineer", "iOS Engineer", "Android Engineer",
+    "Machine Learning Engineer", "Data Engineer", "DevOps Engineer",
+    "Platform Engineer", "Site Reliability Engineer", "Security Engineer",
+    // Product & Management
+    "Product Manager", "Senior Product Manager", "Technical Program Manager",
+    "Project Manager", "Engineering Manager", "Director of Engineering",
+    // Data
+    "Data Scientist", "Data Analyst", "Business Analyst",
+    "Analytics Engineer", "BI Developer",
+    // Marketing & Growth
+    "Marketing Manager", "Growth Manager", "Content Marketing Manager",
+    "Social Media Manager", "Performance Marketing", "SEO Manager",
+    "Brand Manager", "Copywriter", "Content Designer",
+    // Sales & Success
+    "Account Executive", "Sales Engineer", "Customer Success Manager",
+    "Business Development", "Sales Manager",
+    // HR & People
+    "HR Business Partner", "HR Manager", "HR Generalist",
+    "Talent Acquisition", "Recruiter", "People Operations",
+    // Finance
+    "Financial Analyst", "Accountant", "Controller", "CFO",
+    // Operations
+    "Operations Manager", "Chief of Staff", "Strategy Manager",
+  ];
 
-  const handleKeywordChange = async (value: string) => {
+  const handleKeywordChange = (value: string) => {
     setKeyword(value);
-    
-    if (suggestTimeout.current) clearTimeout(suggestTimeout.current);
-    
-    if (value.length < 2) {
+    if (value.length > 1) {
+      const matches = POPULAR_SEARCHES.filter(s =>
+        s.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 6);
+      setSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
       setShowSuggestions(false);
-      return;
     }
-
-    // Debounce — wait 200ms before searching
-    suggestTimeout.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/jobs?keyword=${encodeURIComponent(value)}&suggest=true`);
-        const data = await res.json();
-        if (data.titles?.length > 0) {
-          setSuggestions(data.titles);
-          setShowSuggestions(true);
-        } else {
-          setShowSuggestions(false);
-        }
-      } catch {
-        setShowSuggestions(false);
-      }
-    }, 200);
   };
 
   // Auth state
