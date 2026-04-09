@@ -161,13 +161,10 @@ export default function Home() {
     // Debounce — wait 200ms before searching
     suggestTimeout.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/jobs?keyword=${encodeURIComponent(value)}&limit=6&offset=0`);
+        const res = await fetch(`/api/jobs?keyword=${encodeURIComponent(value)}&suggest=true`);
         const data = await res.json();
-        if (data.jobs?.length > 0) {
-          // Get unique titles
-          const titles = [...new Set(data.jobs.map((j: any) => j.title as string))]
-            .slice(0, 5);
-          setSuggestions(titles);
+        if (data.titles?.length > 0) {
+          setSuggestions(data.titles);
           setShowSuggestions(true);
         } else {
           setShowSuggestions(false);

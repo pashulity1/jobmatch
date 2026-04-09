@@ -10,56 +10,95 @@ export async function GET(req: NextRequest) {
   const jobType = searchParams.get("jobType") || "";
   const limit = parseInt(searchParams.get("limit") || "20");
   const offset = parseInt(searchParams.get("offset") || "0");
+  // Special mode for autocomplete suggestions - only search titles
+  const suggestMode = searchParams.get("suggest") === "true";
 
   try {
     const supabase = getSupabaseAdmin();
 
-    // Build location filter string for RPC
-    let locationFilter: string | null = null;
+    // SUGGEST MODE — fast title-only search for autocomplete
+    if (suggestMode && keyword) {
+      const words = keyword.split(/\s+/).filter(w => w.length > 1);
+      // All words must appear in title (AND)
+      let q = supabase.from("jobs").select("title");
+      for (const word of words) {
+        q = q.ilike("title", `%${word}%`);
+      }
+      const { data } = await q.limit(20);
+      const titles = [...new Set((data || []).map((j: any) => j.title as string))].slice(0, 6);
+      return NextResponse.json({ titles });
+    }
+
+    // Build location patterns
+    const locationPatterns: string[] = [];
     if (location) {
       const locs = location.split(",").map(l => l.trim().toLowerCase());
-      const patterns: string[] = [];
       for (const loc of locs) {
-        if (loc === "remote") patterns.push("Remote");
-        if (loc === "usa") patterns.push("United States", "New York", "San Francisco", "Seattle", "Los Angeles", "Chicago", "Boston", "Austin");
-        if (loc === "europe") patterns.push("London", "Berlin", "Paris", "Amsterdam", "Dublin", "Europe", "EMEA");
-        if (loc === "latam") patterns.push("Brazil", "Mexico", "Colombia", "LATAM");
+        if (loc === "remote") locationPatterns.push("location.ilike.%Remote%");
+        if (loc === "usa") {
+          locationPatterns.push(
+            "location.ilike.%United States%", "location.ilike.%New York%",
+            "location.ilike.%San Francisco%", "location.ilike.%Seattle%",
+            "location.ilike.%Los Angeles%", "location.ilike.%Chicago%",
+            "location.ilike.%Boston%", "location.ilike.%Austin%",
+            "location.ilike.% CA%", "location.ilike.% NY%",
+            "location.ilike.% WA%", "location.ilike.% TX%"
+          );
+        }
+        if (loc === "europe") {
+          locationPatterns.push(
+            "location.ilike.%London%", "location.ilike.%Berlin%",
+            "location.ilike.%Paris%", "location.ilike.%Amsterdam%",
+            "location.ilike.%Dublin%", "location.ilike.%Europe%", "location.ilike.%EMEA%"
+          );
+        }
+        if (loc === "latam") {
+          locationPatterns.push(
+            "location.ilike.%Brazil%", "location.ilike.%Mexico%",
+            "location.ilike.%Colombia%", "location.ilike.%LATAM%"
+          );
+        }
       }
-      locationFilter = patterns.join("|");
     }
 
     if (keyword) {
-      // Use PostgreSQL full-text search via RPC
-      const { data: jobs, error } = await supabase.rpc("search_jobs_fts", {
+      // Use PostgreSQL FTS but ONLY match against title (weight A)
+      // This ensures "HR Generalist" doesn't match "Tech Ops Builder (Generalist)"
+      const { data: jobs, error } = await supabase.rpc("search_jobs_title_first", {
         query_text: keyword,
-        loc_filter: locationFilter,
+        loc_patterns: locationPatterns.length > 0 ? locationPatterns.join(",") : null,
         job_type_filter: jobType || null,
         lim: limit,
         off: offset,
       });
 
       if (error) {
-        console.error("FTS search error:", error.message);
-        // Fallback to basic search if RPC fails
-        return fallbackSearch(supabase, keyword, location, jobType, limit, offset);
+        console.error("RPC error, using fallback:", error.message);
+        return titleSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
       }
 
       const total = jobs?.[0]?.total_count || 0;
-      const normalized = (jobs || []).map((job: any) => ({
-        id: job.id, title: job.title, company: job.company,
-        location: job.location, salary: job.salary || "",
-        jobType: job.job_type, source: job.source,
-        postedDate: job.posted_date, applyUrl: job.apply_url,
-        description: job.description,
-      }));
+      const normalized = (jobs || []).map(normalizeJob);
 
       return NextResponse.json({
         jobs: normalized,
         meta: { total, returned: normalized.length, offset, limit },
       });
     } else {
-      // No keyword — just filter by location/type and return latest
-      return fallbackSearch(supabase, "", location, jobType, limit, offset);
+      // No keyword — return latest jobs with optional filters
+      let query = supabase.from("jobs").select("*", { count: "exact" });
+      if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
+      if (jobType) query = query.ilike("job_type", `%${jobType}%`);
+
+      const { data: jobs, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({
+        jobs: (jobs || []).map(normalizeJob),
+        meta: { total: count || 0, returned: jobs?.length || 0, offset, limit },
+      });
     }
 
   } catch (e: any) {
@@ -68,59 +107,37 @@ export async function GET(req: NextRequest) {
   }
 }
 
-async function fallbackSearch(supabase: any, keyword: string, location: string, jobType: string, limit: number, offset: number) {
+// Fast title-based search fallback
+async function titleSearch(supabase: any, keyword: string, locationPatterns: string[], jobType: string, limit: number, offset: number) {
+  const words = keyword.split(/\s+/).filter(w => w.length > 1);
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
-  if (keyword) {
-    const words = keyword.split(/\s+/).filter(w => w.length > 1);
-    if (words.length > 0) {
-      const orParts = words.map(w => `title.ilike.%${w}%`);
-      query = query.or(orParts.join(","));
-    }
+  // All words must be in title
+  for (const word of words) {
+    query = query.ilike("title", `%${word}%`);
   }
 
-  if (location) {
-    const locs = location.split(",").map(l => l.trim().toLowerCase());
-    const patterns: string[] = [];
-    for (const loc of locs) {
-      if (loc === "remote") patterns.push("location.ilike.%Remote%");
-      if (loc === "usa") {
-        patterns.push(
-          "location.ilike.%United States%", "location.ilike.%New York%",
-          "location.ilike.%San Francisco%", "location.ilike.%Seattle%",
-          "location.ilike.% CA%", "location.ilike.% NY%", "location.ilike.% TX%"
-        );
-      }
-      if (loc === "europe") {
-        patterns.push("location.ilike.%London%", "location.ilike.%Berlin%", "location.ilike.%Europe%");
-      }
-      if (loc === "latam") {
-        patterns.push("location.ilike.%Brazil%", "location.ilike.%Mexico%", "location.ilike.%LATAM%");
-      }
-    }
-    if (patterns.length > 0) query = query.or(patterns.join(","));
-  }
-
+  if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const normalized = (jobs || []).map((job: any) => ({
+  return NextResponse.json({
+    jobs: (jobs || []).map(normalizeJob),
+    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit },
+  });
+}
+
+function normalizeJob(job: any) {
+  return {
     id: job.id, title: job.title, company: job.company,
     location: job.location, salary: job.salary || "",
     jobType: job.job_type, source: job.source,
     postedDate: job.posted_date, applyUrl: job.apply_url,
     description: job.description,
-  }));
-
-  return NextResponse.json({
-    jobs: normalized,
-    meta: { total: count || 0, returned: normalized.length, offset, limit },
-  });
+  };
 }
