@@ -83,6 +83,24 @@ const RECRUITEE_COMPANIES = [
   "moonpay", "bitwarden",
 ];
 
+const WORKABLE_COMPANIES = [
+  // Tech
+  "notion", "typeform", "hotjar", "workable", "intercom",
+  "surfe", "learnworlds", "brafton", "filestage", "contractbook",
+  "intellihr", "recruitee", "teamtailor", "greenhouse",
+  // Creative & Media
+  "frameio", "storyblok", "bynder", "wistia", "vidyard",
+  "vimeo", "behance", "99designs", "designbro",
+  // HR & People
+  "hibob", "personio", "factorial", "kenjo", "bamboohr",
+  "rippling", "gusto", "lattice", "15five", "cultureamp",
+  // Marketing
+  "semrush", "ahrefs", "moz", "sproutsocial", "buffer",
+  "hootsuite", "mailchimp", "klaviyo", "hubspot",
+  // Finance
+  "pleo", "spendesk", "moss", "payhawk", "soldo",
+];
+
 function formatSlug(slug: string): string {
   return decodeURIComponent(slug).split(/[-_ ]/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -196,6 +214,33 @@ async function fetchRecruitee(company: string): Promise<any[]> {
   } catch { return []; }
 }
 
+async function fetchWorkable(company: string): Promise<any[]> {
+  try {
+    // Workable public jobs API
+    const res = await fetch(
+      `https://apply.workable.com/api/v3/accounts/${company}/jobs`,
+      { signal: AbortSignal.timeout(8000), headers: { "Content-Type": "application/json" } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.results || [];
+    return jobs.map((job: any) => ({
+      id: `wk_${job.shortcode || job.id}`,
+      title: job.title || "",
+      company: job.company?.name || formatSlug(company),
+      location: job.location?.location_str || job.location?.city || "Remote",
+      salary: "",
+      job_type: job.employment_type || "Full-time",
+      source: "Workable",
+      posted_date: job.published_on
+        ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      apply_url: job.url || `https://apply.workable.com/${company}/j/${job.shortcode}`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
   let saved = 0, errors = 0;
@@ -230,6 +275,11 @@ export async function GET(req: NextRequest) {
   }
   if (source === "recruitee" || source === "all") {
     const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
+    jobs.push(...results.flat());
+  }
+
+  if (source === "workable" || source === "all") {
+    const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
     jobs.push(...results.flat());
   }
 
