@@ -146,30 +146,36 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const POPULAR_SEARCHES = [
-    "Motion Designer", "Senior Motion Designer", "Motion Graphic Designer",
-    "Video Editor", "Creative Director", "Art Director",
-    "Software Engineer", "Senior Software Engineer", "Full Stack Developer",
-    "Frontend Engineer", "Backend Engineer", "iOS Engineer",
-    "Product Manager", "Product Designer", "UX Designer", "UI Designer",
-    "HR Business Partner", "HR Manager", "Talent Acquisition",
-    "Data Scientist", "Data Analyst", "Machine Learning Engineer",
-    "DevOps Engineer", "Site Reliability Engineer", "Platform Engineer",
-    "Marketing Manager", "Growth Manager", "Content Marketing",
-    "Sales Engineer", "Account Executive", "Customer Success",
-  ];
+  const suggestTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const handleKeywordChange = (value: string) => {
+  const handleKeywordChange = async (value: string) => {
     setKeyword(value);
-    if (value.length > 1) {
-      const matches = POPULAR_SEARCHES.filter(s =>
-        s.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 5);
-      setSuggestions(matches);
-      setShowSuggestions(matches.length > 0);
-    } else {
+    
+    if (suggestTimeout.current) clearTimeout(suggestTimeout.current);
+    
+    if (value.length < 2) {
       setShowSuggestions(false);
+      return;
     }
+
+    // Debounce — wait 200ms before searching
+    suggestTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/jobs?keyword=${encodeURIComponent(value)}&limit=6&offset=0`);
+        const data = await res.json();
+        if (data.jobs?.length > 0) {
+          // Get unique titles
+          const titles = [...new Set(data.jobs.map((j: any) => j.title as string))]
+            .slice(0, 5);
+          setSuggestions(titles);
+          setShowSuggestions(true);
+        } else {
+          setShowSuggestions(false);
+        }
+      } catch {
+        setShowSuggestions(false);
+      }
+    }, 200);
   };
 
   // Auth state
