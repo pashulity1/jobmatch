@@ -19,17 +19,25 @@ export async function GET(req: NextRequest) {
     // For longer words: regular contains search
     if (keyword) {
       const words = keyword.split(/\s+/).filter(Boolean);
-      for (const word of words) {
+
+      if (words.length === 1) {
+        // Single word search
+        const word = words[0];
         if (word.length <= 3) {
           // Short words: match as whole word only
-          // Pattern: space+word+space OR word at start OR word at end
           query = query.or(
             `title.ilike.% ${word} %,title.ilike.${word} %,title.ilike.% ${word},title.ilike.${word}`
           );
         } else {
-          // Longer words: regular contains (safe enough)
           query = query.ilike("title", `%${word}%`);
         }
+      } else {
+        // Multi-word: OR of individual words + exact phrase
+        // "Motion Graphic Designer" → finds "Motion Designer", "Graphic Designer", "Motion Graphic Designer"
+        const longWords = words.filter((w) => w.length > 2);
+        const orParts = longWords.map((w) => `title.ilike.%${w}%`);
+        orParts.push(`title.ilike.%${keyword}%`);
+        query = query.or(orParts.join(","));
       }
     }
 
