@@ -329,25 +329,34 @@ export default function Home() {
                   {/* Company */}
                   <p className="text-blue-400 text-sm mt-0.5 font-medium">{job.company}</p>
 
-                  {/* Info tags — clean text, no emoji */}
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {locationClean && (
-                      <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded-md">{locationClean}</span>
-                    )}
-                    {workMode && (
-                      <span className={`text-xs px-2 py-0.5 rounded-md ${workMode === "Remote" ? "bg-green-950 text-green-400" : workMode === "Hybrid" ? "bg-yellow-950 text-yellow-400" : "bg-gray-800 text-gray-300"}`}>
-                        {workMode}
+                  {/* Info grid — 3 columns, 2 rows */}
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-1.5 mt-3">
+                    <div className="text-xs text-gray-400">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Location</span>
+                      {locationClean || "—"}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Type</span>
+                      {job.jobType || "—"}
+                    </div>
+                    <div className="text-xs">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Work Mode</span>
+                      <span className={workMode === "Remote" ? "text-green-400" : workMode === "Hybrid" ? "text-yellow-400" : "text-gray-400"}>
+                        {workMode || "—"}
                       </span>
-                    )}
-                    {level && (
-                      <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded-md">{level}</span>
-                    )}
-                    {salaryDisplay && (
-                      <span className="text-xs text-green-400 bg-green-950 px-2 py-0.5 rounded-md">{salaryDisplay}</span>
-                    )}
-                    {yearsExp && (
-                      <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-md">{yearsExp}</span>
-                    )}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Level</span>
+                      {level || "—"}
+                    </div>
+                    <div className="text-xs text-green-400">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Salary</span>
+                      {salaryDisplay || "—"}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <span className="text-gray-600 block text-[10px] uppercase tracking-wide mb-0.5">Experience</span>
+                      {yearsExp || "—"}
+                    </div>
                   </div>
 
                   {/* Bottom row */}
