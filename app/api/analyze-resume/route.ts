@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         "anthropic-beta": "pdfs-2024-09-25",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-6",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
         messages: [
           {
