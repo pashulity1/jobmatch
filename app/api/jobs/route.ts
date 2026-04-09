@@ -14,17 +14,13 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     let query = supabase.from("jobs").select("*", { count: "exact" });
 
-    // Keyword filter — word boundary aware
-    // For short words (<=3 chars): search as whole word with spaces or at start/end
-    // For longer words: regular contains search
     if (keyword) {
       const words = keyword.split(/\s+/).filter(Boolean);
 
       if (words.length === 1) {
-        // Single word search
         const word = words[0];
         if (word.length <= 3) {
-          // Short words: match as whole word only
+          // Short words like HR, AI, UI — match whole word only
           query = query.or(
             `title.ilike.% ${word} %,title.ilike.${word} %,title.ilike.% ${word},title.ilike.${word}`
           );
@@ -32,24 +28,31 @@ export async function GET(req: NextRequest) {
           query = query.ilike("title", `%${word}%`);
         }
       } else {
-        // Multi-word: OR of individual words + exact phrase
-        // "Motion Graphic Designer" → finds "Motion Designer", "Graphic Designer", "Motion Graphic Designer"
-        const longWords = words.filter((w) => w.length > 2);
-        const orParts = longWords.map((w) => `title.ilike.%${w}%`);
-        orParts.push(`title.ilike.%${keyword}%`);
-        query = query.or(orParts.join(","));
+        // Multi-word: first word is REQUIRED (AND), rest are optional (OR)
+        // "Motion Graphic Designer" → must have "Motion", and has "Graphic" OR "Designer"
+        // "Software Engineer" → must have "Software" AND "Engineer"
+        const [firstWord, ...restWords] = words.filter(w => w.length > 2);
+
+        // First word is mandatory
+        query = query.ilike("title", `%${firstWord}%`);
+
+        // If 2 words — both required (AND)
+        if (restWords.length === 1) {
+          query = query.ilike("title", `%${restWords[0]}%`);
+        } else if (restWords.length > 1) {
+          // 3+ words — first required, rest as OR
+          const orParts = restWords.map(w => `title.ilike.%${w}%`);
+          query = query.or(orParts.join(","));
+        }
       }
     }
 
-    // Location filter
     if (location) {
       const locs = location.split(",").map((l) => l.trim().toLowerCase());
       const patterns: string[] = [];
 
       for (const loc of locs) {
-        if (loc === "remote") {
-          patterns.push("location.ilike.%Remote%");
-        }
+        if (loc === "remote") patterns.push("location.ilike.%Remote%");
         if (loc === "usa") {
           patterns.push(
             "location.ilike.%United States%",
@@ -96,15 +99,10 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (patterns.length > 0) {
-        query = query.or(patterns.join(","));
-      }
+      if (patterns.length > 0) query = query.or(patterns.join(","));
     }
 
-    // Job type filter
-    if (jobType) {
-      query = query.ilike("job_type", `%${jobType}%`);
-    }
+    if (jobType) query = query.ilike("job_type", `%${jobType}%`);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -116,15 +114,10 @@ export async function GET(req: NextRequest) {
     }
 
     const normalized = (jobs || []).map((job: any) => ({
-      id: job.id,
-      title: job.title,
-      company: job.company,
-      location: job.location,
-      salary: job.salary || "",
-      jobType: job.job_type,
-      source: job.source,
-      postedDate: job.posted_date,
-      applyUrl: job.apply_url,
+      id: job.id, title: job.title, company: job.company,
+      location: job.location, salary: job.salary || "",
+      jobType: job.job_type, source: job.source,
+      postedDate: job.posted_date, applyUrl: job.apply_url,
       description: job.description,
     }));
 

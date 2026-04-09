@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { calculateMatchScore, getMatchColor, getMatchLabel, ResumeProfile } from "@/lib/matcher";
 
 const LOCATIONS = ["Remote", "USA", "Europe", "LATAM"];
@@ -7,19 +7,13 @@ const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Freelance"];
 const DATE_OPTIONS = ["Last 24h", "3 days", "Week", "Month"];
 const PAGE_SIZE = 20;
 const FREE_ANALYSES = 3;
+const STORAGE_KEY_PROFILE = "jobmatch_resume_profile";
+const STORAGE_KEY_COUNT = "resumeAnalysisCount";
 
 type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  jobType: string;
-  source: string;
-  postedDate: string;
-  applyUrl: string;
-  description: string;
-  matchScore?: number;
+  id: string; title: string; company: string; location: string;
+  salary: string; jobType: string; source: string; postedDate: string;
+  applyUrl: string; description: string; matchScore?: number;
 };
 
 function stripHtml(html: string): string {
@@ -28,31 +22,40 @@ function stripHtml(html: string): string {
 
 function extractSalary(description: string, existing: string): string {
   if (existing) return existing;
-  const m = description?.match(/\$[\d,]+[Kk]?\s*[-–]\s*\$[\d,]+[Kk]?/);
+  const m = (description || "").match(/\$[\d,]+[Kk]?\s*[-–]\s*\$[\d,]+[Kk]?/);
   return m ? m[0] : "";
 }
 
 function extractLevel(description: string, title: string): string {
   const text = `${title} ${description}`.toLowerCase();
+  if (text.includes("staff") || text.includes("principal")) return "Staff";
   if (text.includes("senior") || text.includes("sr.")) return "Senior";
-  if (text.includes("junior") || text.includes("jr.") || text.includes("entry")) return "Junior";
-  if (text.includes("lead") || text.includes("staff") || text.includes("principal")) return "Lead";
+  if (text.includes("lead")) return "Lead";
   if (text.includes("manager") || text.includes("director")) return "Manager";
+  if (text.includes("junior") || text.includes("jr.") || text.includes("entry")) return "Junior";
   if (text.includes("mid-level") || text.includes("mid level")) return "Mid";
   return "";
 }
 
 function extractYearsExp(description: string): string {
-  const m = description?.match(/(\d+)\+?\s*years?\s*(of\s+)?(experience|exp)/i);
-  return m ? `${m[1]}+ yrs exp` : "";
+  const m = (description || "").match(/(\d+)\+?\s*years?\s*(of\s+)?(experience|exp)/i);
+  return m ? `${m[1]}+ yrs` : "";
 }
 
 function extractWorkMode(description: string, location: string): string {
   const text = `${description} ${location}`.toLowerCase();
-  if (text.includes("remote")) return "Remote";
   if (text.includes("hybrid")) return "Hybrid";
-  if (text.includes("onsite") || text.includes("on-site") || text.includes("in-office")) return "Onsite";
+  if (text.includes("remote")) return "Remote";
+  if (text.includes("onsite") || text.includes("on-site") || text.includes("in office") || text.includes("in-office")) return "Onsite";
   return "";
+}
+
+function cleanLocation(location: string): string {
+  return (location || "")
+    .replace(/remote/i, "")
+    .replace(/^\s*[-,]\s*/, "")
+    .replace(/\s*[-,]\s*$/, "")
+    .trim();
 }
 
 export default function Home() {
@@ -71,14 +74,20 @@ export default function Home() {
   const [sortByMatch, setSortByMatch] = useState(false);
 
   const [profile, setProfile] = useState<ResumeProfile | null>(null);
-  const [resumeName, setResumeName] = useState("");
   const [analyzingResume, setAnalyzingResume] = useState(false);
   const [resumeError, setResumeError] = useState("");
-  const [analysisCount, setAnalysisCount] = useState(() => {
-    if (typeof window !== "undefined") return parseInt(localStorage.getItem("resumeAnalysisCount") || "0");
-    return 0;
-  });
+  const [analysisCount, setAnalysisCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved profile from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PROFILE);
+      if (saved) setProfile(JSON.parse(saved));
+      const count = parseInt(localStorage.getItem(STORAGE_KEY_COUNT) || "0");
+      setAnalysisCount(count);
+    } catch {}
+  }, []);
 
   const toggle = (v: string, list: string[], set: (v: string[]) => void) =>
     set(list.includes(v) ? list.filter(i => i !== v) : [...list, v]);
@@ -137,24 +146,39 @@ export default function Home() {
   };
 
   const handleResumeUpload = async (file: File) => {
-    if (analysisCount >= FREE_ANALYSES) { setResumeError("No free analyses left."); return; }
+    if (analysisCount >= FREE_ANALYSES) {
+      setResumeError("No free analyses left. Upgrade to Pro.");
+      return;
+    }
     setAnalyzingResume(true); setResumeError("");
     try {
       const formData = new FormData(); formData.append("resume", file);
       const res = await fetch("/api/analyze-resume", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok || data.error) { setResumeError(data.error || "Failed"); return; }
-      setProfile(data.profile); setResumeName(file.name);
-      const newCount = analysisCount + 1; setAnalysisCount(newCount);
-      localStorage.setItem("resumeAnalysisCount", String(newCount));
-      if (jobs.length > 0) setJobs(prev => addMatchScores(prev, data.profile));
+      const newProfile = data.profile;
+      setProfile(newProfile);
+      // Save to localStorage — persists across sessions
+      localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(newProfile));
+      const newCount = analysisCount + 1;
+      setAnalysisCount(newCount);
+      localStorage.setItem(STORAGE_KEY_COUNT, String(newCount));
+      if (jobs.length > 0) setJobs(prev => addMatchScores(prev, newProfile));
     } catch { setResumeError("Failed to analyze resume."); }
     finally { setAnalyzingResume(false); }
+  };
+
+  const removeProfile = () => {
+    setProfile(null);
+    localStorage.removeItem(STORAGE_KEY_PROFILE);
+    setJobs(p => p.map(j => ({ ...j, matchScore: undefined })));
   };
 
   const displayedJobs = sortByMatch && profile
     ? [...jobs].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
     : jobs;
+
+  const remainingFree = Math.max(FREE_ANALYSES - analysisCount, 0);
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4">
@@ -174,11 +198,13 @@ export default function Home() {
                   <p className="text-xs text-gray-400">Upload resume → see match % for every job</p>
                 </div>
                 <span className="text-xs text-blue-400 bg-blue-950 px-2 py-1 rounded-full">
-                  {Math.max(FREE_ANALYSES - analysisCount, 0)} free left
+                  {remainingFree} free left
                 </span>
               </div>
-              {analysisCount >= FREE_ANALYSES ? (
-                <button className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded-xl">Upgrade to Pro — $9/mo</button>
+              {remainingFree === 0 ? (
+                <button className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded-xl">
+                  Upgrade to Pro — $9/mo
+                </button>
               ) : (
                 <button onClick={() => fileInputRef.current?.click()} disabled={analyzingResume}
                   className="w-full border-2 border-dashed border-gray-700 hover:border-blue-500 rounded-xl py-3 text-gray-400 hover:text-blue-400 text-sm transition-colors disabled:opacity-50">
@@ -192,11 +218,10 @@ export default function Home() {
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-300">✓ {profile.name || resumeName}</p>
+                <p className="text-sm font-medium text-green-300">✓ {profile.name}</p>
                 <p className="text-xs text-gray-400">{profile.title} · {profile.level} · {profile.skills.slice(0, 3).join(", ")}</p>
               </div>
-              <button onClick={() => { setProfile(null); setJobs(p => p.map(j => ({ ...j, matchScore: undefined }))); }}
-                className="text-xs text-gray-500 hover:text-gray-300">Remove</button>
+              <button onClick={removeProfile} className="text-xs text-gray-500 hover:text-gray-300">Remove</button>
             </div>
           )}
         </div>
@@ -222,22 +247,20 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Salary: <span className="text-blue-400">{salary === 200 ? "$200k+" : `up to $${salary}k`}</span>
             </label>
             <input type="range" min="0" max="200" value={salary} onChange={e => setSalary(Number(e.target.value))} className="w-full accent-blue-500" />
           </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Job Type</label>
-              <div className="flex flex-wrap gap-2">
-                {JOB_TYPES.map(t => (
-                  <button key={t} onClick={() => toggle(t, selectedTypes, setSelectedTypes)}
-                    className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${selectedTypes.includes(t) ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Job Type</label>
+            <div className="flex flex-wrap gap-2">
+              {JOB_TYPES.map(t => (
+                <button key={t} onClick={() => toggle(t, selectedTypes, setSelectedTypes)}
+                  className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${selectedTypes.includes(t) ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
           <div>
@@ -277,18 +300,18 @@ export default function Home() {
 
             {displayedJobs.map(job => {
               const desc = stripHtml(job.description);
-              const salary = extractSalary(desc, job.salary);
+              const salaryDisplay = extractSalary(desc, job.salary);
               const level = extractLevel(desc, job.title);
               const yearsExp = extractYearsExp(desc);
               const workMode = extractWorkMode(desc, job.location);
-              const locationClean = job.location?.replace(/remote/i, "").replace(/,\s*$/, "").trim();
+              const locationClean = cleanLocation(job.location);
               const isLowMatch = job.matchScore !== undefined && job.matchScore < 30;
 
               return (
                 <div key={job.id}
-                  className={`bg-gray-900 rounded-2xl p-4 border border-gray-800 hover:border-gray-700 transition-all ${isLowMatch ? "opacity-50" : ""}`}>
+                  className={`bg-gray-900 rounded-2xl p-4 border border-gray-800 hover:border-gray-600 transition-all ${isLowMatch ? "opacity-40" : ""}`}>
 
-                  {/* Top: title + match score */}
+                  {/* Title + match */}
                   <div className="flex items-start justify-between gap-2">
                     <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
                     {job.matchScore !== undefined && (
@@ -306,46 +329,34 @@ export default function Home() {
                   {/* Company */}
                   <p className="text-blue-400 text-sm mt-0.5 font-medium">{job.company}</p>
 
-                  {/* Info row */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-gray-400">
+                  {/* Info tags — clean text, no emoji */}
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
                     {locationClean && (
-                      <span className="flex items-center gap-1">
-                        <span>📍</span> {locationClean}
-                      </span>
+                      <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded-md">{locationClean}</span>
                     )}
                     {workMode && (
-                      <span className="flex items-center gap-1">
-                        <span>🏢</span> {workMode}
+                      <span className={`text-xs px-2 py-0.5 rounded-md ${workMode === "Remote" ? "bg-green-950 text-green-400" : workMode === "Hybrid" ? "bg-yellow-950 text-yellow-400" : "bg-gray-800 text-gray-300"}`}>
+                        {workMode}
                       </span>
                     )}
                     {level && (
-                      <span className="flex items-center gap-1">
-                        <span>📊</span> {level}
-                      </span>
+                      <span className="text-xs text-gray-300 bg-gray-800 px-2 py-0.5 rounded-md">{level}</span>
                     )}
-                    {salary && (
-                      <span className="flex items-center gap-1 text-green-400">
-                        <span>💰</span> {salary}
-                      </span>
+                    {salaryDisplay && (
+                      <span className="text-xs text-green-400 bg-green-950 px-2 py-0.5 rounded-md">{salaryDisplay}</span>
                     )}
                     {yearsExp && (
-                      <span className="flex items-center gap-1">
-                        <span>⏱</span> {yearsExp}
-                      </span>
-                    )}
-                    {job.postedDate && (
-                      <span className="flex items-center gap-1 text-gray-500">
-                        <span>📅</span> {job.postedDate}
-                      </span>
+                      <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-md">{yearsExp}</span>
                     )}
                   </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-gray-800 mt-3 pt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600">{job.source}</span>
+                  {/* Bottom row */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>{job.source}</span>
+                      {job.postedDate && <span>· {job.postedDate}</span>}
                       {job.matchScore !== undefined && (
-                        <span className="text-xs" style={{ color: getMatchColor(job.matchScore) }}>
+                        <span style={{ color: getMatchColor(job.matchScore) }}>
                           · {getMatchLabel(job.matchScore)}
                         </span>
                       )}
