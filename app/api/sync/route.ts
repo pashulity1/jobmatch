@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import Parser from "rss-parser";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
@@ -142,6 +141,12 @@ const USAJOBS_KEYWORDS = [
   "librarian", "archivist", "museum curator", "firefighter",
   "police officer", "correctional officer", "border patrol agent",
   "customs officer", "emergency dispatcher",
+];
+
+const REMOTEJOBS_CATEGORIES = [
+  "programming", "design", "marketing", "sales", "writing",
+  "data-science", "devops", "product-management",
+  "customer-support", "finance", "human-resources", "legal",
 ];
 
 function formatSlug(slug: string): string {
@@ -329,75 +334,6 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
-async function fetchRemoteOK(): Promise<any[]> {
-  try {
-    const res = await fetch("https://remoteok.com/api", {
-      signal: AbortSignal.timeout(15000),
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
-        "Accept": "application/json",
-      },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data
-      .filter((job: any) => job.position)
-      .map((job: any) => ({
-        id: `rok_${job.id}`,
-        title: job.position || "",
-        company: job.company || "Unknown",
-        location: job.location || "Remote",
-        salary: job.salary_min
-          ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
-          : "",
-        job_type: "Remote",
-        source: "RemoteOK",
-        posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-        apply_url: job.url || `https://remoteok.com/remote-jobs/${job.id}`,
-        description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-      }));
-  } catch { return []; }
-}
-
-async function fetchWeWorkRemotely(): Promise<any[]> {
-  try {
-    const parser = new Parser();
-    const feeds = [
-      "https://weworkremotely.com/categories/remote-programming-jobs.rss",
-      "https://weworkremotely.com/categories/remote-design-jobs.rss",
-      "https://weworkremotely.com/categories/remote-marketing-jobs.rss",
-      "https://weworkremotely.com/categories/remote-sales-jobs.rss",
-      "https://weworkremotely.com/categories/remote-customer-support-jobs.rss",
-      "https://weworkremotely.com/categories/remote-copywriting-jobs.rss",
-      "https://weworkremotely.com/categories/remote-finance-legal-jobs.rss",
-      "https://weworkremotely.com/categories/remote-product-jobs.rss",
-    ];
-    const results = await Promise.all(feeds.map(async (url) => {
-      try {
-        const feed = await parser.parseURL(url);
-        return feed.items.map((item: any) => {
-          const titleParts = (item.title || "").split(" at ");
-          const title = titleParts[0]?.trim() || item.title || "";
-          const company = titleParts[1]?.trim() || item.creator || "Unknown";
-          return {
-            id: `wwr_${Buffer.from(item.guid || item.link || "").toString("base64").substring(0, 20)}`,
-            title,
-            company,
-            location: "Remote",
-            salary: "",
-            job_type: "Remote",
-            source: "WeWorkRemotely",
-            posted_date: item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-            apply_url: item.link || "",
-            description: (item.contentSnippet || "").substring(0, 3000),
-          };
-        });
-      } catch { return []; }
-    }));
-    return results.flat();
-  } catch { return []; }
-}
-
 async function fetchJobicy(): Promise<any[]> {
   try {
     const categories = ["engineering", "design", "marketing", "sales", "finance", "healthcare", "legal", "hr", "education", "other"];
@@ -427,29 +363,33 @@ async function fetchJobicy(): Promise<any[]> {
   } catch { return []; }
 }
 
-async function fetchHimalayas(): Promise<any[]> {
+async function fetchRemoteJobs(category: string): Promise<any[]> {
   try {
-    const res = await fetch("https://himalayas.app/jobs/api?limit=100", {
-      signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "JobMatch/1.0", "Accept": "application/json" },
-    });
+    const apiKey = process.env.REMOTEJOBS_API_KEY;
+    if (!apiKey) return [];
+    const res = await fetch(
+      `https://remotejobs.org/api/v1/jobs?category=${category}&limit=50`,
+      {
+        signal: AbortSignal.timeout(15000),
+        headers: { "Authorization": `Bearer ${apiKey}` },
+      }
+    );
     if (!res.ok) return [];
     const data = await res.json();
-    const jobs = data.jobs || [];
-    return jobs.map((job: any) => ({
-      id: `him_${job.slug || job.id}`,
-      title: job.title || "",
-      company: job.companyName || job.company?.name || "Unknown",
-      location: Array.isArray(job.locationRestrictions) ? job.locationRestrictions.join(", ") : (job.location || "Remote"),
-      salary: (job.minSalary && job.maxSalary)
-        ? `$${Math.round(job.minSalary / 1000)}k - $${Math.round(job.maxSalary / 1000)}k`
-        : "",
-      job_type: job.jobType || "Full-time",
-      source: "Himalayas",
-      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.applyUrl || `https://himalayas.app/jobs/${job.slug}`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
+    return (data.data || [])
+      .filter((job: any) => job.id && job.title)
+      .map((job: any) => ({
+        id: `rjo_${job.id}`,
+        title: job.title || "",
+        company: job.company?.name || "Unknown",
+        location: job.location || "Remote",
+        salary: job.salary_text || (job.salary_min ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k` : ""),
+        job_type: job.type || "Full-time",
+        source: "RemoteJobs",
+        posted_date: job.posted_at ? new Date(job.posted_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.apply_url || job.url || "",
+        description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      }));
   } catch { return []; }
 }
 
@@ -501,21 +441,13 @@ export async function GET(req: NextRequest) {
     const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
     jobs.push(...results.flat());
   }
-  if (source === "remoteok" || source === "all") {
-    const result = await fetchRemoteOK();
-    jobs.push(...result);
-  }
-  if (source === "weworkremotely" || source === "all") {
-    const result = await fetchWeWorkRemotely();
-    jobs.push(...result);
-  }
   if (source === "jobicy" || source === "all") {
     const result = await fetchJobicy();
     jobs.push(...result);
   }
-  if (source === "himalayas" || source === "all") {
-    const result = await fetchHimalayas();
-    jobs.push(...result);
+  if (source === "remotejobs" || source === "all") {
+    const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
+    jobs.push(...results.flat());
   }
 
   const { saved, errors } = await saveToDb(jobs);
