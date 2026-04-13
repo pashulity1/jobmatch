@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import Parser from "rss-parser";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
@@ -332,72 +333,97 @@ async function fetchRemoteOK(): Promise<any[]> {
   try {
     const res = await fetch("https://remoteok.com/api", {
       signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "JobMatch/1.0" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
+        "Accept": "application/json",
+      },
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return data.slice(1).map((job: any) => ({
-      id: `rok_${job.id}`, title: job.position || "",
-      company: job.company || "Unknown",
-      location: job.location || "Remote",
-      salary: job.salary_min
-        ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
-        : "",
-      job_type: "Full-time", source: "RemoteOK",
-      posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || `https://remoteok.com/remote-jobs/${job.id}`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
+    return data
+      .filter((job: any) => job.position)
+      .map((job: any) => ({
+        id: `rok_${job.id}`,
+        title: job.position || "",
+        company: job.company || "Unknown",
+        location: job.location || "Remote",
+        salary: job.salary_min
+          ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
+          : "",
+        job_type: "Remote",
+        source: "RemoteOK",
+        posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.url || `https://remoteok.com/remote-jobs/${job.id}`,
+        description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      }));
   } catch { return []; }
 }
 
 async function fetchWeWorkRemotely(): Promise<any[]> {
   try {
-    const res = await fetch("https://weworkremotely.com/remote-jobs.json", {
-      signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "JobMatch/1.0" },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.jobs || [];
-    return jobs.map((job: any) => ({
-      id: `wwr_${job.slug || job.id}`,
-      title: job.title || "",
-      company: job.company_name || "Unknown",
-      location: job.region || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "WeWorkRemotely",
-      posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url ? `https://weworkremotely.com${job.url}` : "",
-      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    const parser = new Parser();
+    const feeds = [
+      "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+      "https://weworkremotely.com/categories/remote-design-jobs.rss",
+      "https://weworkremotely.com/categories/remote-marketing-jobs.rss",
+      "https://weworkremotely.com/categories/remote-sales-jobs.rss",
+      "https://weworkremotely.com/categories/remote-customer-support-jobs.rss",
+      "https://weworkremotely.com/categories/remote-copywriting-jobs.rss",
+      "https://weworkremotely.com/categories/remote-finance-legal-jobs.rss",
+      "https://weworkremotely.com/categories/remote-product-jobs.rss",
+    ];
+    const results = await Promise.all(feeds.map(async (url) => {
+      try {
+        const feed = await parser.parseURL(url);
+        return feed.items.map((item: any) => {
+          const titleParts = (item.title || "").split(" at ");
+          const title = titleParts[0]?.trim() || item.title || "";
+          const company = titleParts[1]?.trim() || item.creator || "Unknown";
+          return {
+            id: `wwr_${Buffer.from(item.guid || item.link || "").toString("base64").substring(0, 20)}`,
+            title,
+            company,
+            location: "Remote",
+            salary: "",
+            job_type: "Remote",
+            source: "WeWorkRemotely",
+            posted_date: item.pubDate ? new Date(item.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+            apply_url: item.link || "",
+            description: (item.contentSnippet || "").substring(0, 3000),
+          };
+        });
+      } catch { return []; }
     }));
+    return results.flat();
   } catch { return []; }
 }
 
 async function fetchJobicy(): Promise<any[]> {
   try {
-    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?count=50&geo=usa", {
-      signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "JobMatch/1.0" },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.jobs || [];
-    return jobs.map((job: any) => ({
-      id: `jcy_${job.id}`,
-      title: job.jobTitle || "",
-      company: job.companyName || "Unknown",
-      location: job.jobGeo || "Remote",
-      salary: job.annualSalaryMin
-        ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
-        : "",
-      job_type: job.jobType || "Full-time",
-      source: "Jobicy",
-      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || "",
-      description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    const categories = ["engineering", "design", "marketing", "sales", "finance", "healthcare", "legal", "hr", "education", "other"];
+    const results = await Promise.all(categories.map(async (cat) => {
+      const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&industry=${cat}`, {
+        signal: AbortSignal.timeout(15000),
+        headers: { "User-Agent": "JobMatch/1.0" },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.jobs || []).map((job: any) => ({
+        id: `jcy_${job.id}`,
+        title: job.jobTitle || "",
+        company: job.companyName || "Unknown",
+        location: job.jobGeo || "Remote",
+        salary: job.annualSalaryMin
+          ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
+          : "",
+        job_type: job.jobType || "Full-time",
+        source: "Jobicy",
+        posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.url || "",
+        description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      }));
     }));
+    return results.flat();
   } catch { return []; }
 }
 
@@ -405,22 +431,22 @@ async function fetchHimalayas(): Promise<any[]> {
   try {
     const res = await fetch("https://himalayas.app/jobs/api?limit=100", {
       signal: AbortSignal.timeout(15000),
-      headers: { "User-Agent": "JobMatch/1.0" },
+      headers: { "User-Agent": "JobMatch/1.0", "Accept": "application/json" },
     });
     if (!res.ok) return [];
     const data = await res.json();
     const jobs = data.jobs || [];
     return jobs.map((job: any) => ({
-      id: `him_${job.id}`,
+      id: `him_${job.slug || job.id}`,
       title: job.title || "",
-      company: job.company?.name || "Unknown",
-      location: job.locationRestrictions?.join(", ") || "Remote",
-      salary: job.salary
-        ? `$${Math.round((job.salary.min || 0) / 1000)}k - $${Math.round((job.salary.max || job.salary.min || 0) / 1000)}k`
+      company: job.companyName || job.company?.name || "Unknown",
+      location: Array.isArray(job.locationRestrictions) ? job.locationRestrictions.join(", ") : (job.location || "Remote"),
+      salary: (job.minSalary && job.maxSalary)
+        ? `$${Math.round(job.minSalary / 1000)}k - $${Math.round(job.maxSalary / 1000)}k`
         : "",
       job_type: job.jobType || "Full-time",
       source: "Himalayas",
-      posted_date: job.createdAt ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
       apply_url: job.applyUrl || `https://himalayas.app/jobs/${job.slug}`,
       description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
