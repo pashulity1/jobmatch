@@ -93,174 +93,54 @@ const WORKABLE_COMPANIES = [
 ];
 
 const ADZUNA_CATEGORIES = [
-  "it-jobs",
-  "engineering-jobs", 
-  "healthcare-nursing-jobs",
-  "sales-jobs",
-  "accounting-finance-jobs",
-  "teaching-jobs",
-  "legal-jobs",
-  "creative-design-jobs",
-  "marketing-jobs",
-  "hr-jobs",
-  "logistics-warehouse-jobs",
-  "scientific-qa-jobs",
-  "social-work-jobs",
-  "trade-construction-jobs",
-  "hospitality-catering-jobs",
-    "admin-jobs",
-  "customer-services-jobs",
-  "retail-jobs",
-  "manufacturing-jobs",
-  "maintenance-jobs",
-  "travel-jobs",
-  "energy-oil-gas-jobs",
-  "property-jobs",
-  "consultancy-jobs",
-  "charity-voluntary-jobs",
-  "graduate-jobs",
-  "part-time-jobs",
-  "temporary-jobs",
-  "contract-jobs",
-  "security-jobs",
-  "aviation-jobs",
-  "automotive-jobs",
-  "food-production-jobs",
-  "media-journalism-jobs",
-  "publishing-jobs",
-  "sports-fitness-jobs",
-  "beauty-wellness-jobs",
-  "facilities-management-jobs",
-  "public-sector-jobs",
-  "government-jobs",
-  "defense-jobs"
+  "it-jobs", "engineering-jobs", "healthcare-nursing-jobs",
+  "sales-jobs", "accounting-finance-jobs", "teaching-jobs",
+  "legal-jobs", "creative-design-jobs", "marketing-jobs", "hr-jobs",
+  "logistics-warehouse-jobs", "scientific-qa-jobs", "social-work-jobs",
+  "trade-construction-jobs", "hospitality-catering-jobs", "admin-jobs",
+  "customer-services-jobs", "retail-jobs", "manufacturing-jobs",
+  "energy-oil-gas-jobs", "property-jobs", "consultancy-jobs",
+  "graduate-jobs", "part-time-jobs", "security-jobs",
+  "automotive-jobs", "media-journalism-jobs",
 ];
 
 const USAJOBS_KEYWORDS = [
-  "software engineer",
-  "data analyst",
-  "nurse",
-  "accountant",
-  "project manager",
-  "designer",
-  "cybersecurity",
-  "logistics",
-  "attorney",
-  "administrative",
-  "doctor",
-  "physician",
-  "electrician",
-  "mechanical engineer",
-  "civil engineer",
-  "financial analyst",
-  "human resources",
-  "marketing",
-  "procurement",
-  "biologist",
-  "chemist",
-  "architect",
-  "pilot",
-  "security officer",
-  "teacher",
-  "social worker",
-  "economist",
-  "statistician",
-  "program analyst",
- "budget analyst",
-   "ux designer",
-  "ui designer",
-  "graphic designer",
-  "motion designer",
-  "product manager",
-  "business analyst",
-  "systems analyst",
-  "network engineer",
-  "cloud engineer",
-  "devops engineer",
-  "qa engineer",
-  "test engineer",
-  "database administrator",
-  "it support",
-  "help desk",
-  "information security analyst",
-  "penetration tester",
-  "data scientist",
-  "machine learning engineer",
-  "ai engineer",
-  "research scientist",
-  "lab technician",
-  "pharmacist",
-  "pharmacy technician",
-  "medical assistant",
-  "radiologic technologist",
-  "physical therapist",
-  "occupational therapist",
-  "dentist",
-  "dental hygienist",
-  "veterinarian",
-  "paralegal",
-  "legal assistant",
-  "judge",
-  "law clerk",
-  "compliance officer",
-  "auditor",
-  "tax specialist",
-  "controller",
-  "bookkeeper",
-  "loan officer",
-  "insurance agent",
-  "claims adjuster",
-  "real estate agent",
-  "property manager",
-  "construction manager",
-  "site supervisor",
-  "estimator",
-  "surveyor",
-  "urban planner",
-  "interior designer",
-  "industrial designer",
-  "quality assurance",
-  "supply chain manager",
-  "warehouse manager",
-  "inventory specialist",
-  "transportation coordinator",
-  "dispatcher",
-  "truck driver",
-  "forklift operator",
-  "maintenance technician",
-  "hvac technician",
-  "plumber",
-  "welder",
-  "carpenter",
-  "assembler",
-  "machinist",
-  "production manager",
-  "operations manager",
-  "customer service representative",
-  "call center agent",
-  "sales representative",
-  "account manager",
-  "business development",
-  "content writer",
-  "copywriter",
-  "editor",
-  "translator",
-  "interpreter",
-  "photographer",
-  "videographer",
-  "animator",
-  "game developer",
-  "3d artist",
-  "technical writer",
-  "librarian",
-  "archivist",
-  "museum curator",
-  "firefighter",
-  "police officer",
-  "correctional officer",
-  "border patrol agent",
-  "customs officer",
-  "emergency dispatcher"
+  "software engineer", "data analyst", "nurse", "accountant",
+  "project manager", "designer", "cybersecurity", "logistics",
+  "attorney", "administrative", "doctor", "physician", "electrician",
+  "mechanical engineer", "civil engineer", "financial analyst",
+  "human resources", "marketing", "procurement", "biologist",
+  "chemist", "architect", "pilot", "security officer", "teacher",
+  "social worker", "economist", "statistician", "program analyst",
+  "budget analyst", "ux designer", "ui designer", "graphic designer",
+  "motion designer", "product manager", "business analyst",
+  "systems analyst", "network engineer", "cloud engineer",
+  "devops engineer", "qa engineer", "test engineer",
+  "database administrator", "it support", "help desk",
+  "information security analyst", "penetration tester",
+  "data scientist", "machine learning engineer", "ai engineer",
+  "research scientist", "lab technician", "pharmacist",
+  "pharmacy technician", "medical assistant", "radiologic technologist",
+  "physical therapist", "occupational therapist", "dentist",
+  "dental hygienist", "veterinarian", "paralegal", "legal assistant",
+  "judge", "law clerk", "compliance officer", "auditor",
+  "tax specialist", "controller", "bookkeeper", "loan officer",
+  "insurance agent", "claims adjuster", "real estate agent",
+  "property manager", "construction manager", "site supervisor",
+  "estimator", "surveyor", "urban planner", "interior designer",
+  "industrial designer", "quality assurance", "supply chain manager",
+  "warehouse manager", "inventory specialist", "transportation coordinator",
+  "dispatcher", "truck driver", "forklift operator",
+  "maintenance technician", "hvac technician", "plumber", "welder",
+  "carpenter", "assembler", "machinist", "production manager",
+  "operations manager", "customer service representative",
+  "call center agent", "sales representative", "account manager",
+  "business development", "content writer", "copywriter", "editor",
+  "translator", "interpreter", "photographer", "videographer",
+  "animator", "game developer", "3d artist", "technical writer",
+  "librarian", "archivist", "museum curator", "firefighter",
+  "police officer", "correctional officer", "border patrol agent",
+  "customs officer", "emergency dispatcher",
 ];
 
 function formatSlug(slug: string): string {
@@ -281,16 +161,9 @@ async function fetchGreenhouse(company: string): Promise<any[]> {
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ");
       const cleanDesc = rawContent
         .replace(/<[^>]+>/g, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&lt;/gi, "<")
-        .replace(/&gt;/gi, ">")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&[a-z0-9#]+;/gi, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .substring(0, 3000);
+        .replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&nbsp;/gi, " ")
+        .replace(/&[a-z0-9#]+;/gi, " ").replace(/\s+/g, " ").trim().substring(0, 3000);
       return {
         id: `gh_${job.id}`, title: job.title || "",
         company: formatSlug(company), location: job.location?.name || "Remote",
@@ -378,24 +251,16 @@ async function fetchRecruitee(company: string): Promise<any[]> {
 
 async function fetchWorkable(company: string): Promise<any[]> {
   try {
-    const res = await fetch(
-      `https://apply.workable.com/api/v3/accounts/${company}/jobs`,
-      { signal: AbortSignal.timeout(8000), headers: { "Content-Type": "application/json" } }
-    );
+    const res = await fetch(`https://apply.workable.com/api/v3/accounts/${company}/jobs`,
+      { signal: AbortSignal.timeout(8000), headers: { "Content-Type": "application/json" } });
     if (!res.ok) return [];
     const data = await res.json();
-    const jobs = data.results || [];
-    return jobs.map((job: any) => ({
-      id: `wk_${job.shortcode || job.id}`,
-      title: job.title || "",
+    return (data.results || []).map((job: any) => ({
+      id: `wk_${job.shortcode || job.id}`, title: job.title || "",
       company: job.company?.name || formatSlug(company),
       location: job.location?.location_str || job.location?.city || "Remote",
-      salary: "",
-      job_type: job.employment_type || "Full-time",
-      source: "Workable",
-      posted_date: job.published_on
-        ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : "",
+      salary: "", job_type: job.employment_type || "Full-time", source: "Workable",
+      posted_date: job.published_on ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
       apply_url: job.url || `https://apply.workable.com/${company}/j/${job.shortcode}`,
       description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
@@ -407,8 +272,7 @@ async function fetchAdzuna(category: string, country: string = "us"): Promise<an
     const appId = process.env.ADZUNA_APP_ID;
     const apiKey = process.env.ADZUNA_API_KEY;
     if (!appId || !apiKey) return [];
-    
-    const pages = [1, 2, 3];
+    const pages = [1, 2, 3, 4, 5];
     const results = await Promise.all(pages.map(async (page) => {
       const res = await fetch(
         `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?app_id=${appId}&app_key=${apiKey}&results_per_page=50&category=${category}&content-type=application/json`,
@@ -417,18 +281,12 @@ async function fetchAdzuna(category: string, country: string = "us"): Promise<an
       if (!res.ok) return [];
       const data = await res.json();
       return (data.results || []).map((job: any) => ({
-        id: `az_${job.id}`,
-        title: job.title || "",
+        id: `az_${job.id}`, title: job.title || "",
         company: job.company?.display_name || "Unknown",
         location: job.location?.display_name || "Remote",
-        salary: job.salary_min
-          ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
-          : "",
-        job_type: "Full-time",
-        source: "Adzuna",
-        posted_date: job.created
-          ? new Date(job.created).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
+        salary: job.salary_min ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k` : "",
+        job_type: "Full-time", source: "Adzuna",
+        posted_date: job.created ? new Date(job.created).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
         apply_url: job.redirect_url || "",
         description: (job.description || "").substring(0, 3000),
       }));
@@ -446,11 +304,7 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
       `https://data.usajobs.gov/api/search?Keyword=${encodeURIComponent(keyword)}&ResultsPerPage=50`,
       {
         signal: AbortSignal.timeout(15000),
-        headers: {
-          "Authorization-Key": apiKey,
-          "User-Agent": email,
-          "Host": "data.usajobs.gov",
-        },
+        headers: { "Authorization-Key": apiKey, "User-Agent": email, "Host": "data.usajobs.gov" },
       }
     );
     if (!res.ok) return [];
@@ -459,22 +313,117 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
     return items.map((item: any) => {
       const job = item.MatchedObjectDescriptor;
       return {
-        id: `usa_${job.PositionID}`,
-        title: job.PositionTitle || "",
+        id: `usa_${job.PositionID}`, title: job.PositionTitle || "",
         company: job.OrganizationName || "U.S. Government",
         location: job.PositionLocationDisplay || "USA",
         salary: job.PositionRemuneration?.[0]
           ? `$${Math.round(job.PositionRemuneration[0].MinimumRange / 1000)}k - $${Math.round(job.PositionRemuneration[0].MaximumRange / 1000)}k`
           : "",
-        job_type: job.PositionSchedule?.[0]?.Name || "Full-time",
-        source: "USAJobs",
-        posted_date: job.PublicationStartDate
-          ? new Date(job.PublicationStartDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-          : "",
+        job_type: job.PositionSchedule?.[0]?.Name || "Full-time", source: "USAJobs",
+        posted_date: job.PublicationStartDate ? new Date(job.PublicationStartDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
         apply_url: job.ApplyURI?.[0] || "",
         description: (job.UserArea?.Details?.JobSummary || "").substring(0, 3000),
       };
     });
+  } catch { return []; }
+}
+
+async function fetchRemoteOK(): Promise<any[]> {
+  try {
+    const res = await fetch("https://remoteok.com/api", {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "JobMatch/1.0" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.slice(1).map((job: any) => ({
+      id: `rok_${job.id}`, title: job.position || "",
+      company: job.company || "Unknown",
+      location: job.location || "Remote",
+      salary: job.salary_min
+        ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
+        : "",
+      job_type: "Full-time", source: "RemoteOK",
+      posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || `https://remoteok.com/remote-jobs/${job.id}`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchWeWorkRemotely(): Promise<any[]> {
+  try {
+    const res = await fetch("https://weworkremotely.com/remote-jobs.json", {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "JobMatch/1.0" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    return jobs.map((job: any) => ({
+      id: `wwr_${job.slug || job.id}`,
+      title: job.title || "",
+      company: job.company_name || "Unknown",
+      location: job.region || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "WeWorkRemotely",
+      posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url ? `https://weworkremotely.com${job.url}` : "",
+      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchJobicy(): Promise<any[]> {
+  try {
+    const res = await fetch("https://jobicy.com/api/v2/remote-jobs?count=50&geo=usa", {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "JobMatch/1.0" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    return jobs.map((job: any) => ({
+      id: `jcy_${job.id}`,
+      title: job.jobTitle || "",
+      company: job.companyName || "Unknown",
+      location: job.jobGeo || "Remote",
+      salary: job.annualSalaryMin
+        ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
+        : "",
+      job_type: job.jobType || "Full-time",
+      source: "Jobicy",
+      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || "",
+      description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchHimalayas(): Promise<any[]> {
+  try {
+    const res = await fetch("https://himalayas.app/jobs/api?limit=100", {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "JobMatch/1.0" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobs || [];
+    return jobs.map((job: any) => ({
+      id: `him_${job.id}`,
+      title: job.title || "",
+      company: job.company?.name || "Unknown",
+      location: job.locationRestrictions?.join(", ") || "Remote",
+      salary: job.salary
+        ? `$${Math.round((job.salary.min || 0) / 1000)}k - $${Math.round((job.salary.max || job.salary.min || 0) / 1000)}k`
+        : "",
+      job_type: job.jobType || "Full-time",
+      source: "Himalayas",
+      posted_date: job.createdAt ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.applyUrl || `https://himalayas.app/jobs/${job.slug}`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
   } catch { return []; }
 }
 
@@ -525,6 +474,22 @@ export async function GET(req: NextRequest) {
   if (source === "usajobs" || source === "all") {
     const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
     jobs.push(...results.flat());
+  }
+  if (source === "remoteok" || source === "all") {
+    const result = await fetchRemoteOK();
+    jobs.push(...result);
+  }
+  if (source === "weworkremotely" || source === "all") {
+    const result = await fetchWeWorkRemotely();
+    jobs.push(...result);
+  }
+  if (source === "jobicy" || source === "all") {
+    const result = await fetchJobicy();
+    jobs.push(...result);
+  }
+  if (source === "himalayas" || source === "all") {
+    const result = await fetchHimalayas();
+    jobs.push(...result);
   }
 
   const { saved, errors } = await saveToDb(jobs);
