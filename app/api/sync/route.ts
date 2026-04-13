@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const GREENHOUSE_COMPANIES = [
-  // Original verified
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
   "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
@@ -22,7 +21,6 @@ const GREENHOUSE_COMPANIES = [
   "twitch", "clever", "algolia", "instacart", "weave",
   "checkr", "oklo", "gitlab", "truebill", "bird",
   "paystack", "odeko", "momentus", "groww", "smartasset", "fivetran",
-  // New from YC script v2 — all verified!
   "billiontoone", "ginkgobioworks", "goatgroup", "scaleai",
   "outschool", "bitmovin", "gocardless", "instawork", "humaninterest",
   "xendit", "givecampus", "partnerstack", "reach", "flip",
@@ -31,19 +29,17 @@ const GREENHOUSE_COMPANIES = [
   "goldbelly", "submittable", "mattermost", "openwork", "harbor",
   "stage", "dispatch", "maven", "superset", "mantis", "clara",
   "icarus", "nucleo", "nexus", "burnt", "attune", "focalsystems",
-  // Large companies from scan
-  "twilio", "okta", "affirm", "betterment", "sofi", "oscar", "tripadvisor", "skyscanner", "waymo", "udemy", "sweetgreen", "stockx",
+  "twilio", "okta", "affirm", "betterment", "sofi", "oscar",
+  "tripadvisor", "skyscanner", "waymo", "udemy", "sweetgreen", "stockx",
 ];
 
 const ASHBY_COMPANIES = [
-  // Original verified
   "linear", "retool", "ramp", "deel", "monzo", "superhuman", "vanta",
   "metabase", "dagster", "hightouch", "census", "pitch",
   "supabase", "neon", "upstash", "resend", "cal", "raycast",
   "highlight", "axiom", "clerk", "workos",
   "mintlify", "gitbook", "readme", "perplexity", "dust", "langchain",
   "zapier", "benchling", "clipboard", "whatnot",
-  // New from YC script v2 — all verified!
   "newfront", "mux", "deepgram", "eightsleep", "verge-genomics",
   "assembly", "meadow", "bankjoy", "tempo", "tenjin", "permutive",
   "ycombinator", "snapdocs", "backpack", "cambly", "influxdata",
@@ -84,21 +80,42 @@ const RECRUITEE_COMPANIES = [
 ];
 
 const WORKABLE_COMPANIES = [
-  // Tech
   "notion", "typeform", "hotjar", "workable", "intercom",
   "surfe", "learnworlds", "brafton", "filestage", "contractbook",
   "intellihr", "recruitee", "teamtailor", "greenhouse",
-  // Creative & Media
   "frameio", "storyblok", "bynder", "wistia", "vidyard",
   "vimeo", "behance", "99designs", "designbro",
-  // HR & People
   "hibob", "personio", "factorial", "kenjo", "bamboohr",
   "rippling", "gusto", "lattice", "15five", "cultureamp",
-  // Marketing
   "semrush", "ahrefs", "moz", "sproutsocial", "buffer",
   "hootsuite", "mailchimp", "klaviyo", "hubspot",
-  // Finance
   "pleo", "spendesk", "moss", "payhawk", "soldo",
+];
+
+const ADZUNA_CATEGORIES = [
+  "it-jobs",
+  "engineering-jobs",
+  "healthcare-nursing-jobs",
+  "sales-jobs",
+  "accounting-finance-jobs",
+  "teaching-jobs",
+  "legal-jobs",
+  "creative-design-jobs",
+  "marketing-jobs",
+  "hr-jobs",
+];
+
+const USAJOBS_KEYWORDS = [
+  "software engineer",
+  "data analyst",
+  "nurse",
+  "accountant",
+  "project manager",
+  "designer",
+  "cybersecurity",
+  "logistics",
+  "attorney",
+  "administrative",
 ];
 
 function formatSlug(slug: string): string {
@@ -216,7 +233,6 @@ async function fetchRecruitee(company: string): Promise<any[]> {
 
 async function fetchWorkable(company: string): Promise<any[]> {
   try {
-    // Workable public jobs API
     const res = await fetch(
       `https://apply.workable.com/api/v3/accounts/${company}/jobs`,
       { signal: AbortSignal.timeout(8000), headers: { "Content-Type": "application/json" } }
@@ -238,6 +254,77 @@ async function fetchWorkable(company: string): Promise<any[]> {
       apply_url: job.url || `https://apply.workable.com/${company}/j/${job.shortcode}`,
       description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
+  } catch { return []; }
+}
+
+async function fetchAdzuna(category: string, country: string = "us"): Promise<any[]> {
+  try {
+    const appId = process.env.ADZUNA_APP_ID;
+    const apiKey = process.env.ADZUNA_API_KEY;
+    if (!appId || !apiKey) return [];
+    const res = await fetch(
+      `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${appId}&app_key=${apiKey}&results_per_page=50&category=${category}&content-type=application/json`,
+      { signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.results || []).map((job: any) => ({
+      id: `az_${job.id}`,
+      title: job.title || "",
+      company: job.company?.display_name || "Unknown",
+      location: job.location?.display_name || "Remote",
+      salary: job.salary_min
+        ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
+        : "",
+      job_type: "Full-time",
+      source: "Adzuna",
+      posted_date: job.created
+        ? new Date(job.created).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "",
+      apply_url: job.redirect_url || "",
+      description: (job.description || "").substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchUSAJobs(keyword: string): Promise<any[]> {
+  try {
+    const apiKey = process.env.USAJOBS_API_KEY;
+    const email = process.env.USAJOBS_EMAIL;
+    if (!apiKey || !email) return [];
+    const res = await fetch(
+      `https://data.usajobs.gov/api/search?Keyword=${encodeURIComponent(keyword)}&ResultsPerPage=50`,
+      {
+        signal: AbortSignal.timeout(15000),
+        headers: {
+          "Authorization-Key": apiKey,
+          "User-Agent": email,
+          "Host": "data.usajobs.gov",
+        },
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.SearchResult?.SearchResultItems || [];
+    return items.map((item: any) => {
+      const job = item.MatchedObjectDescriptor;
+      return {
+        id: `usa_${job.PositionID}`,
+        title: job.PositionTitle || "",
+        company: job.OrganizationName || "U.S. Government",
+        location: job.PositionLocationDisplay || "USA",
+        salary: job.PositionRemuneration?.[0]
+          ? `$${Math.round(job.PositionRemuneration[0].MinimumRange / 1000)}k - $${Math.round(job.PositionRemuneration[0].MaximumRange / 1000)}k`
+          : "",
+        job_type: job.PositionSchedule?.[0]?.Name || "Full-time",
+        source: "USAJobs",
+        posted_date: job.PublicationStartDate
+          ? new Date(job.PublicationStartDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        apply_url: job.ApplyURI?.[0] || "",
+        description: (job.UserArea?.Details?.JobSummary || "").substring(0, 3000),
+      };
+    });
   } catch { return []; }
 }
 
@@ -277,9 +364,16 @@ export async function GET(req: NextRequest) {
     const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
     jobs.push(...results.flat());
   }
-
   if (source === "workable" || source === "all") {
     const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
+    jobs.push(...results.flat());
+  }
+  if (source === "adzuna" || source === "all") {
+    const results = await Promise.all(ADZUNA_CATEGORIES.map(c => fetchAdzuna(c)));
+    jobs.push(...results.flat());
+  }
+  if (source === "usajobs" || source === "all") {
+    const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
     jobs.push(...results.flat());
   }
 
