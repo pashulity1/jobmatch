@@ -94,7 +94,7 @@ const WORKABLE_COMPANIES = [
 
 const ADZUNA_CATEGORIES = [
   "it-jobs",
-  "engineering-jobs",
+  "engineering-jobs", 
   "healthcare-nursing-jobs",
   "sales-jobs",
   "accounting-finance-jobs",
@@ -103,6 +103,11 @@ const ADZUNA_CATEGORIES = [
   "creative-design-jobs",
   "marketing-jobs",
   "hr-jobs",
+  "logistics-warehouse-jobs",
+  "scientific-qa-jobs",
+  "social-work-jobs",
+  "trade-construction-jobs",
+  "hospitality-catering-jobs",
 ];
 
 const USAJOBS_KEYWORDS = [
@@ -116,6 +121,120 @@ const USAJOBS_KEYWORDS = [
   "logistics",
   "attorney",
   "administrative",
+  "doctor",
+  "physician",
+  "electrician",
+  "mechanical engineer",
+  "civil engineer",
+  "financial analyst",
+  "human resources",
+  "marketing",
+  "procurement",
+  "biologist",
+  "chemist",
+  "architect",
+  "pilot",
+  "security officer",
+  "teacher",
+  "social worker",
+  "economist",
+  "statistician",
+  "program analyst",
+ "budget analyst",
+   "ux designer",
+  "ui designer",
+  "graphic designer",
+  "motion designer",
+  "product manager",
+  "business analyst",
+  "systems analyst",
+  "network engineer",
+  "cloud engineer",
+  "devops engineer",
+  "qa engineer",
+  "test engineer",
+  "database administrator",
+  "it support",
+  "help desk",
+  "information security analyst",
+  "penetration tester",
+  "data scientist",
+  "machine learning engineer",
+  "ai engineer",
+  "research scientist",
+  "lab technician",
+  "pharmacist",
+  "pharmacy technician",
+  "medical assistant",
+  "radiologic technologist",
+  "physical therapist",
+  "occupational therapist",
+  "dentist",
+  "dental hygienist",
+  "veterinarian",
+  "paralegal",
+  "legal assistant",
+  "judge",
+  "law clerk",
+  "compliance officer",
+  "auditor",
+  "tax specialist",
+  "controller",
+  "bookkeeper",
+  "loan officer",
+  "insurance agent",
+  "claims adjuster",
+  "real estate agent",
+  "property manager",
+  "construction manager",
+  "site supervisor",
+  "estimator",
+  "surveyor",
+  "urban planner",
+  "interior designer",
+  "industrial designer",
+  "quality assurance",
+  "supply chain manager",
+  "warehouse manager",
+  "inventory specialist",
+  "transportation coordinator",
+  "dispatcher",
+  "truck driver",
+  "forklift operator",
+  "maintenance technician",
+  "hvac technician",
+  "plumber",
+  "welder",
+  "carpenter",
+  "assembler",
+  "machinist",
+  "production manager",
+  "operations manager",
+  "customer service representative",
+  "call center agent",
+  "sales representative",
+  "account manager",
+  "business development",
+  "content writer",
+  "copywriter",
+  "editor",
+  "translator",
+  "interpreter",
+  "photographer",
+  "videographer",
+  "animator",
+  "game developer",
+  "3d artist",
+  "technical writer",
+  "librarian",
+  "archivist",
+  "museum curator",
+  "firefighter",
+  "police officer",
+  "correctional officer",
+  "border patrol agent",
+  "customs officer",
+  "emergency dispatcher"
 ];
 
 function formatSlug(slug: string): string {
@@ -262,28 +381,33 @@ async function fetchAdzuna(category: string, country: string = "us"): Promise<an
     const appId = process.env.ADZUNA_APP_ID;
     const apiKey = process.env.ADZUNA_API_KEY;
     if (!appId || !apiKey) return [];
-    const res = await fetch(
-      `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${appId}&app_key=${apiKey}&results_per_page=50&category=${category}&content-type=application/json`,
-      { signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.results || []).map((job: any) => ({
-      id: `az_${job.id}`,
-      title: job.title || "",
-      company: job.company?.display_name || "Unknown",
-      location: job.location?.display_name || "Remote",
-      salary: job.salary_min
-        ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
-        : "",
-      job_type: "Full-time",
-      source: "Adzuna",
-      posted_date: job.created
-        ? new Date(job.created).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : "",
-      apply_url: job.redirect_url || "",
-      description: (job.description || "").substring(0, 3000),
+    
+    const pages = [1, 2, 3];
+    const results = await Promise.all(pages.map(async (page) => {
+      const res = await fetch(
+        `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?app_id=${appId}&app_key=${apiKey}&results_per_page=50&category=${category}&content-type=application/json`,
+        { signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.results || []).map((job: any) => ({
+        id: `az_${job.id}`,
+        title: job.title || "",
+        company: job.company?.display_name || "Unknown",
+        location: job.location?.display_name || "Remote",
+        salary: job.salary_min
+          ? `$${Math.round(job.salary_min / 1000)}k - $${Math.round((job.salary_max || job.salary_min) / 1000)}k`
+          : "",
+        job_type: "Full-time",
+        source: "Adzuna",
+        posted_date: job.created
+          ? new Date(job.created).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        apply_url: job.redirect_url || "",
+        description: (job.description || "").substring(0, 3000),
+      }));
     }));
+    return results.flat();
   } catch { return []; }
 }
 
