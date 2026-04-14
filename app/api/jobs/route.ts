@@ -10,7 +10,6 @@ export async function GET(req: NextRequest) {
   const jobType = searchParams.get("jobType") || "";
   const limit = parseInt(searchParams.get("limit") || "20");
   const offset = parseInt(searchParams.get("offset") || "0");
-  // Special mode for autocomplete suggestions - only search titles
   const suggestMode = searchParams.get("suggest") === "true";
 
   try {
@@ -19,7 +18,6 @@ export async function GET(req: NextRequest) {
     // SUGGEST MODE — fast title-only search for autocomplete
     if (suggestMode && keyword) {
       const words = keyword.split(/\s+/).filter(w => w.length > 1);
-      // All words must appear in title (AND)
       let q = supabase.from("jobs").select("title");
       for (const word of words) {
         q = q.ilike("title", `%${word}%`);
@@ -62,9 +60,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (keyword) {
-      // Always search title-only — reliable and precise
-      // FTS on description causes too many false positives ("HR" in "Threat Detection" description)
-      return titleSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
+      return fullTextSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
     } else {
       // No keyword — return latest jobs with optional filters
       let query = supabase.from("jobs").select("*", { count: "exact" });
@@ -88,21 +84,68 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Smart title-based search
-async function titleSearch(supabase: any, keyword: string, locationPatterns: string[], jobType: string, limit: number, offset: number) {
+// PostgreSQL fulltext search — fast even on 500k+ rows
+async function fullTextSearch(
+  supabase: any,
+  keyword: string,
+  locationPatterns: string[],
+  jobType: string,
+  limit: number,
+  offset: number
+) {
   const LEVEL_WORDS = new Set(["senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head", "manager", "director"]);
-  const words = keyword.split(/\s+/).filter(w => w.length > 1);
-  // Core words = without level words
+  const words = keyword.split(/\s+/).filter(w => w.length > 0);
   const coreWords = words.filter(w => !LEVEL_WORDS.has(w));
   const searchWords = coreWords.length > 0 ? coreWords : words;
 
+  try {
+    // Use websearch mode — handles "software engineer" naturally
+    let query = supabase
+      .from("jobs")
+      .select("*", { count: "exact" })
+      .textSearch("search_vector", searchWords.join(" "), {
+        type: "websearch",
+        config: "english",
+      });
+
+    if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
+    if (jobType) query = query.ilike("job_type", `%${jobType}%`);
+
+    const { data: jobs, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // FTS success with results
+    if (!error && jobs && jobs.length > 0) {
+      return NextResponse.json({
+        jobs: jobs.map(normalizeJob),
+        meta: { total: count || 0, returned: jobs.length, offset, limit, searchType: "fulltext" },
+      });
+    }
+
+    // FTS returned 0 — fallback to title ILIKE
+    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
+
+  } catch {
+    // Graceful fallback if search_vector not available
+    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
+  }
+}
+
+// Fallback: title ILIKE
+async function titleSearchFallback(
+  supabase: any,
+  searchWords: string[],
+  locationPatterns: string[],
+  jobType: string,
+  limit: number,
+  offset: number
+) {
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
   if (searchWords.length === 1) {
-    // Single word — exact match in title
     const w = searchWords[0];
     if (w.length <= 3) {
-      // Short word like "HR", "UI" — whole word match
       query = query.or(
         `title.ilike.% ${w} %,title.ilike.${w} %,title.ilike.% ${w},title.ilike.${w}`
       );
@@ -110,7 +153,6 @@ async function titleSearch(supabase: any, keyword: string, locationPatterns: str
       query = query.ilike("title", `%${w}%`);
     }
   } else {
-    // Multiple words — ALL must appear in title (AND)
     for (const word of searchWords) {
       query = query.ilike("title", `%${word}%`);
     }
@@ -127,7 +169,7 @@ async function titleSearch(supabase: any, keyword: string, locationPatterns: str
 
   return NextResponse.json({
     jobs: (jobs || []).map(normalizeJob),
-    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit },
+    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit, searchType: "ilike_fallback" },
   });
 }
 
