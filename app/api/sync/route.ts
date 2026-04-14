@@ -393,6 +393,69 @@ async function fetchRemoteJobs(category: string): Promise<any[]> {
   } catch { return []; }
 }
 
+async function fetchRemotive(): Promise<any[]> {
+  try {
+    const res = await fetch("https://remotive.com/api/remote-jobs", {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.jobs || !Array.isArray(data.jobs)) return [];
+    return data.jobs.map((job: any) => ({
+      id: `rem_${job.id}`, title: job.title || "",
+      company: job.company_name || "", location: job.candidate_required_location || "Remote",
+      salary: job.salary || "", job_type: job.job_type === "full_time" ? "Full-time" : "Contract",
+      source: "Remotive",
+      posted_date: job.publication_date ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || "",
+      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchArbeitnow(): Promise<any[]> {
+  try {
+    const res = await fetch("https://www.arbeitnow.com/api/job-board-api", {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.data || !Array.isArray(data.data)) return [];
+    return data.data.map((job: any) => ({
+      id: `arbeit_${job.slug}`, title: job.title || "",
+      company: job.company_name || "", location: job.location || "Remote",
+      salary: "", job_type: job.job_types?.[0] || "Full-time",
+      source: "Arbeitnow",
+      posted_date: job.created_at ? new Date(job.created_at * 1000).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || "",
+      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
+async function fetchHimalayas(): Promise<any[]> {
+  try {
+    const res = await fetch("https://himalayas.app/jobs/api?limit=100", {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.jobs || !Array.isArray(data.jobs)) return [];
+    return data.jobs.map((job: any) => ({
+      id: `him_${job.id}`, title: job.title || "",
+      company: job.companyName || "", location: job.location || "Remote",
+      salary: job.salary || "", job_type: job.employmentType === "full-time" ? "Full-time" : "Contract",
+      source: "Himalayas",
+      posted_date: job.publishedAt ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || "",
+      description: (job.description || "").substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
   let saved = 0, errors = 0;
@@ -448,6 +511,18 @@ export async function GET(req: NextRequest) {
   if (source === "remotejobs" || source === "all") {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
     jobs.push(...results.flat());
+  }
+  if (source === "remotive" || source === "all") {
+    const result = await fetchRemotive();
+    jobs.push(...result);
+  }
+  if (source === "arbeitnow" || source === "all") {
+    const result = await fetchArbeitnow();
+    jobs.push(...result);
+  }
+  if (source === "himalayas" || source === "all") {
+    const result = await fetchHimalayas();
+    jobs.push(...result);
   }
 
   const { saved, errors } = await saveToDb(jobs);
