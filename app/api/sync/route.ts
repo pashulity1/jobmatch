@@ -444,15 +444,20 @@ async function fetchHimalayas(): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs || !Array.isArray(data.jobs)) return [];
-    return data.jobs.map((job: any) => ({
-      id: `him_${job.id}`, title: job.title || "",
-      company: job.companyName || "", location: job.location || "Remote",
-      salary: job.salary || "", job_type: job.employmentType === "full-time" ? "Full-time" : "Contract",
-      source: "Himalayas",
-      posted_date: job.publishedAt ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || "",
-      description: (job.description || "").substring(0, 3000),
-    }));
+    return data.jobs
+      .filter((job: any) => job.id && job.title)
+      .map((job: any) => ({
+        id: `him_${job.id}`,
+        title: job.title || "",
+        company: job.companyName || job.company?.name || "",
+        location: job.location || job.locationRestrictions?.[0] || "Remote",
+        salary: job.salaryRange || "",
+        job_type: job.jobType || job.employmentType || "Full-time",
+        source: "Himalayas",
+        posted_date: job.publishedAt ? new Date(job.publishedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.applicationLink || job.applyUrl || job.url || "",
+        description: (job.description || job.excerpt || "").replace(/<[^>]+>/g, " ").trim().substring(0, 3000),
+      }));
   } catch { return []; }
 }
 
