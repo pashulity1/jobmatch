@@ -641,44 +641,6 @@ async function fetchReed(keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
-// ─── NEW: Jooble API ──────────────────────────────────────────────────────────
-// Get key at: https://jooble.org/api/about
-// Add to Railway: JOOBLE_API_KEY=your_key_here
-async function fetchJooble(query: { keywords: string; location: string }): Promise<any[]> {
-  try {
-    const apiKey = process.env.JOOBLE_API_KEY;
-    if (!apiKey) return [];
-
-    const res = await fetch(`https://jooble.org/api/${apiKey}`, {
-      method: "POST",
-      signal: AbortSignal.timeout(15000),
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        keywords: query.keywords,
-        location: query.location,
-        page: 1,
-        ResultOnPage: 20,
-      }),
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    return (data.jobs || []).map((job: any) => ({
-      id: `jbl_${job.id || Math.random().toString(36).slice(2)}`,
-      title: job.title || "",
-      company: job.company || "Unknown",
-      location: job.location || query.location,
-      salary: job.salary || "",
-      job_type: job.type || "Full-time",
-      source: "Jooble",
-      posted_date: job.updated
-        ? new Date(job.updated).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : "",
-      apply_url: job.link || "",
-      description: (job.snippet || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
-  } catch { return []; }
-}
 
 // ─── NEW: Jobdata API ─────────────────────────────────────────────────────────
 // Register at: https://jobdataapi.com
