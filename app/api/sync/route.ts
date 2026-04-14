@@ -269,32 +269,56 @@ function formatSlug(slug: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-async function fetchGreenhouse(company: string): Promise<any[]> {
+async function fetchJooble(query: { keywords: string; location: string }): Promise<any[]> {
   try {
-    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${company}/jobs?content=true`,
-      { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (!data.jobs) return [];
-    return data.jobs.map((job: any) => {
-      const rawContent = (job.content || "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ");
-      const cleanDesc = rawContent
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
-        .replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&nbsp;/gi, " ")
-        .replace(/&[a-z0-9#]+;/gi, " ").replace(/\s+/g, " ").trim().substring(0, 3000);
-      return {
-        id: `gh_${job.id}`, title: job.title || "",
-        company: formatSlug(company), location: job.location?.name || "Remote",
-        salary: "", job_type: "Full-time", source: "Greenhouse",
-        posted_date: job.updated_at ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-        apply_url: job.absolute_url || `https://boards.greenhouse.io/${company}`,
-        description: cleanDesc || "Click Apply to view full job description.",
-      };
+    const apiKey = process.env.JOOBLE_API_KEY;
+    if (!apiKey) return [];
+
+    const res = await fetch(`https://jooble.org/api/${apiKey}`, {
+      method: "POST",
+      signal: AbortSignal.timeout(15000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        keywords: query.keywords,
+        location: query.location,
+        page: 1,
+        ResultOnPage: 20,
+      }),
     });
-  } catch { return []; }
+
+    if (!res.ok) {
+      console.error(`Jooble error: ${res.status} ${res.statusText}`);
+      return [];
+    }
+
+    const text = await res.text();
+    console.log(`Jooble raw (${query.keywords}):`, text.substring(0, 200));
+
+    let data: any;
+    try { data = JSON.parse(text); } catch {
+      console.error("Jooble JSON parse error:", text.substring(0, 200));
+      return [];
+    }
+
+    const jobs = data.jobs || data.results || data || [];
+    if (!Array.isArray(jobs)) return [];
+
+    return jobs.map((job: any) => ({
+      id: `jbl_${job.id || Buffer.from(job.link || Math.random().toString()).toString("base64").slice(0, 16)}`,
+      title: job.title || "",
+      company: job.company || "Unknown",
+      location: job.location || query.location,
+      salary: job.salary || "",
+      job_type: job.type || "Full-time",
+      source: "Jooble",
+      posted_date: job.updated ? new Date(job.updated).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.link || "",
+      description: (job.snippet || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Jooble fetch error:", e.message);
+    return [];
+  }
 }
 
 async function fetchAshby(company: string): Promise<any[]> {
