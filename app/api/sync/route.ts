@@ -292,7 +292,6 @@ async function fetchJooble(query: { keywords: string; location: string }): Promi
     }
 
     const text = await res.text();
-    console.log(`Jooble raw (${query.keywords}):`, text.substring(0, 200));
 
     let data: any;
     try { data = JSON.parse(text); } catch {
@@ -313,7 +312,7 @@ async function fetchJooble(query: { keywords: string; location: string }): Promi
       source: "Jooble",
       posted_date: job.updated ? new Date(job.updated).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
       apply_url: job.link || "",
-      description: (job.snippet || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      description: (job.snippet || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/&[a-z0-9#]+;/gi, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
   } catch (e: any) {
     console.error("Jooble fetch error:", e.message);
