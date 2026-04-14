@@ -132,7 +132,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (us
 export default function Home() {
   const [keyword, setKeyword] = useState("");
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [salary, setSalary] = useState(200);
+  const [salary, setSalary] = useState(0);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -456,7 +456,7 @@ export default function Home() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Salary: <span className="text-blue-400">{salary === 200 ? "$200k+" : `up to $${salary}k`}</span>
+              Salary: <span className="text-blue-400">{salary === 0 ? "Any" : `$${salary}k+`}</span>
             </label>
             <input type="range" min="0" max="200" value={salary} onChange={e => setSalary(Number(e.target.value))} className="w-full accent-blue-500" />
           </div>
