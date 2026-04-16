@@ -88,7 +88,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PostgreSQL fulltext search — fast even on 500k+ rows
 async function fullTextSearch(
   supabase: any,
   keyword: string,
@@ -98,8 +97,7 @@ async function fullTextSearch(
   offset: number
 ) {
   // LEVEL_WORDS — only pure seniority modifiers, NOT role names.
-  // "manager" and "director" are kept because they define the role
-  // (e.g. "Product Manager", "Engineering Director"), not the level.
+  // "manager" and "director" are part of the role title, not the level.
   const LEVEL_WORDS = new Set([
     "senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head"
   ]);
@@ -107,13 +105,15 @@ async function fullTextSearch(
   const words = keyword.split(/\s+/).filter(w => w.length > 0);
   const coreWords = words.filter(w => !LEVEL_WORDS.has(w));
 
-  // Only apply level-word stripping if we keep at least half the original words.
-  // This prevents "Product Manager" → "Product" (losing the role entirely).
+  // Only strip level words if we keep at least half the original words.
+  // Prevents "Product Manager" → "Product" (losing the role entirely).
   const searchWords =
     coreWords.length >= Math.ceil(words.length / 2) ? coreWords : words;
 
+  // VARIANT B: title must contain ALL search words.
+  // FTS ranks results by relevance, title filter eliminates noise.
+  // Applied with .or() per word so each word is independently required.
   try {
-    // Use websearch mode — handles "software engineer" naturally
     let query = supabase
       .from("jobs")
       .select("*", { count: "exact" })
@@ -122,6 +122,11 @@ async function fullTextSearch(
         config: "english",
       });
 
+    // Require every search word to appear in the title
+    for (const word of searchWords) {
+      query = query.ilike("title", `%${word}%`);
+    }
+
     if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
 
@@ -129,24 +134,22 @@ async function fullTextSearch(
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // FTS success with results
     if (!error && jobs && jobs.length > 0) {
       return NextResponse.json({
         jobs: jobs.map(normalizeJob),
-        meta: { total: count || 0, returned: jobs.length, offset, limit, searchType: "fulltext" },
+        meta: { total: count || 0, returned: jobs.length, offset, limit, searchType: "fulltext+title" },
       });
     }
 
-    // FTS returned 0 — fallback to title ILIKE
+    // FTS+title returned 0 — fallback to title ILIKE only
     return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
 
   } catch {
-    // Graceful fallback if search_vector not available
     return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
   }
 }
 
-// Fallback: title ILIKE — searches title only, stricter than FTS
+// Fallback: title ILIKE only — each search word must appear in title
 async function titleSearchFallback(
   supabase: any,
   searchWords: string[],
@@ -181,10 +184,9 @@ async function titleSearchFallback(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // If title ILIKE also returns 0 — return empty, do NOT fall back to random jobs
   return NextResponse.json({
     jobs: (jobs || []).map(normalizeJob),
-    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit, searchType: "ilike_fallback" },
+    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit, searchType: "ilike_title_only" },
   });
 }
 
