@@ -17,9 +17,8 @@ export async function POST(req: NextRequest) {
   if (action === "signup") {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    // Update name in profile
     if (data.user && name) {
-      await supabase.from("profiles").update({ name }).eq("id", data.user.id);
+      await supabase.from("profiles").upsert({ id: data.user.id, name, email });
     }
     return NextResponse.json({ success: true, user: data.user });
   }
@@ -33,6 +32,18 @@ export async function POST(req: NextRequest) {
   if (action === "signout") {
     await supabase.auth.signOut();
     return NextResponse.json({ success: true });
+  }
+
+  // Google OAuth — returns the redirect URL to initiate OAuth flow
+  if (action === "google") {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "https://jobmatch-production-2b83.up.railway.app"}/auth/callback`,
+      },
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ url: data.url });
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
