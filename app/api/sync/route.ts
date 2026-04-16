@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const GREENHOUSE_COMPANIES = [
-  // Original
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
   "hubspot", "intercom", "zendesk", "asana", "airtable", "canva",
@@ -32,26 +31,25 @@ const GREENHOUSE_COMPANIES = [
   "icarus", "nucleo", "nexus", "burnt", "attune", "focalsystems",
   "twilio", "okta", "affirm", "betterment", "sofi", "oscar",
   "tripadvisor", "skyscanner", "waymo", "udemy", "sweetgreen", "stockx",
-  // New additions
   "nvidia", "amd", "intel", "qualcomm", "arm",
-  "snowflake", "confluent", "dbt-labs", "airbyte", "fivetran",
+  "snowflake", "confluent", "dbt-labs", "airbyte",
   "mongodb", "elastic", "cockroachdb", "planetscale", "supabase",
-  "vercel", "netlify", "fly", "render", "railway",
+  "netlify", "fly", "render", "railway",
   "auth0", "stytch", "ory", "frontegg",
   "retool", "appsmith", "budibase", "tooljet",
-  "figma", "framer", "webflow", "builder",
+  "framer", "builder",
   "linear", "height", "shortcut", "basecamp",
   "carta", "capchase", "clearco", "pipe",
-  "deel", "remote", "rippling", "oyster",
+  "deel", "remote", "oyster",
   "ironclad", "docusign", "pactflow", "clio",
   "toast", "lightspeed", "square", "clover",
-  "plaid", "stripe", "adyen", "checkout",
+  "plaid", "adyen", "checkout",
   "benchling", "labviva", "scispot", "sapio",
   "relativity", "everlaw", "logikcull", "disco",
-  "zendesk", "freshdesk", "intercom", "kustomer",
+  "freshdesk", "kustomer",
   "drift", "qualified", "chili-piper", "salesloft",
   "gong", "chorus", "clari", "outreach",
-  "productboard", "pendo", "amplitude", "mixpanel",
+  "productboard", "pendo",
 ];
 
 const ASHBY_COMPANIES = [
@@ -81,7 +79,7 @@ const ASHBY_COMPANIES = [
   "figma", "penpot", "plasmic", "framer",
   "loom", "tella", "mmhmm", "jam",
   "incident", "firehydrant", "blameless", "rootly",
-  "vanta", "drata", "secureframe", "laika",
+  "drata", "secureframe", "laika",
   "merge", "apideck", "vessel", "knit",
   "fleet", "fleetdm", "kandji", "mosyle",
   "plane", "huly", "cycle", "arc",
@@ -100,7 +98,7 @@ const LEVER_COMPANIES = [
   "lumos", "drata", "primer", "sardine", "replit", "codeium", "enablecomp",
   // New additions
   "figma", "notion", "airtable", "webflow", "framer",
-  "stripe", "brex", "ramp", "mercury", "found",
+  "stripe", "brex", "ramp", "found",
   "attentive", "klaviyo", "yotpo", "drip", "omnisend",
   "heap", "fullstory", "logrocket", "hotjar", "mouseflow",
   "pagerduty", "opsgenie", "victorops", "signalfire",
@@ -140,7 +138,7 @@ const RECRUITEE_COMPANIES = [
   // New additions
   "teamwork", "basecamp", "clickup", "todoist",
   "miro", "whimsical", "lucid", "creately",
-  "storyblok", "contentful", "sanity", "prismic",
+  "storyblok", "sanity", "prismic",
   "lokalise", "phrase", "crowdin", "transifex",
   "appcues", "userpilot", "intercom", "chameleon",
 ];
@@ -765,6 +763,8 @@ export async function GET(req: NextRequest) {
     jobs.push(...results.flat());
   }
 
-  const { saved, errors } = await saveToDb(jobs);
+  // Deduplicate by id before saving — prevents duplicates from overlapping company lists
+  const uniqueJobs = Array.from(new Map(jobs.map(j => [j.id, j])).values());
+  const { saved, errors } = await saveToDb(uniqueJobs);
   return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors });
 }
