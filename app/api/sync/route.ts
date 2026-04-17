@@ -50,6 +50,11 @@ const GREENHOUSE_COMPANIES = [
   "drift", "qualified", "chili-piper", "salesloft",
   "gong", "chorus", "clari", "outreach",
   "productboard", "pendo",
+  // New additions
+  "mistral", "atlassian", "cockroachlabs", "grammarly",
+  "miro", "loom", "superhuman", "mercury", "ramp",
+  "culture-amp", "leapsome", "persona", "alloy", "postman",
+  "hightouch", "census", "modal", "baseten", "clerk",
 ];
 
 const ASHBY_COMPANIES = [
@@ -85,6 +90,8 @@ const ASHBY_COMPANIES = [
   "plane", "huly", "cycle", "arc",
   "rows", "tally", "fillout", "paperform",
   "typeform", "jotform", "surveymonkey", "alchemer",
+  // New additions
+  "mercury", "brex", "coda", "replit",
 ];
 
 const LEVER_COMPANIES = [
@@ -110,6 +117,9 @@ const LEVER_COMPANIES = [
   "productboard", "aha", "roadmunk", "craft",
   "sprinklr", "brandwatch", "meltwater", "mention",
   "kandji", "mosyle", "addigy", "jamf",
+  // New additions
+  "netflix", "uber", "lyft", "airbnb", "dropbox",
+  "reddit", "duolingo", "discord", "canva",
 ];
 
 const SMARTRECRUITERS_COMPANIES = [
