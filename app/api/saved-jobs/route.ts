@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-function getSupabaseWithToken(token: string) {
+function getAnonClient(token: string) {
   return createClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
@@ -11,16 +11,24 @@ function getSupabaseWithToken(token: string) {
   );
 }
 
+function getServiceClient() {
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+}
+
+async function getUser(token: string) {
+  const { data: { user } } = await getAnonClient(token).auth.getUser();
+  return user;
+}
+
 // GET /api/saved-jobs — list saved jobs for current user
 export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseWithToken(token);
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await getServiceClient()
     .from("saved_jobs")
     .select("*")
     .eq("user_id", user.id)
@@ -35,15 +43,15 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseWithToken(token);
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const { job_id, title, company, location, salary, job_type, source, posted_date, apply_url } = body;
 
-  // Check if already saved
-  const { data: existing } = await supabase
+  const db = getServiceClient();
+
+  const { data: existing } = await db
     .from("saved_jobs")
     .select("id")
     .eq("user_id", user.id)
@@ -52,19 +60,12 @@ export async function POST(req: NextRequest) {
 
   if (existing) return NextResponse.json({ saved: existing });
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("saved_jobs")
     .insert({
-      user_id: user.id,
-      job_id,
-      title,
-      company,
-      location,
-      salary: salary || "",
-      job_type: job_type || "Full-time",
-      source: source || "",
-      posted_date: posted_date || "",
-      apply_url: apply_url || "",
+      user_id: user.id, job_id, title, company, location,
+      salary: salary || "", job_type: job_type || "Full-time",
+      source: source || "", posted_date: posted_date || "", apply_url: apply_url || "",
     })
     .select()
     .single();
@@ -78,14 +79,13 @@ export async function DELETE(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseWithToken(token);
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const job_id = new URL(req.url).searchParams.get("job_id");
   if (!job_id) return NextResponse.json({ error: "Missing job_id" }, { status: 400 });
 
-  const { error } = await supabase
+  const { error } = await getServiceClient()
     .from("saved_jobs")
     .delete()
     .eq("user_id", user.id)

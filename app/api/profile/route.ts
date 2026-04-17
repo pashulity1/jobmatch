@@ -3,24 +3,31 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-function getSupabaseWithToken(token: string) {
-  const supabase = createClient(
+function getAnonClient(token: string) {
+  return createClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
-  return supabase;
+}
+
+function getServiceClient() {
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+}
+
+async function getUser(token: string) {
+  const { data: { user } } = await getAnonClient(token).auth.getUser();
+  return user;
 }
 
 export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseWithToken(token);
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase
+  const { data: profile } = await getServiceClient()
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -33,8 +40,7 @@ export async function PUT(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseWithToken(token);
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser(token);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
@@ -47,7 +53,7 @@ export async function PUT(req: NextRequest) {
   if (interested_positions !== undefined) updates.interested_positions = interested_positions;
   if (work_format !== undefined) updates.work_format = work_format;
 
-  const { data, error } = await supabase
+  const { data, error } = await getServiceClient()
     .from("profiles")
     .upsert(updates, { onConflict: "id" })
     .select()
