@@ -133,6 +133,7 @@ export default function Dashboard() {
     if (!t) return;
     setSaving(true); setSaveMsg("");
     try {
+      console.log("TOKEN VALUE:", token, localStorage.getItem("jm_token"));
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
