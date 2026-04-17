@@ -25,6 +25,27 @@ type Tab = typeof TABS[number];
 const LEVEL_OPTIONS = ["Entry", "Mid", "Senior", "Lead", "Manager", "Director"];
 const FORMAT_OPTIONS = ["Remote", "Hybrid", "Onsite"];
 
+const POPULAR_POSITIONS = [
+  "Motion Designer", "Senior Motion Designer", "Motion Graphic Designer",
+  "Video Editor", "Creative Director", "Art Director", "Graphic Designer",
+  "Brand Designer", "UI Designer", "UX Designer", "Product Designer",
+  "Visual Designer", "Illustrator", "Animator", "3D Artist",
+  "Software Engineer", "Senior Software Engineer", "Full Stack Developer",
+  "Frontend Engineer", "Backend Engineer", "iOS Engineer", "Android Engineer",
+  "Machine Learning Engineer", "Data Engineer", "DevOps Engineer",
+  "Platform Engineer", "Site Reliability Engineer", "Security Engineer",
+  "Product Manager", "Senior Product Manager", "Technical Program Manager",
+  "Project Manager", "Engineering Manager", "Director of Engineering",
+  "Data Scientist", "Data Analyst", "Business Analyst", "Analytics Engineer",
+  "Marketing Manager", "Growth Manager", "Content Marketing Manager",
+  "Social Media Manager", "Performance Marketing", "SEO Manager",
+  "Brand Manager", "Copywriter", "Content Designer",
+  "Account Executive", "Sales Engineer", "Customer Success Manager",
+  "Business Development", "Sales Manager",
+  "HR Business Partner", "HR Manager", "Recruiter", "Talent Acquisition",
+  "Financial Analyst", "Accountant", "Operations Manager", "Chief of Staff",
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -55,6 +76,8 @@ export default function Dashboard() {
   const [digestEnabled, setDigestEnabled] = useState(false);
   const [digestFreq, setDigestFreq] = useState<"daily" | "weekly">("daily");
   const [newAlertPosition, setNewAlertPosition] = useState("");
+  const [alertSuggestions, setAlertSuggestions] = useState<string[]>([]);
+  const [showAlertSuggestions, setShowAlertSuggestions] = useState(false);
 
   useEffect(() => {
     const rawToken = localStorage.getItem("jm_token");
@@ -463,12 +486,51 @@ export default function Dashboard() {
             {/* Positions */}
             <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
               <h2 className="text-sm font-semibold text-gray-300 mb-3">Alert Positions</h2>
-              <div className="flex gap-2 mb-2">
-                <input value={newAlertPosition} onChange={e => setNewAlertPosition(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addPosition(newAlertPosition, alertPositions, setAlertPositions, setNewAlertPosition)}
-                  placeholder="e.g. Motion Designer"
-                  className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 text-sm" />
-                <button onClick={() => addPosition(newAlertPosition, alertPositions, setAlertPositions, setNewAlertPosition)}
+              <div className="flex gap-2 mb-2 relative">
+                <div className="flex-1 relative">
+                  <input
+                    value={newAlertPosition}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setNewAlertPosition(v);
+                      if (v.length > 1) {
+                        const matches = POPULAR_POSITIONS.filter(p =>
+                          p.toLowerCase().includes(v.toLowerCase())
+                        ).slice(0, 6);
+                        setAlertSuggestions(matches);
+                        setShowAlertSuggestions(matches.length > 0);
+                      } else {
+                        setShowAlertSuggestions(false);
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        setShowAlertSuggestions(false);
+                        addPosition(newAlertPosition, alertPositions, setAlertPositions, setNewAlertPosition);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowAlertSuggestions(false), 150)}
+                    placeholder="e.g. Motion Designer"
+                    className="w-full bg-gray-800 text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 text-sm"
+                  />
+                  {showAlertSuggestions && (
+                    <div className="absolute z-20 mt-1 w-full bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
+                      {alertSuggestions.map(s => (
+                        <button key={s} onMouseDown={() => {
+                          setNewAlertPosition(s);
+                          setShowAlertSuggestions(false);
+                        }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors">
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => {
+                  setShowAlertSuggestions(false);
+                  addPosition(newAlertPosition, alertPositions, setAlertPositions, setNewAlertPosition);
+                }}
                   className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 rounded-xl">Add</button>
               </div>
               <div className="flex flex-wrap gap-2">
