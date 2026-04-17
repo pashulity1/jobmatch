@@ -70,6 +70,50 @@ const GREENHOUSE_COMPANIES = [
   "livekit", "daily", "whereby", "agora",
   "labelbox", "weights-biases", "comet", "neptune",
   "prefect", "dagster", "mage", "kedro", "zenml",
+  // Batch 4 — Fintech & Banking
+  "navan", "expensify", "rho", "airbase", "spendesk", "payhawk",
+  "pleo", "soldo", "jeeves", "pomelo", "tribal",
+  "synctera", "column", "treasury-prime", "increase", "bond",
+  "prime-trust", "alpaca", "drivewealth", "capitolis",
+  "broadridge", "finastra", "marqeta", "highnote",
+  "apto", "deserve", "tally", "dave", "chime", "current", "varo",
+  "greenlight", "step", "copper", "pixpay", "kard",
+  // Batch 4 — HR Tech
+  "bamboohr", "workday", "paylocity", "paycom", "paychex",
+  "isolved", "ceridian", "kronos",
+  "comeet", "breezyhr", "pinpoint", "dover", "gem",
+  "beamery", "eightfold", "phenom", "seekout", "fetcher",
+  "hireez", "jobvite", "icims",
+  "betterworks", "15five", "reflektive", "engagedly", "trakstar",
+  "bonusly", "motivosity", "fond", "blueboard",
+  // Batch 4 — Developer Tools
+  "jetbrains", "gitkraken", "tower",
+  "rollbar", "bugsnag", "raygun", "honeybadger", "airbrake", "appsignal",
+  "june", "koala", "commonroom", "orbit",
+  "stoplight", "insomnia", "httpie", "ngrok",
+  // Batch 4 — Design & Creative
+  "sketch", "invision", "zeplin", "avocode", "abstract",
+  "adobe", "lottiefiles", "rive",
+  // Batch 5 — more Fintech
+  "moss", "fidessa", "murex", "modern-treasury", "taleo", "successfactors",
+  "gladly", "recharge", "bold", "carthook", "zipify", "reconvert",
+  "privy", "justuno", "shipbob", "shipstation", "easyship", "shippo", "goshippo",
+  "returnly", "loop-returns", "narvar", "aftership", "route",
+  "bigcommerce", "woocommerce", "magento", "prestashop",
+  "okendo", "stamped", "loox", "reviews-io",
+  // Batch 5 — Health & Biotech
+  "tempus", "veracyte", "guardant", "exact-sciences",
+  "23andme", "color", "invitae", "myriad", "ambry",
+  "insitro", "insilico", "ontada", "syapse",
+  "hinge-health", "sword", "kaia", "brightline",
+  "talkspace", "betterhelp", "lyra", "spring",
+  "omada", "livongo", "virta", "found",
+  // Batch 5 — Climate & Sustainability
+  "watershed", "sweep", "persefoni", "greenly", "plan-a",
+  "sinai", "sphera", "enablon", "velocity-ehs",
+  "arcadia", "stem", "fluence",
+  "turntide", "freewire", "ev-connect", "blink",
+  "terrasos", "verra", "goldstandard",
 ];
 
 const ASHBY_COMPANIES = [
@@ -114,6 +158,26 @@ const ASHBY_COMPANIES = [
   "livekit", "daily", "whereby", "agora", "stream",
   "tugboat", "ashby", "rippling", "remote", "oyster",
   "height", "shortcut", "jira", "contra", "toptal", "andela",
+  // Batch 5 — early-stage AI
+  "ai21", "aleph-alpha", "inflection", "adept", "imbue",
+  "mosaicml", "fireworks", "lepton", "huggingface",
+  "fixie", "llamaindex", "haystack",
+  "vellum", "humanloop", "promptlayer", "helicone", "braintrust",
+  "arize", "whylabs", "fiddler", "arthur", "truera",
+  "glean", "guru", "mem", "rewind", "avoma", "grain",
+  // Batch 5 — infra & devops
+  "porter", "qovery", "gimlet", "garden",
+  "earthly", "dagger", "buildkite", "circleci", "semaphore",
+  "depot", "namespace", "tabnine",
+  "trunk", "reviewpad", "graphite", "aviator",
+  "mergequeue", "shipyard", "speedscale", "tracetest",
+  "gremlin", "steadybit",
+  // Batch 5 — B2B SaaS
+  "front", "missive", "helpscout", "groove",
+  "drift", "qualified", "calendly",
+  "instantly", "lemlist", "woodpecker", "mailshake",
+  "waalaxy", "expandi", "phantombuster",
+  "hunter", "snov", "voilanorbert",
 ];
 
 const LEVER_COMPANIES = [
@@ -155,6 +219,36 @@ const LEVER_COMPANIES = [
   "postscript", "smartrr", "skio", "loop",
   "chargebee", "zuora", "maxio", "paddle", "lemon-squeezy",
   "stripe-climate", "pachama", "terrapass", "southpole", "respira",
+  // Batch 5 — Media & Entertainment
+  "buzzfeed", "vox", "vice", "insider", "axios",
+  "substack", "ghost", "medium", "squarespace",
+  "patreon", "ko-fi", "gumroad", "podia",
+  "teachable", "thinkific", "kajabi", "circle", "mighty-networks",
+  "audible", "scribd", "storytel",
+  "pluralsight",
+  // Batch 5 — Logistics & Supply Chain
+  "forto", "freightos", "beacon", "zencargo",
+  "fourkites", "descartes", "e2open", "kinaxis",
+  "stord", "flowspace", "deliverr", "whiplash",
+  "bringg", "onfleet", "routific", "workwave",
+  "verizon-connect", "geotab", "fleetcomplete",
+  "transfix", "convoy", "coyote",
+  // Batch 5 — Real Estate Tech
+  "knock", "orchard", "flyhomes",
+  "homeward", "ribbon", "landis", "divvy", "zerodown",
+  "roofstock", "fundrise", "crowdstreet", "yieldstreet", "cadre",
+  "buildium", "appfolio", "yardi", "realpage",
+  "thumbtack", "angi", "houzz", "buildzoom",
+  "procore", "egnyte", "fieldwire", "buildertrend",
+  // Batch 5 — Food & Restaurant Tech
+  "touchbistro", "olo", "omnivore",
+  "paytronix", "punchh", "thanx", "fivestars",
+  "ovation", "popmenu", "birdeye", "reputation",
+  "yext", "uberall", "synup", "brightlocal",
+  // Batch 5 — Legal & Compliance
+  "mycase", "smokeball", "filevine",
+  "litify", "neos", "actionstep", "cosmolex", "rocketmatter",
+  "nextpoint", "kira", "luminance", "legl", "onit", "brightflag",
 ];
 
 const SMARTRECRUITERS_COMPANIES = [
