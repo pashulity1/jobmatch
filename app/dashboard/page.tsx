@@ -57,6 +57,8 @@ export default function Dashboard() {
   const [newAlertPosition, setNewAlertPosition] = useState("");
 
   useEffect(() => {
+    const rawToken = localStorage.getItem("jm_token");
+    console.log("RAW TOKEN FROM STORAGE:", rawToken ? rawToken.substring(0, 20) : "NULL");
     const savedToken = localStorage.getItem("jm_token");
     const savedUser = localStorage.getItem("jm_user");
     if (!savedToken || !savedUser) { router.push("/"); return; }
