@@ -12,6 +12,25 @@ type Job = {
   id: string; title: string; company: string; location: string;
   salary: string; jobType: string; source: string; postedDate: string;
   applyUrl: string; description: string; matchScore?: number;
+  postedAt?: string | null;
+};
+
+function getJobAgeBadge(postedAt: string | null | undefined) {
+  if (!postedAt) return null;
+  const days = Math.floor((Date.now() - new Date(postedAt).getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 3)  return { label: "Новая", color: "green" };
+  if (days <= 14) return { label: `${days}д назад`, color: "blue" };
+  if (days <= 30) return { label: `${days}д назад`, color: "gray" };
+  if (days <= 60) return { label: `⚠️ ${days}д назад`, color: "amber" };
+  return { label: `⚠️ ${days}д — возможно закрыта`, color: "red" };
+}
+
+const BADGE_CLASSES: Record<string, string> = {
+  green: "bg-green-100 text-green-700",
+  blue:  "bg-blue-100 text-blue-700",
+  gray:  "bg-gray-100 text-gray-600",
+  amber: "bg-amber-100 text-amber-700",
+  red:   "bg-red-100 text-red-700",
 };
 
 type User = {
@@ -174,6 +193,7 @@ export default function Home() {
   const [sortByMatch, setSortByMatch] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [freshOnly, setFreshOnly] = useState(false);
 
   const POPULAR_SEARCHES = [
     // Design & Creative
@@ -304,6 +324,7 @@ export default function Home() {
       ...(selectedLocations.length && { location: selectedLocations.join(",") }),
       ...(selectedTypes[0] && { jobType: selectedTypes[0] }),
       ...(selectedDate && { datePosted: selectedDate }),
+      ...(freshOnly && { fresh: "true" }),
     });
     return `/api/jobs?${params}`;
   };
@@ -522,6 +543,13 @@ export default function Home() {
               ))}
             </div>
           </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-300">Только свежие (до 30 дней)</span>
+            <button onClick={() => setFreshOnly(!freshOnly)}
+              className={`w-11 h-6 rounded-full transition-colors relative ${freshOnly ? "bg-green-600" : "bg-gray-700"}`}>
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${freshOnly ? "left-6" : "left-1"}`} />
+            </button>
+          </div>
           <button onClick={handleSearch} disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold py-3 rounded-xl transition-colors">
             {loading ? "Searching..." : "Search Jobs"}
@@ -584,8 +612,16 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                       {job.postedDate && <span>{job.postedDate}</span>}
+                      {(() => {
+                        const badge = getJobAgeBadge(job.postedAt);
+                        return badge ? (
+                          <span className={`px-1.5 py-0.5 rounded-md font-medium ${BADGE_CLASSES[badge.color]}`}>
+                            {badge.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {job.matchScore !== undefined && (
                         <span style={{ color: getMatchColor(job.matchScore) }}>· {getMatchLabel(job.matchScore)}</span>
                       )}

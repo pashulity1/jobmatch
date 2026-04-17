@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20");
   const offset = parseInt(searchParams.get("offset") || "0");
   const suggestMode = searchParams.get("suggest") === "true";
+  const fresh = searchParams.get("fresh") === "true";
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   try {
     const supabase = getSupabaseAdmin();
@@ -64,12 +66,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (keyword) {
-      return fullTextSearch(supabase, keyword, locationPatterns, jobType, limit, offset);
+      return fullTextSearch(supabase, keyword, locationPatterns, jobType, limit, offset, fresh ? thirtyDaysAgo : null);
     } else {
       // No keyword — return latest jobs with optional filters
       let query = supabase.from("jobs").select("*", { count: "exact" });
       if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
+      if (fresh) query = query.gte("posted_at", thirtyDaysAgo);
 
       const { data: jobs, error, count } = await query
         .order("created_at", { ascending: false })
@@ -94,7 +97,8 @@ async function fullTextSearch(
   locationPatterns: string[],
   jobType: string,
   limit: number,
-  offset: number
+  offset: number,
+  freshCutoff: string | null = null
 ) {
   // LEVEL_WORDS — only pure seniority modifiers, NOT role names.
   // "manager" and "director" are part of the role title, not the level.
@@ -129,6 +133,7 @@ async function fullTextSearch(
 
     if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
+    if (freshCutoff) query = query.gte("posted_at", freshCutoff);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -142,7 +147,7 @@ async function fullTextSearch(
     }
 
     // FTS+title returned 0 — fallback to title ILIKE only
-    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
+    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset, freshCutoff);
 
   } catch {
     return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
@@ -156,7 +161,8 @@ async function titleSearchFallback(
   locationPatterns: string[],
   jobType: string,
   limit: number,
-  offset: number
+  offset: number,
+  freshCutoff: string | null = null
 ) {
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
@@ -177,6 +183,7 @@ async function titleSearchFallback(
 
   if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
+  if (freshCutoff) query = query.gte("posted_at", freshCutoff);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
@@ -197,5 +204,6 @@ function normalizeJob(job: any) {
     jobType: job.job_type, source: job.source,
     postedDate: job.posted_date, applyUrl: job.apply_url,
     description: job.description,
+    postedAt: job.posted_at || null,
   };
 }
