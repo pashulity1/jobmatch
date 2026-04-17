@@ -16,7 +16,7 @@ function getServiceClient() {
 }
 
 async function getUser(token: string) {
-  const { data: { user } } = await getAnonClient(token).auth.getUser();
+  const { data: { user } } = await getAnonClient(token).auth.getUser(token);
   return user;
 }
 
