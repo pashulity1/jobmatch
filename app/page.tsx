@@ -585,8 +585,7 @@ export default function Home() {
 
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>{job.source}</span>
-                      {job.postedDate && <span>· {job.postedDate}</span>}
+                      {job.postedDate && <span>{job.postedDate}</span>}
                       {job.matchScore !== undefined && (
                         <span style={{ color: getMatchColor(job.matchScore) }}>· {getMatchLabel(job.matchScore)}</span>
                       )}
@@ -597,13 +596,13 @@ export default function Home() {
                           if (!user) { setShowAuthModal(true); return; }
                           const isSaved = savedJobIds.has(job.id);
                           if (isSaved) {
-                            await fetch(`/api/saved-jobs?job_id=${job.id}`, {
+                            const res = await fetch(`/api/saved-jobs?job_id=${job.id}`, {
                               method: "DELETE",
                               headers: { Authorization: `Bearer ${token}` },
                             });
-                            setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
+                            if (res.ok) setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
                           } else {
-                            await fetch("/api/saved-jobs", {
+                            const res = await fetch("/api/saved-jobs", {
                               method: "POST",
                               headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                               body: JSON.stringify({
@@ -612,10 +611,10 @@ export default function Home() {
                                 source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
                               }),
                             });
-                            setSavedJobIds(prev => new Set([...prev, job.id]));
+                            if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));
                           }
                         }}
-                        className={`text-lg leading-none transition-colors ${savedJobIds.has(job.id) ? "text-red-400" : "text-gray-600 hover:text-gray-400"}`}
+                        className={`text-2xl leading-none transition-colors ${savedJobIds.has(job.id) ? "text-red-400" : "text-gray-600 hover:text-gray-400"}`}
                         title={savedJobIds.has(job.id) ? "Unsave" : "Save"}>
                         ♥
                       </button>

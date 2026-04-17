@@ -38,17 +38,18 @@ export async function PUT(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { resume_profile, resume_analyses_count, name } = body;
+  const { resume_profile, resume_analyses_count, name, interested_positions, work_format } = body;
 
-  const updates: any = { updated_at: new Date().toISOString() };
+  const updates: any = { id: user.id, updated_at: new Date().toISOString() };
   if (resume_profile !== undefined) updates.resume_profile = resume_profile;
   if (resume_analyses_count !== undefined) updates.resume_analyses_count = resume_analyses_count;
   if (name !== undefined) updates.name = name;
+  if (interested_positions !== undefined) updates.interested_positions = interested_positions;
+  if (work_format !== undefined) updates.work_format = work_format;
 
   const { data, error } = await supabase
     .from("profiles")
-    .update(updates)
-    .eq("id", user.id)
+    .upsert(updates, { onConflict: "id" })
     .select()
     .single();
 

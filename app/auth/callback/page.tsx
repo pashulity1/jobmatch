@@ -12,10 +12,14 @@ export default function AuthCallback() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         localStorage.setItem("jm_token", session.access_token);
         localStorage.setItem("jm_user", JSON.stringify(session.user));
+        await supabase.from("profiles").upsert(
+          { id: session.user.id, email: session.user.email, updated_at: new Date().toISOString() },
+          { onConflict: "id", ignoreDuplicates: true }
+        );
       }
       router.push("/");
     });

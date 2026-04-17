@@ -42,9 +42,19 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { job_id, title, company, location, salary, job_type, source, posted_date, apply_url } = body;
 
+  // Check if already saved
+  const { data: existing } = await supabase
+    .from("saved_jobs")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("job_id", job_id)
+    .single();
+
+  if (existing) return NextResponse.json({ saved: existing });
+
   const { data, error } = await supabase
     .from("saved_jobs")
-    .upsert({
+    .insert({
       user_id: user.id,
       job_id,
       title,
@@ -55,7 +65,7 @@ export async function POST(req: NextRequest) {
       source: source || "",
       posted_date: posted_date || "",
       apply_url: apply_url || "",
-    }, { onConflict: "user_id,job_id" })
+    })
     .select()
     .single();
 

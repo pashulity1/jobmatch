@@ -333,7 +333,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <button onClick={() => handleUnsaveJob(job.job_id)}
-                      className="text-gray-600 hover:text-red-400 text-lg leading-none shrink-0 mt-0.5">
+                      className="text-red-400 hover:text-red-300 text-2xl leading-none shrink-0 mt-0.5">
                       ♥
                     </button>
                   </div>
