@@ -307,8 +307,12 @@ export default function Dashboard() {
                         <p className="text-sm font-medium">{job.title}</p>
                         <p className="text-xs text-blue-400">{job.company}</p>
                       </div>
-                      <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-gray-400 hover:text-white">Apply →</a>
+                      <div className="flex items-center gap-3">
+                        <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-gray-400 hover:text-white">Apply →</a>
+                        <button onClick={() => handleUnsaveJob(job.job_id)}
+                          className="text-red-400 hover:text-red-300 text-2xl leading-none">♥</button>
+                      </div>
                     </div>
                   ))}
                 </div>
