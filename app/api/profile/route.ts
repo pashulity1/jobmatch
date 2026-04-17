@@ -7,24 +7,30 @@ function getServiceClient() {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
 }
 
-function getUserId(token: string): string | null {
+function getUserId(token: string): { id: string | null; debug: any } {
   try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    console.log("TOKEN RECEIVED:", token ? token.substring(0, 20) : "NULL");
+    const parts = token.split('.');
+    if (parts.length !== 3) return { id: null, debug: { error: "not a JWT, parts: " + parts.length } };
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
-    if (!payload.sub) return null;
-    if (payload.exp && payload.exp < Date.now() / 1000) return null;
-    return payload.sub as string;
-  } catch {
-    return null;
+    console.log("DECODED PAYLOAD:", JSON.stringify(payload));
+    if (!payload.sub) return { id: null, debug: { error: "no sub", payload } };
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      return { id: null, debug: { error: "token expired", exp: payload.exp, now: Math.floor(Date.now() / 1000) } };
+    }
+    return { id: payload.sub as string, debug: null };
+  } catch (e: any) {
+    return { id: null, debug: { error: e.message } };
   }
 }
 
 export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) return NextResponse.json({ error: "Unauthorized", debug: "no token" }, { status: 401 });
 
-  const userId = getUserId(token);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id: userId, debug } = getUserId(token);
+  if (!userId) return NextResponse.json({ error: "Unauthorized", debug }, { status: 401 });
 
   const { data: profile } = await getServiceClient()
     .from("profiles")
@@ -37,10 +43,10 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) return NextResponse.json({ error: "Unauthorized", debug: "no token" }, { status: 401 });
 
-  const userId = getUserId(token);
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id: userId, debug } = getUserId(token);
+  if (!userId) return NextResponse.json({ error: "Unauthorized", debug }, { status: 401 });
 
   const body = await req.json();
   const { resume_profile, resume_analyses_count, name, interested_positions, work_format } = body;
