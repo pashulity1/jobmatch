@@ -129,12 +129,13 @@ export default function Dashboard() {
   };
 
   const handleSaveSettings = async () => {
-    if (!token) return;
+    const t = token || localStorage.getItem("jm_token");
+    if (!t) return;
     setSaving(true); setSaveMsg("");
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
         body: JSON.stringify({
           name: settingsName,
           interested_positions: settingsPositions,
@@ -150,12 +151,13 @@ export default function Dashboard() {
   };
 
   const handleSaveAlerts = async () => {
-    if (!token) return;
+    const t = token || localStorage.getItem("jm_token");
+    if (!t) return;
     setSaving(true); setSaveMsg("");
     try {
       await fetch("/api/job-alerts", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
         body: JSON.stringify({
           positions: alertPositions,
           levels: alertLevels,
