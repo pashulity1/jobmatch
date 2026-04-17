@@ -132,7 +132,7 @@ export default function Dashboard() {
     if (!token) return;
     setSaving(true); setSaveMsg("");
     try {
-      await fetch("/api/profile", {
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -141,9 +141,11 @@ export default function Dashboard() {
           work_format: settingsFormats,
         }),
       });
+      const data = await res.json();
+      if (!res.ok) { setSaveMsg(`Error: ${data.error || res.status}`); return; }
       setSaveMsg("Saved ✓");
       setTimeout(() => setSaveMsg(""), 2000);
-    } catch { setSaveMsg("Error saving"); }
+    } catch (e: any) { setSaveMsg(`Error: ${e.message}`); }
     finally { setSaving(false); }
   };
 
