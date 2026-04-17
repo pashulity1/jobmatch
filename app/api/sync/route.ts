@@ -55,6 +55,21 @@ const GREENHOUSE_COMPANIES = [
   "miro", "loom", "superhuman", "mercury", "ramp",
   "culture-amp", "leapsome", "persona", "alloy", "postman",
   "hightouch", "census", "modal", "baseten", "clerk",
+  // Batch 3
+  "sendgrid", "heap", "fullstory", "hotjar", "splitio", "optimizely",
+  "contentsquare", "medallia", "qualtrics", "monday", "smartsheet", "wrike",
+  "zoom", "webex", "ringcentral", "vonage", "bandwidth",
+  "akamai", "imperva", "qualys", "tenable",
+  "crowdstrike", "sentinelone", "cylance", "carbonblack", "lacework", "wiz", "orca",
+  "veracode", "checkmarx", "sonarqube",
+  "dynatrace", "splunk", "sumo", "logdna", "papertrail",
+  "typesense", "meilisearch", "pinecone", "weaviate",
+  "domo", "looker", "mode", "sigma", "thoughtspot", "sisense",
+  "braze", "klaviyo", "iterable", "customer-io", "sendbird",
+  "clearbit", "zoominfo", "lusha",
+  "livekit", "daily", "whereby", "agora",
+  "labelbox", "weights-biases", "comet", "neptune",
+  "prefect", "dagster", "mage", "kedro", "zenml",
 ];
 
 const ASHBY_COMPANIES = [
@@ -92,6 +107,13 @@ const ASHBY_COMPANIES = [
   "typeform", "jotform", "surveymonkey", "alchemer",
   // New additions
   "mercury", "brex", "coda", "replit",
+  // Batch 3
+  "groq", "anyscale", "weights-biases", "scale", "labelbox", "dbt-labs",
+  "segment", "amplitude", "mixpanel", "braze", "klaviyo",
+  "algolia", "pinecone", "weaviate", "qdrant", "chroma",
+  "livekit", "daily", "whereby", "agora", "stream",
+  "tugboat", "ashby", "rippling", "remote", "oyster",
+  "height", "shortcut", "jira", "contra", "toptal", "andela",
 ];
 
 const LEVER_COMPANIES = [
@@ -120,6 +142,19 @@ const LEVER_COMPANIES = [
   // New additions
   "netflix", "uber", "lyft", "airbnb", "dropbox",
   "reddit", "duolingo", "discord", "canva",
+  // Batch 3
+  "spotify", "twitter", "pinterest", "snapchat", "tiktok",
+  "robinhood", "coinbase", "kraken", "gemini", "chainalysis",
+  "doordash", "instacart", "grubhub", "postmates", "gopuff",
+  "wayfair", "chewy", "etsy", "poshmark", "mercari",
+  "peloton", "mirror", "whoop", "oura", "garmin",
+  "noom", "hims", "cerebral", "headspace", "calm",
+  "oscar", "devoted", "clover", "cityblock", "turquoise",
+  "opendoor", "offerpad", "compass", "redfin", "homepoint",
+  "faire", "ankorstore", "gorgias", "rechargepay",
+  "postscript", "smartrr", "skio", "loop",
+  "chargebee", "zuora", "maxio", "paddle", "lemon-squeezy",
+  "stripe-climate", "pachama", "terrapass", "southpole", "respira",
 ];
 
 const SMARTRECRUITERS_COMPANIES = [
