@@ -472,16 +472,16 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
 
 async function fetchJobicy(): Promise<any[]> {
   try {
-    const categories = ["engineering", "design", "marketing", "sales", "finance", "healthcare", "legal", "hr", "education", "other"];
-    const results = await Promise.all(categories.map(async (cat) => {
-      const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&industry=${cat}`, {
+    const industries = ["marketing", "design", "hr", "finance", "all"];
+    const results = await Promise.all(industries.map(async (industry) => {
+      const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&geo=usa&industry=${industry}`, {
         signal: AbortSignal.timeout(15000),
         headers: { "User-Agent": "JobMatch/1.0" },
       });
       if (!res.ok) return [];
       const data = await res.json();
       return (data.jobs || []).map((job: any) => ({
-        id: `jcy_${job.id}`,
+        id: `jobicy_${job.id}`,
         title: job.jobTitle || "",
         company: job.companyName || "Unknown",
         location: job.jobGeo || "Remote",
@@ -495,8 +495,13 @@ async function fetchJobicy(): Promise<any[]> {
         description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
       }));
     }));
-    return results.flat();
-  } catch { return []; }
+    const flat = results.flat();
+    console.log(`Jobicy: fetched ${flat.length} jobs`);
+    return flat;
+  } catch (e: any) {
+    console.error("Jobicy error:", e.message);
+    return [];
+  }
 }
 
 async function fetchRemoteJobs(category: string): Promise<any[]> {
@@ -533,42 +538,64 @@ async function fetchRemotive(): Promise<any[]> {
   try {
     const res = await fetch("https://remotive.com/api/remote-jobs", {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs || !Array.isArray(data.jobs)) return [];
-    return data.jobs.map((job: any) => ({
-      id: `rem_${job.id}`, title: job.title || "",
-      company: job.company_name || "", location: job.candidate_required_location || "Remote",
-      salary: job.salary || "", job_type: job.job_type === "full_time" ? "Full-time" : "Contract",
+    const jobs = data.jobs.map((job: any) => ({
+      id: `remotive_${job.id}`,
+      title: job.title || "",
+      company: job.company_name || "",
+      location: job.candidate_required_location || "Remote",
+      salary: job.salary || "",
+      job_type: job.job_type === "full_time" ? "Full-time" : job.job_type === "contract" ? "Contract" : "Full-time",
       source: "Remotive",
       posted_date: job.publication_date ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
       apply_url: job.url || "",
-      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
-  } catch { return []; }
+    console.log(`Remotive: fetched ${jobs.length} jobs`);
+    return jobs;
+  } catch (e: any) {
+    console.error("Remotive error:", e.message);
+    return [];
+  }
 }
 
 async function fetchArbeitnow(): Promise<any[]> {
   try {
     const res = await fetch("https://www.arbeitnow.com/api/job-board-api", {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.data || !Array.isArray(data.data)) return [];
-    return data.data.map((job: any) => ({
-      id: `arbeit_${job.slug}`, title: job.title || "",
-      company: job.company_name || "", location: job.location || "Remote",
-      salary: "", job_type: job.job_types?.[0] || "Full-time",
-      source: "Arbeitnow",
-      posted_date: job.created_at ? new Date(job.created_at * 1000).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || "",
-      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch { return []; }
+    const jobs = data.data.map((job: any) => {
+      const baseLocation = job.location || "";
+      const location = job.remote && !baseLocation.toLowerCase().includes("remote")
+        ? baseLocation ? `${baseLocation}, Remote` : "Remote"
+        : baseLocation || "Remote";
+      return {
+        id: `arbeitnow_${job.slug}`,
+        title: job.title || "",
+        company: job.company_name || "",
+        location,
+        salary: "",
+        job_type: job.job_types?.[0] || "Full-time",
+        source: "Arbeitnow",
+        posted_date: job.created_at ? new Date(job.created_at * 1000).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.url || "",
+        description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      };
+    });
+    console.log(`Arbeitnow: fetched ${jobs.length} jobs`);
+    return jobs;
+  } catch (e: any) {
+    console.error("Arbeitnow error:", e.message);
+    return [];
+  }
 }
 
 async function fetchHimalayas(): Promise<any[]> {
@@ -728,21 +755,20 @@ export async function GET(req: NextRequest) {
     const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
     jobs.push(...results.flat());
   }
-  if (source === "jobicy" || source === "all") {
-    const result = await fetchJobicy();
-    jobs.push(...result);
-  }
   if (source === "remotejobs" || source === "all") {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
     jobs.push(...results.flat());
   }
-  if (source === "remotive" || source === "all") {
-    const result = await fetchRemotive();
-    jobs.push(...result);
-  }
-  if (source === "arbeitnow" || source === "all") {
-    const result = await fetchArbeitnow();
-    jobs.push(...result);
+  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "all") {
+    const settled = await Promise.allSettled([
+      source === "remotive" || source === "all" ? fetchRemotive() : Promise.resolve([]),
+      source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
+      source === "jobicy" || source === "all" ? fetchJobicy() : Promise.resolve([]),
+    ]);
+    for (const r of settled) {
+      if (r.status === "fulfilled") jobs.push(...r.value);
+      else console.error("Source failed:", r.reason);
+    }
   }
   if (source === "himalayas" || source === "all") {
     const result = await fetchHimalayas();
