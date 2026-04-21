@@ -410,6 +410,27 @@ function formatSlug(slug: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
+async function fetchGreenhouse(company: string): Promise<any[]> {
+  try {
+    const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${company}/jobs?content=true`,
+      { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.jobs || []).map((job: any) => ({
+      id: `gh_${job.id}`,
+      title: job.title || "",
+      company: formatSlug(company),
+      location: job.location?.name || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Greenhouse",
+      posted_date: job.updated_at ? new Date(job.updated_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.absolute_url || `https://boards.greenhouse.io/${company}`,
+      description: (job.content || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+    }));
+  } catch { return []; }
+}
+
 async function fetchJooble(query: { keywords: string; location: string }): Promise<any[]> {
   try {
     const apiKey = process.env.JOOBLE_API_KEY;
