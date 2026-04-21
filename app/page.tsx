@@ -4,7 +4,7 @@ import { calculateMatchScore, getMatchColor, getMatchLabel, ResumeProfile } from
 
 // Quick-pick options shown in the location dropdown
 const LOCATION_QUICK_PICKS = [
-  "Remote", "United States", "Canada", "United Kingdom",
+  "Remote", "USA", "Canada", "United Kingdom",
   "Germany", "France", "Netherlands", "Australia", "Brazil", "India",
 ];
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Freelance"];

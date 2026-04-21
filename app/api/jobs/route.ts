@@ -91,11 +91,16 @@ export async function GET(req: NextRequest) {
           allTerms.add("Remote");
           continue;
         }
-        if (lower === "usa") {
-          for (const t of ["United States", " US,", " US ", "New York", "San Francisco",
-            "Seattle", "Los Angeles", "Chicago", "Boston", "Austin",
-            " CA,", " NY,", " TX,", " WA,", " FL,", " MA,", " IL,", " CO,", " GA,"])
-            allTerms.add(t.trim());
+        if (lower === "usa" || lower === "united states") {
+          // Use city names and state abbrevs WITHOUT commas — commas in ilike values
+          // break the PostgREST OR string (comma is the separator between conditions)
+          for (const t of [
+            "United States", "New York", "San Francisco", "Seattle",
+            "Los Angeles", "Chicago", "Boston", "Austin", "Atlanta",
+            "Denver", "Miami", "Portland", "Nashville", "Houston",
+            " CA", " NY", " TX", " WA", " FL", " MA", " IL", " CO", " GA",
+            " VA", " PA", " OH", " NC", " AZ", " MN", " OR",
+          ]) allTerms.add(t.trim());
           continue;
         }
         if (lower === "europe") {
@@ -115,10 +120,6 @@ export async function GET(req: NextRequest) {
       const unique = [...allTerms];
       locationOrString = unique.map(t => `location.ilike.%${t}%`).join(",");
 
-      console.log("=== LOCATION FILTER ===");
-      console.log("Input:", location);
-      console.log("Expanded terms:", unique);
-      console.log("OR string:", locationOrString);
     }
 
     if (keyword) {
