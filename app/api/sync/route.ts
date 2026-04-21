@@ -295,6 +295,8 @@ const WORKABLE_COMPANIES = [
   "pleo", "spendesk", "moss", "payhawk", "soldo",
   "adyen", "travelperk", "attio", "tinybird",
   "puulse-marketing", "clarity-ai", "cognigy",
+  "skroutz", "beat", "taxfix", "sumup-2", "n26",
+  "perkbox", "learnupon", "360learning", "doctolib",
 ];
 
 const ADZUNA_CATEGORIES = [
@@ -534,19 +536,24 @@ async function fetchRecruitee(company: string): Promise<any[]> {
 
 async function fetchWorkable(company: string): Promise<any[]> {
   try {
-    const res = await fetch(`https://apply.workable.com/api/v3/accounts/${company}/jobs`,
-      { signal: AbortSignal.timeout(8000), headers: { "Content-Type": "application/json" } });
+    // Public widget API — no auth required (v3 requires auth, v1/widget is public)
+    const res = await fetch(`https://apply.workable.com/api/v1/widget/accounts/${company}`,
+      { signal: AbortSignal.timeout(8000), headers: { "Accept": "application/json" } });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.results || []).map((job: any) => ({
-      id: `wk_${job.shortcode || job.id}`, title: job.title || "",
-      company: job.company?.name || formatSlug(company),
-      location: job.location?.location_str || job.location?.city || "Remote",
-      salary: "", job_type: job.employment_type || "Full-time", source: "Workable",
-      posted_date: job.published_on ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || `https://apply.workable.com/${company}/j/${job.shortcode}`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
+    const companyName = data.name || formatSlug(company);
+    return (data.jobs || []).map((job: any) => {
+      const location = [job.city, job.country].filter(Boolean).join(", ") || (job.telecommuting ? "Remote" : "");
+      return {
+        id: `wk_${job.shortcode}`, title: job.title || "",
+        company: companyName,
+        location: location || "Remote",
+        salary: "", job_type: job.employment_type || "Full-time", source: "Workable",
+        posted_date: job.published_on ? new Date(job.published_on).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.url || `https://apply.workable.com/${company}/j/${job.shortcode}`,
+        description: job.department || "",
+      };
+    });
   } catch { return []; }
 }
 
