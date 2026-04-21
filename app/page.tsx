@@ -70,6 +70,16 @@ function extractSalary(description: string, existing: string): string {
   return m ? m[0] : "";
 }
 
+// Decode HTML entities so Greenhouse/Lever escaped HTML renders correctly
+function decodeHtml(html: string): string {
+  return (html || "")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, "\u00a0")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)));
+}
+
 function extractLevel(description: string, title: string): string {
   const text = `${title} ${description}`.toLowerCase();
   if (text.includes("staff") || text.includes("principal")) return "Staff";
@@ -414,6 +424,8 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [freshOnly, setFreshOnly] = useState(false);
+  // Tracks which card is expanded — only one at a time
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const POPULAR_SEARCHES = [
     // Design & Creative
@@ -637,6 +649,20 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4">
+      {/* Scoped styles for rendered HTML job descriptions */}
+      <style>{`
+        .job-description { color: #d1d5db; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; }
+        .job-description p { margin: 0.6em 0; }
+        .job-description ul, .job-description ol { padding-left: 1.5rem; margin: 0.5em 0; }
+        .job-description li { margin: 0.25em 0; }
+        .job-description h1, .job-description h2, .job-description h3 { color: #f3f4f6; font-weight: 500; margin: 1em 0 0.4em; }
+        .job-description h1 { font-size: 1.1em; }
+        .job-description h2 { font-size: 1em; }
+        .job-description h3 { font-size: 0.95em; }
+        .job-description a { color: #60a5fa; text-decoration: underline; }
+        .job-description strong, .job-description b { color: #e5e7eb; }
+        .job-description img { display: none; }
+      `}</style>
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
@@ -812,84 +838,128 @@ export default function Home() {
               const workMode = extractWorkMode(desc, job.location);
               const locationClean = cleanLocation(job.location);
               const isLowMatch = job.matchScore !== undefined && job.matchScore < 30;
+              const isExpanded = expandedId === job.id;
 
               return (
                 <div key={job.id}
-                  className={`bg-gray-900 rounded-2xl p-4 border border-gray-800 hover:border-gray-600 transition-all ${isLowMatch ? "opacity-40" : ""}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
-                    {job.matchScore !== undefined && (
-                      <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-                        style={{
-                          backgroundColor: `${getMatchColor(job.matchScore)}20`,
-                          color: getMatchColor(job.matchScore),
-                          border: `1px solid ${getMatchColor(job.matchScore)}40`,
-                        }}>
-                        {job.matchScore}%
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-blue-400 text-sm mt-0.5 font-medium">{job.company}</p>
+                  onClick={() => setExpandedId(isExpanded ? null : job.id)}
+                  className={`bg-gray-900 rounded-2xl border transition-all cursor-pointer ${isLowMatch ? "opacity-40" : ""} ${isExpanded ? "border-blue-700" : "border-gray-800 hover:border-gray-600"}`}>
 
-                  {/* Info row */}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5 text-xs text-gray-400">
-                    {locationClean && <span>📍 {locationClean}</span>}
-                    {job.jobType && <span>· {job.jobType}</span>}
-                    {workMode && <span className={workMode === "Remote" ? "text-green-400" : workMode === "Hybrid" ? "text-yellow-400" : ""}>· {workMode}</span>}
-                    {level && <span>· {level}</span>}
-                    {salaryDisplay && <span className="text-green-400">· {salaryDisplay}</span>}
-                    {yearsExp && <span>· {yearsExp}</span>}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
-                      {formatDate(job.postedDate) && <span>{formatDate(job.postedDate)}</span>}
-                      {(() => {
-                        const badge = getJobAgeBadge(job.postedAt || job.postedDate);
-                        return badge ? (
-                          <span className={`px-1.5 py-0.5 rounded-md font-medium ${BADGE_CLASSES[badge.color]}`}>
-                            {badge.label}
+                  {/* ── Card header (always visible) ── */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {job.matchScore !== undefined && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                            style={{
+                              backgroundColor: `${getMatchColor(job.matchScore)}20`,
+                              color: getMatchColor(job.matchScore),
+                              border: `1px solid ${getMatchColor(job.matchScore)}40`,
+                            }}>
+                            {job.matchScore}%
                           </span>
-                        ) : null;
-                      })()}
-                      {job.matchScore !== undefined && (
-                        <span style={{ color: getMatchColor(job.matchScore) }}>· {getMatchLabel(job.matchScore)}</span>
-                      )}
+                        )}
+                        {/* Chevron — rotates when expanded */}
+                        <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={async () => {
-                          if (!user) { setShowAuthModal(true); return; }
-                          const isSaved = savedJobIds.has(job.id);
-                          if (isSaved) {
-                            const res = await fetch(`/api/saved-jobs?job_id=${job.id}`, {
-                              method: "DELETE",
-                              headers: { Authorization: `Bearer ${token}` },
-                            });
-                            if (res.ok) setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
-                          } else {
-                            const res = await fetch("/api/saved-jobs", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                              body: JSON.stringify({
-                                job_id: job.id, title: job.title, company: job.company,
-                                location: job.location, salary: job.salary, job_type: job.jobType,
-                                source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
-                              }),
-                            });
-                            if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));
-                          }
-                        }}
-                        className={`text-2xl leading-none transition-colors ${savedJobIds.has(job.id) ? "text-red-400" : "text-gray-600 hover:text-gray-400"}`}
-                        title={savedJobIds.has(job.id) ? "Unsave" : "Save"}>
-                        ♥
-                      </button>
-                      <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl transition-colors">
-                        Apply →
-                      </a>
+                    <p className="text-blue-400 text-sm mt-0.5 font-medium">{job.company}</p>
+
+                    {/* Info row */}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5 text-xs text-gray-400">
+                      {locationClean && <span>📍 {locationClean}</span>}
+                      {job.jobType && <span>· {job.jobType}</span>}
+                      {workMode && <span className={workMode === "Remote" ? "text-green-400" : workMode === "Hybrid" ? "text-yellow-400" : ""}>· {workMode}</span>}
+                      {level && <span>· {level}</span>}
+                      {salaryDisplay && <span className="text-green-400">· {salaryDisplay}</span>}
+                      {yearsExp && <span>· {yearsExp}</span>}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+                        {formatDate(job.postedDate) && <span>{formatDate(job.postedDate)}</span>}
+                        {(() => {
+                          const badge = getJobAgeBadge(job.postedAt || job.postedDate);
+                          return badge ? (
+                            <span className={`px-1.5 py-0.5 rounded-md font-medium ${BADGE_CLASSES[badge.color]}`}>
+                              {badge.label}
+                            </span>
+                          ) : null;
+                        })()}
+                        {job.matchScore !== undefined && (
+                          <span style={{ color: getMatchColor(job.matchScore) }}>· {getMatchLabel(job.matchScore)}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Stop propagation so save/apply clicks don't toggle the card */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!user) { setShowAuthModal(true); return; }
+                            const isSaved = savedJobIds.has(job.id);
+                            if (isSaved) {
+                              const res = await fetch(`/api/saved-jobs?job_id=${job.id}`, {
+                                method: "DELETE",
+                                headers: { Authorization: `Bearer ${token}` },
+                              });
+                              if (res.ok) setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
+                            } else {
+                              const res = await fetch("/api/saved-jobs", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                                body: JSON.stringify({
+                                  job_id: job.id, title: job.title, company: job.company,
+                                  location: job.location, salary: job.salary, job_type: job.jobType,
+                                  source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
+                                }),
+                              });
+                              if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));
+                            }
+                          }}
+                          className={`text-2xl leading-none transition-colors ${savedJobIds.has(job.id) ? "text-red-400" : "text-gray-600 hover:text-gray-400"}`}
+                          title={savedJobIds.has(job.id) ? "Unsave" : "Save"}>
+                          ♥
+                        </button>
+                        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl transition-colors">
+                          Apply →
+                        </a>
+                      </div>
                     </div>
                   </div>
+
+                  {/* ── Expanded section ── */}
+                  {isExpanded && (
+                    <div className="px-4 pb-5 border-t border-gray-800" onClick={e => e.stopPropagation()}>
+                      {/* Prominent Apply button at top of expanded view */}
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-xs text-gray-500">Full description</span>
+                        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors">
+                          Apply Now →
+                        </a>
+                      </div>
+                      {job.description ? (
+                        <div
+                          className="job-description"
+                          dangerouslySetInnerHTML={{ __html: decodeHtml(job.description) }}
+                        />
+                      ) : (
+                        <p className="text-gray-500 text-sm italic">No description available.</p>
+                      )}
+                      {/* Collapse button at bottom */}
+                      <button
+                        onClick={() => setExpandedId(null)}
+                        className="mt-4 text-xs text-gray-500 hover:text-gray-300 underline transition-colors">
+                        ↑ Collapse
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
