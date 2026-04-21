@@ -3,24 +3,28 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-// Returns PostgREST .or() filter fragments that match a location term
-// at word/comma boundaries — avoids false substring matches like
-// "San Francisco" matching "France" or "Freelance" matching "France".
-// PostgREST allows comma-containing values when wrapped in double quotes.
+// Returns PostgREST .or() filter fragments for a location term.
+// IMPORTANT: values must NEVER contain commas — PostgREST splits the or-string
+// on commas, so a value like "France, %" would silently break the filter.
+// Instead we use prefix/suffix/space-boundary wildcards:
+//   France%     → "France", "France, Paris", "France (Remote)"
+//   %France     → "Paris, France", "Île-de-France"
+//   % France%   → "Paris, France, EU", "Remote France Region"
 function strictLocationPatterns(term: string): string[] {
   const v = term.trim();
   return [
-    `location.ilike.${v}`,             // exact: "France"
-    `location.ilike.${v} %`,           // prefix+space: "France (Remote)"
-    `location.ilike."${v}, %"`,        // prefix+comma: "France, Paris"
-    `location.ilike."%, ${v}"`,        // suffix+comma: "Paris, France"
-    `location.ilike."%, ${v}, %"`,     // middle: "EU, France, Remote"
-    `location.ilike."%, ${v} %"`,      // "Paris, France (Remote)"
+    `location.ilike.${v}%`,    // starts with: "France", "France, Paris", "France (Remote)"
+    `location.ilike.%${v}`,    // ends with: "Paris, France", "Île-de-France"
+    `location.ilike.% ${v}`,   // space-prefixed end: "Paris France"
+    `location.ilike.% ${v}%`,  // space-prefixed middle: "Paris, France, EU"
   ];
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  console.log("=== JOBS API CALLED ===");
+  console.log("All params:", Object.fromEntries(searchParams.entries()));
+  console.log("Location param:", searchParams.get("location"));
   const keyword = (searchParams.get("keyword") || "").toLowerCase().trim();
   const location = searchParams.get("location") || "";
   const jobType = searchParams.get("jobType") || "";
@@ -56,12 +60,10 @@ export async function GET(req: NextRequest) {
 
         if (loc === "remote") {
           locationPatterns.push(
-            "location.ilike.Remote",
-            "location.ilike.Remote %",
-            `location.ilike."Remote, %"`,
-            `location.ilike."%, Remote"`,
-            `location.ilike."%, Remote, %"`,
-            `location.ilike."%, Remote %"`,
+            "location.ilike.Remote%",   // "Remote", "Remote, France"
+            "location.ilike.%Remote",   // "France, Remote"
+            "location.ilike.% Remote",  // "Paris Remote"
+            "location.ilike.% Remote%", // "Paris, Remote, EU"
           );
           continue;
         }
@@ -95,6 +97,10 @@ export async function GET(req: NextRequest) {
         // Free-text: use strict boundary patterns with the original casing
         locationPatterns.push(...strictLocationPatterns(raw));
       }
+    }
+
+    if (locationPatterns.length > 0) {
+      console.log("Location OR string:", locationPatterns.join(","));
     }
 
     if (keyword) {
