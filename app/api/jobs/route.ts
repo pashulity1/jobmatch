@@ -3,21 +3,76 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-// Returns PostgREST .or() filter fragments for a location term.
-// IMPORTANT: values must NEVER contain commas — PostgREST splits the or-string
-// on commas, so a value like "France, %" would silently break the filter.
-// Instead we use prefix/suffix/space-boundary wildcards:
-//   France%     → "France", "France, Paris", "France (Remote)"
-//   %France     → "Paris, France", "Île-de-France"
-//   % France%   → "Paris, France, EU", "Remote France Region"
-function strictLocationPatterns(term: string): string[] {
+// US state full-name → [abbreviation, ...aliases]
+const US_STATES: Record<string, string[]> = {
+  "alabama": ["AL", "Alabama"], "alaska": ["AK", "Alaska"],
+  "arizona": ["AZ", "Arizona"], "arkansas": ["AR", "Arkansas"],
+  "california": ["CA", "California", "Calif"],
+  "colorado": ["CO", "Colorado"], "connecticut": ["CT", "Connecticut"],
+  "delaware": ["DE", "Delaware"], "florida": ["FL", "Florida"],
+  "georgia": ["GA", "Georgia"], "hawaii": ["HI", "Hawaii"],
+  "idaho": ["ID", "Idaho"], "illinois": ["IL", "Illinois"],
+  "indiana": ["IN", "Indiana"], "iowa": ["IA", "Iowa"],
+  "kansas": ["KS", "Kansas"], "kentucky": ["KY", "Kentucky"],
+  "louisiana": ["LA", "Louisiana"], "maine": ["ME", "Maine"],
+  "maryland": ["MD", "Maryland"], "massachusetts": ["MA", "Massachusetts"],
+  "michigan": ["MI", "Michigan"], "minnesota": ["MN", "Minnesota"],
+  "mississippi": ["MS", "Mississippi"], "missouri": ["MO", "Missouri"],
+  "montana": ["MT", "Montana"], "nebraska": ["NE", "Nebraska"],
+  "nevada": ["NV", "Nevada"], "new hampshire": ["NH", "New Hampshire"],
+  "new jersey": ["NJ", "New Jersey"], "new mexico": ["NM", "New Mexico"],
+  "new york": ["NY", "New York"], "north carolina": ["NC", "North Carolina"],
+  "north dakota": ["ND", "North Dakota"], "ohio": ["OH", "Ohio"],
+  "oklahoma": ["OK", "Oklahoma"], "oregon": ["OR", "Oregon"],
+  "pennsylvania": ["PA", "Pennsylvania"], "rhode island": ["RI", "Rhode Island"],
+  "south carolina": ["SC", "South Carolina"], "south dakota": ["SD", "South Dakota"],
+  "tennessee": ["TN", "Tennessee"], "texas": ["TX", "Texas"],
+  "utah": ["UT", "Utah"], "vermont": ["VT", "Vermont"],
+  "virginia": ["VA", "Virginia"], "washington": ["WA", "Washington"],
+  "west virginia": ["WV", "West Virginia"], "wisconsin": ["WI", "Wisconsin"],
+  "wyoming": ["WY", "Wyoming"],
+  "district of columbia": ["DC", "D.C.", "Washington DC", "Washington, D.C."],
+};
+
+// Expand a user-typed location to all recognizable DB variants.
+// "florida" → ["florida", "FL", "Florida"]
+// "FL"      → ["FL", "Florida"]
+// "france"  → ["france"]
+function expandLocation(input: string): string[] {
+  const lower = input.toLowerCase().trim();
+  if (US_STATES[lower]) return [input, ...US_STATES[lower]];
+  for (const [, variants] of Object.entries(US_STATES)) {
+    if (variants.some(v => v.toLowerCase() === lower)) {
+      return [...new Set([input, ...variants])];
+    }
+  }
+  return [input];
+}
+
+// Build OR filter fragments for one location term.
+// IMPORTANT: values must NEVER contain commas — PostgREST splits .or() on commas.
+// Short abbreviations (≤2 chars like "CA") skip the starts-with pattern to
+// avoid false positives like "CA%" matching "Canada".
+function termPatterns(term: string): string[] {
   const v = term.trim();
+  if (v.length <= 2) {
+    return [
+      `location.ilike.%${v}`,    // "San Francisco, CA"
+      `location.ilike.% ${v}`,   // "San Francisco CA"
+      `location.ilike.% ${v}%`,  // "San Francisco, CA, US"
+    ];
+  }
   return [
-    `location.ilike.${v}%`,    // starts with: "France", "France, Paris", "France (Remote)"
-    `location.ilike.%${v}`,    // ends with: "Paris, France", "Île-de-France"
-    `location.ilike.% ${v}`,   // space-prefixed end: "Paris France"
-    `location.ilike.% ${v}%`,  // space-prefixed middle: "Paris, France, EU"
+    `location.ilike.${v}%`,    // "France", "France, Paris", "France (Remote)"
+    `location.ilike.%${v}`,    // "Paris, France", "Île-de-France"
+    `location.ilike.% ${v}`,   // "Paris France"
+    `location.ilike.% ${v}%`,  // "Paris, France, EU"
   ];
+}
+
+// Kept for the named-region special cases (europe, latam, usa city list)
+function strictLocationPatterns(term: string): string[] {
+  return termPatterns(term);
 }
 
 export async function GET(req: NextRequest) {
@@ -70,16 +125,14 @@ export async function GET(req: NextRequest) {
         if (loc === "usa") {
           for (const term of [
             "United States", "New York", "San Francisco", "Seattle",
-            "Los Angeles", "Chicago", "Boston", "Austin",
+            "Los Angeles", "Chicago", "Boston", "Austin", "US",
           ]) {
-            locationPatterns.push(...strictLocationPatterns(term));
+            locationPatterns.push(...termPatterns(term));
           }
-          // State abbreviations — keep as suffix patterns only
-          locationPatterns.push(
-            `location.ilike."%, CA"`, `location.ilike."%, NY"`,
-            `location.ilike."%, WA"`, `location.ilike."%, TX"`,
-            `location.ilike."%, CA %"`, `location.ilike."%, NY %"`,
-          );
+          // Common state abbreviations — suffix-only to avoid "CA%" matching "Canada"
+          for (const abbr of ["CA", "NY", "WA", "TX", "MA", "IL", "CO", "GA", "FL"]) {
+            locationPatterns.push(...termPatterns(abbr));
+          }
           continue;
         }
         if (loc === "europe") {
@@ -94,8 +147,11 @@ export async function GET(req: NextRequest) {
           }
           continue;
         }
-        // Free-text: use strict boundary patterns with the original casing
-        locationPatterns.push(...strictLocationPatterns(raw));
+        // Free-text: expand US states to all variants (FL, Florida, etc.) then build patterns
+        const variants = expandLocation(raw);
+        for (const v of variants) {
+          locationPatterns.push(...termPatterns(v));
+        }
       }
     }
 

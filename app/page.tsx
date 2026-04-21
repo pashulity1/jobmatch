@@ -80,15 +80,27 @@ function cleanLocation(location: string): string {
   return (location || "").replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
 }
 
+const RECENT_LOCATIONS_KEY = "jm_recent_locations";
+
+function saveRecentLocation(loc: string) {
+  try {
+    const prev = JSON.parse(localStorage.getItem(RECENT_LOCATIONS_KEY) || "[]") as string[];
+    const deduped = prev.filter(l => l.toLowerCase() !== loc.toLowerCase());
+    localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify([loc, ...deduped].slice(0, 10)));
+  } catch {}
+}
+
 // LocationDropdown — replaces the old 4-button location filter.
 // Renders a button that opens a searchable dropdown with quick picks,
 // allows free-text custom entries, and shows selected locations as removable tags.
 function LocationDropdown({
   selected,
   onChange,
+  recentLocations = [],
 }: {
   selected: string[];
   onChange: (locs: string[]) => void;
+  recentLocations?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -98,6 +110,11 @@ function LocationDropdown({
   const filtered = LOCATION_QUICK_PICKS.filter(p =>
     p.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Recent entries to show: max 5, not already selected, only when not typing
+  const recentToShow = !search
+    ? recentLocations.filter(r => !selected.includes(r)).slice(0, 5)
+    : [];
 
   // Close dropdown when user clicks outside the component
   useEffect(() => {
@@ -172,6 +189,23 @@ function LocationDropdown({
 
           {/* Quick picks list */}
           <div className="max-h-52 overflow-y-auto">
+            {recentToShow.length > 0 && (
+              <>
+                <p className="px-3 pt-2 pb-1 text-xs text-gray-500 font-medium">Recent</p>
+                {recentToShow.map(loc => (
+                  <button
+                    key={`recent-${loc}`}
+                    onMouseDown={() => { toggleLocation(loc); setSearch(""); setOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {loc}
+                  </button>
+                ))}
+              </>
+            )}
             {filtered.length > 0 && (
               <>
                 <p className="px-3 pt-2 pb-1 text-xs text-gray-500 font-medium">Quick picks</p>
@@ -327,6 +361,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (us
 export default function Home() {
   const [keyword, setKeyword] = useState("");
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [recentLocations, setRecentLocations] = useState<string[]>([]);
   const [salary, setSalary] = useState(0);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -410,10 +445,13 @@ export default function Home() {
       try {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
-        // Load profile from Supabase
         loadProfile(savedToken);
       } catch {}
     }
+    try {
+      const recent = JSON.parse(localStorage.getItem(RECENT_LOCATIONS_KEY) || "[]");
+      if (Array.isArray(recent)) setRecentLocations(recent);
+    } catch {}
   }, []);
 
   const loadProfile = async (t: string) => {
@@ -656,7 +694,20 @@ export default function Home() {
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Location</label>
             <LocationDropdown
               selected={selectedLocations}
-              onChange={(locs) => { setSelectedLocations(locs); handleSearch(locs); }}
+              recentLocations={recentLocations}
+              onChange={(locs) => {
+                setSelectedLocations(locs);
+                // Save newly added locations to history
+                const added = locs.filter(l => !selectedLocations.includes(l));
+                added.forEach(l => {
+                  saveRecentLocation(l);
+                  setRecentLocations(prev => {
+                    const deduped = prev.filter(r => r.toLowerCase() !== l.toLowerCase());
+                    return [l, ...deduped].slice(0, 10);
+                  });
+                });
+                handleSearch(locs);
+              }}
             />
           </div>
           <div>
