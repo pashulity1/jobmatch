@@ -47,7 +47,7 @@ function stripHtml(html: string): string {
 }
 
 function extractSalary(description: string, existing: string): string {
-  if (existing) return existing;
+  if (existing && !/^[£$]0k/i.test(existing.trim())) return existing;
   const m = (description || "").match(/\$[\d,]+[Kk]?\s*[-–]\s*\$[\d,]+[Kk]?/);
   return m ? m[0] : "";
 }
@@ -76,21 +76,27 @@ function extractWorkMode(description: string, location: string): string {
   return "";
 }
 
-function cleanLocation(location: string | null): string {
+function cleanLocation(location: string | null | undefined): string {
   if (!location) return "";
-  // Handles AN, ANN, AAN, AANN, ANA, AANA outward codes — with or without space before inward code
-  const ukPostcodeRegex = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i;
-  if (ukPostcodeRegex.test(location.trim())) return "United Kingdom";
-  return location.replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
+  const s = location.trim();
+  if (/^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i.test(s)) return "United Kingdom";
+  return s;
 }
 
 function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr || dateStr === "Invalid Date") return "";
-  // Already formatted as "Month YYYY" — pass through directly
-  if (/^[A-Za-z]+ \d{4}$/.test(dateStr.trim())) return dateStr.trim();
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (!dateStr) return "";
+  let date = new Date(dateStr);
+  if (!isNaN(date.getTime())) {
+    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+  const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) {
+    date = new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    }
+  }
+  return "";
 }
 
 const RECENT_LOCATIONS_KEY = "jm_recent_locations";
