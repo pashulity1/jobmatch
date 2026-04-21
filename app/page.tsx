@@ -2,7 +2,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { calculateMatchScore, getMatchColor, getMatchLabel, ResumeProfile } from "@/lib/matcher";
 
-const LOCATIONS = ["Remote", "USA", "Europe", "LATAM"];
+// Quick-pick options shown in the location dropdown
+const LOCATION_QUICK_PICKS = [
+  "Remote", "United States", "Canada", "United Kingdom",
+  "Germany", "France", "Netherlands", "Australia", "Brazil", "India",
+];
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Freelance"];
 const DATE_OPTIONS = ["Last 24h", "3 days", "Week", "Month"];
 const PAGE_SIZE = 20;
@@ -74,6 +78,149 @@ function extractWorkMode(description: string, location: string): string {
 
 function cleanLocation(location: string): string {
   return (location || "").replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
+}
+
+// LocationDropdown — replaces the old 4-button location filter.
+// Renders a button that opens a searchable dropdown with quick picks,
+// allows free-text custom entries, and shows selected locations as removable tags.
+function LocationDropdown({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (locs: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Filter quick picks based on the current search text
+  const filtered = LOCATION_QUICK_PICKS.filter(p =>
+    p.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Close dropdown when user clicks outside the component
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Toggle a location in the selected list
+  function toggleLocation(loc: string) {
+    onChange(selected.includes(loc) ? selected.filter(l => l !== loc) : [...selected, loc]);
+  }
+
+  // Add a custom free-text location (from Enter key or Add button)
+  function addCustom() {
+    const val = search.trim();
+    if (val && !selected.includes(val)) onChange([...selected, val]);
+    setSearch("");
+    setOpen(false);
+  }
+
+  // Label shown on the trigger button
+  const buttonLabel = selected.length === 0
+    ? "Location"
+    : selected.length === 1
+      ? selected[0]
+      : `Location: ${selected.length} selected`;
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm border transition-colors
+          ${selected.length > 0
+            ? "bg-gray-800 text-white border-blue-500"
+            : "bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500"}`}
+      >
+        <span>{buttonLabel}</span>
+        <svg className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute z-30 mt-1 w-full bg-gray-900 border border-gray-700 rounded-xl shadow-xl overflow-hidden">
+          {/* Search input */}
+          <div className="p-2 border-b border-gray-800">
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => {
+                // Enter adds a custom location if the text doesn't match any quick pick exactly
+                if (e.key === "Enter") {
+                  const exact = filtered.find(p => p.toLowerCase() === search.toLowerCase());
+                  if (exact) { toggleLocation(exact); setSearch(""); setOpen(false); }
+                  else if (search.trim()) addCustom();
+                }
+                if (e.key === "Escape") { setOpen(false); setSearch(""); }
+              }}
+              placeholder="Search city, state, country..."
+              className="w-full bg-gray-800 text-white text-sm px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+            />
+          </div>
+
+          {/* Quick picks list */}
+          <div className="max-h-52 overflow-y-auto">
+            {filtered.length > 0 && (
+              <>
+                <p className="px-3 pt-2 pb-1 text-xs text-gray-500 font-medium">Quick picks</p>
+                {filtered.map(loc => (
+                  <button
+                    key={loc}
+                    onMouseDown={() => { toggleLocation(loc); setSearch(""); setOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between
+                      ${selected.includes(loc) ? "text-blue-400 bg-blue-950/40" : "text-gray-300 hover:bg-gray-800"}`}
+                  >
+                    {loc}
+                    {/* Checkmark for already-selected items */}
+                    {selected.includes(loc) && <span className="text-blue-400">✓</span>}
+                  </button>
+                ))}
+              </>
+            )}
+            {/* Show "Add custom" option when text doesn't match any quick pick */}
+            {search.trim() && !filtered.find(p => p.toLowerCase() === search.toLowerCase()) && (
+              <button
+                onMouseDown={addCustom}
+                className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-gray-800 transition-colors"
+              >
+                Add &ldquo;{search.trim()}&rdquo;
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Selected location tags */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selected.map(loc => (
+            <span key={loc} className="flex items-center gap-1 text-xs bg-blue-900/50 text-blue-300 border border-blue-700 px-2.5 py-1 rounded-full">
+              {loc}
+              {/* Remove tag button */}
+              <button
+                onClick={() => onChange(selected.filter(l => l !== loc))}
+                className="text-blue-400 hover:text-white leading-none ml-0.5"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Auth Modal Component
@@ -318,10 +465,11 @@ export default function Home() {
     return addMatchScores(cleaned, p);
   };
 
-  const buildUrl = (offset: number) => {
+  const buildUrl = (offset: number, locOverride?: string[]) => {
+    const locs = locOverride ?? selectedLocations;
     const params = new URLSearchParams({
       keyword: keyword || "", limit: String(PAGE_SIZE), offset: String(offset),
-      ...(selectedLocations.length && { location: selectedLocations.join(",") }),
+      ...(locs.length && { location: locs.join(",") }),
       ...(selectedTypes[0] && { jobType: selectedTypes[0] }),
       ...(selectedDate && { datePosted: selectedDate }),
       ...(freshOnly && { fresh: "true" }),
@@ -329,10 +477,10 @@ export default function Home() {
     return `/api/jobs?${params}`;
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (locOverride?: string[]) => {
     setLoading(true); setError(""); setJobs([]); setCurrentOffset(0); setTotalFound(0); setHasMore(false);
     try {
-      const res = await fetch(buildUrl(0));
+      const res = await fetch(buildUrl(0, locOverride));
       const data = await res.json();
       if (data.error) { setError("Failed to load jobs."); return; }
       const withScores = processJobs(data.jobs || [], profile);
@@ -506,14 +654,10 @@ export default function Home() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Location</label>
-            <div className="flex flex-wrap gap-2">
-              {LOCATIONS.map(loc => (
-                <button key={loc} onClick={() => toggle(loc, selectedLocations, setSelectedLocations)}
-                  className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${selectedLocations.includes(loc) ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
-                  {loc}
-                </button>
-              ))}
-            </div>
+            <LocationDropdown
+              selected={selectedLocations}
+              onChange={(locs) => { setSelectedLocations(locs); handleSearch(locs); }}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
