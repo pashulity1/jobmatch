@@ -893,15 +893,37 @@ async function fetchMuse(): Promise<any[]> {
   }
 }
 
-async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
+async function saveToDb(jobs: any[], debug = false): Promise<{ saved: number; errors: number; firstError?: string }> {
   const supabase = getSupabaseAdmin();
   let saved = 0, errors = 0;
+  let firstError: string | undefined;
   const BATCH = 100;
   for (let i = 0; i < jobs.length; i += BATCH) {
-    const { error } = await supabase.from("jobs").upsert(jobs.slice(i, i + BATCH), { onConflict: "id" });
-    if (error) { console.error("saveToDb error:", JSON.stringify(error)); errors++; } else saved += jobs.slice(i, i + BATCH).length;
+    const batch = jobs.slice(i, i + BATCH);
+    if (debug && i === 0) {
+      console.log("saveToDb sample keys:", Object.keys(batch[0]).join(", "));
+      console.log("saveToDb sample job:", JSON.stringify(batch[0]));
+      // Try single-row first to get cleaner error
+      const { error: singleErr } = await supabase.from("jobs").upsert([batch[0]], { onConflict: "id" });
+      if (singleErr) {
+        const msg = `code=${singleErr.code} msg=${singleErr.message} details=${singleErr.details} hint=${singleErr.hint}`;
+        console.error("saveToDb single-row test FAILED:", msg);
+        firstError = msg;
+      } else {
+        console.log("saveToDb single-row test OK");
+      }
+    }
+    const { error } = await supabase.from("jobs").upsert(batch, { onConflict: "id" });
+    if (error) {
+      const msg = `code=${error.code} msg=${error.message} details=${error.details} hint=${error.hint}`;
+      console.error("saveToDb batch error:", msg);
+      if (!firstError) firstError = msg;
+      errors++;
+    } else {
+      saved += batch.length;
+    }
   }
-  return { saved, errors };
+  return { saved, errors, firstError };
 }
 
 export async function GET(req: NextRequest) {
@@ -978,6 +1000,7 @@ export async function GET(req: NextRequest) {
 
   // Deduplicate by id before saving — prevents duplicates from overlapping company lists
   const uniqueJobs = Array.from(new Map(jobs.map(j => [j.id, j])).values());
-  const { saved, errors } = await saveToDb(uniqueJobs);
-  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors });
+  const debug = source === "themuse";
+  const { saved, errors, firstError } = await saveToDb(uniqueJobs, debug);
+  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors, ...(firstError && { firstError }) });
 }
