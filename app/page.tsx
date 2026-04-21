@@ -22,11 +22,11 @@ type Job = {
 function getJobAgeBadge(postedAt: string | null | undefined) {
   if (!postedAt) return null;
   const days = Math.floor((Date.now() - new Date(postedAt).getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 3)  return { label: "Новая", color: "green" };
-  if (days <= 14) return { label: `${days}д назад`, color: "blue" };
-  if (days <= 30) return { label: `${days}д назад`, color: "gray" };
-  if (days <= 60) return { label: `⚠️ ${days}д назад`, color: "amber" };
-  return { label: `⚠️ ${days}д — возможно закрыта`, color: "red" };
+  if (days <= 3)  return { label: "New", color: "green" };
+  if (days <= 14) return { label: `${days}d ago`, color: "blue" };
+  if (days <= 30) return { label: `${days}d ago`, color: "gray" };
+  if (days <= 60) return { label: `⚠️ ${days}d ago`, color: "amber" };
+  return { label: `⚠️ ${days}d — may be closed`, color: "red" };
 }
 
 const BADGE_CLASSES: Record<string, string> = {
@@ -500,6 +500,7 @@ export default function Home() {
       salary: job.salary || "", jobType: job.jobType || job.job_type || "Full-time",
       source: job.source, postedDate: job.postedDate || job.posted_date || "",
       applyUrl: job.applyUrl || job.apply_url || "", description: job.description || "",
+      postedAt: job.postedAt || null,
     }));
     return addMatchScores(cleaned, p);
   };
