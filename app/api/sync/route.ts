@@ -891,37 +891,39 @@ async function fetchMuse(): Promise<any[]> {
   }
 }
 
-async function saveToDb(jobs: any[], debug = false): Promise<{ saved: number; errors: number; firstError?: string }> {
+async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
+
+  const cleanedJobs = jobs.map(job => ({
+    id: job.id,
+    title: job.title,
+    company: job.company,
+    location: job.location,
+    salary: job.salary || "",
+    job_type: job.job_type || job.jobType || "",
+    source: job.source,
+    posted_date: job.posted_date || job.postedDate || null,
+    apply_url: job.apply_url || job.applyUrl || "",
+    description: job.description || "",
+  }));
+
+  const validJobs = cleanedJobs.filter(j => j.id && j.title && j.source);
+
   let saved = 0, errors = 0;
-  let firstError: string | undefined;
   const BATCH = 100;
-  for (let i = 0; i < jobs.length; i += BATCH) {
-    const batch = jobs.slice(i, i + BATCH);
-    if (debug && i === 0) {
-      console.log("saveToDb sample keys:", Object.keys(batch[0]).join(", "));
-      console.log("saveToDb sample job:", JSON.stringify(batch[0]));
-      // Try single-row first to get cleaner error
-      const { error: singleErr } = await supabase.from("jobs").upsert([batch[0]], { onConflict: "id" });
-      if (singleErr) {
-        const msg = `code=${singleErr.code} msg=${singleErr.message} details=${singleErr.details} hint=${singleErr.hint}`;
-        console.error("saveToDb single-row test FAILED:", msg);
-        firstError = msg;
-      } else {
-        console.log("saveToDb single-row test OK");
-      }
-    }
+
+  for (let i = 0; i < validJobs.length; i += BATCH) {
+    const batch = validJobs.slice(i, i + BATCH);
     const { error } = await supabase.from("jobs").upsert(batch, { onConflict: "id" });
     if (error) {
-      const msg = `code=${error.code} msg=${error.message} details=${error.details} hint=${error.hint}`;
-      console.error("saveToDb batch error:", msg);
-      if (!firstError) firstError = msg;
+      console.error("Upsert error:", error.message, error.code);
       errors++;
     } else {
       saved += batch.length;
     }
   }
-  return { saved, errors, firstError };
+
+  return { saved, errors };
 }
 
 export async function GET(req: NextRequest) {
@@ -998,7 +1000,6 @@ export async function GET(req: NextRequest) {
 
   // Deduplicate by id before saving — prevents duplicates from overlapping company lists
   const uniqueJobs = Array.from(new Map(jobs.map(j => [j.id, j])).values());
-  const debug = source === "themuse";
-  const { saved, errors, firstError } = await saveToDb(uniqueJobs, debug);
-  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors, ...(firstError && { firstError }) });
+  const { saved, errors } = await saveToDb(uniqueJobs);
+  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors });
 }
