@@ -688,7 +688,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-300">Только свежие (до 30 дней)</span>
+            <span className="text-sm font-medium text-gray-300">Last 30 days only</span>
             <button onClick={() => setFreshOnly(!freshOnly)}
               className={`w-11 h-6 rounded-full transition-colors relative ${freshOnly ? "bg-green-600" : "bg-gray-700"}`}>
               <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${freshOnly ? "left-6" : "left-1"}`} />
