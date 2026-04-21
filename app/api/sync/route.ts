@@ -858,19 +858,27 @@ async function fetchMuse(): Promise<any[]> {
       if (!res.ok) break;
       const data = await res.json();
       if (!data.results || data.results.length === 0) break;
+
+      if (page === 0 && data.results[0]) {
+        console.log("Muse sample:", JSON.stringify(data.results[0], null, 2));
+      }
+
       for (const job of data.results) {
+        if (!job.id || !job.name) continue;
         allJobs.push({
-          id: `muse_${job.id}`,
-          title: job.name || "",
+          id: `muse_${String(job.id)}`,
+          title: job.name,
           company: job.company?.name || "",
           location: job.locations?.[0]?.name || "Remote",
           salary: "",
-          job_type: job.levels?.[0]?.short_name || "Full-time",
+          // levels[0].short_name is seniority ("entry","mid","senior"), NOT job type
+          // The Muse listing API doesn't expose employment type — default to Full-time
+          job_type: "Full-time",
           source: "TheMuse",
           posted_date: job.publication_date
             ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
             : "",
-          apply_url: job.refs?.landing_page || "",
+          apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
           description: job.categories?.[0]?.name || "",
           posted_at: job.publication_date || null,
         });
@@ -892,7 +900,7 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
   const BATCH = 100;
   for (let i = 0; i < jobs.length; i += BATCH) {
     const { error } = await supabase.from("jobs").upsert(jobs.slice(i, i + BATCH), { onConflict: "id" });
-    if (error) { console.error(error); errors++; } else saved += jobs.slice(i, i + BATCH).length;
+    if (error) { console.error("saveToDb error:", JSON.stringify(error)); errors++; } else saved += jobs.slice(i, i + BATCH).length;
   }
   return { saved, errors };
 }
