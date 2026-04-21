@@ -3,6 +3,22 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+// Returns PostgREST .or() filter fragments that match a location term
+// at word/comma boundaries — avoids false substring matches like
+// "San Francisco" matching "France" or "Freelance" matching "France".
+// PostgREST allows comma-containing values when wrapped in double quotes.
+function strictLocationPatterns(term: string): string[] {
+  const v = term.trim();
+  return [
+    `location.ilike.${v}`,             // exact: "France"
+    `location.ilike.${v} %`,           // prefix+space: "France (Remote)"
+    `location.ilike."${v}, %"`,        // prefix+comma: "France, Paris"
+    `location.ilike."%, ${v}"`,        // suffix+comma: "Paris, France"
+    `location.ilike."%, ${v}, %"`,     // middle: "EU, France, Remote"
+    `location.ilike."%, ${v} %"`,      // "Paris, France (Remote)"
+  ];
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const keyword = (searchParams.get("keyword") || "").toLowerCase().trim();
@@ -32,36 +48,52 @@ export async function GET(req: NextRequest) {
     // Build location patterns
     const locationPatterns: string[] = [];
     if (location) {
-      const locs = location.split(",").map(l => l.trim().toLowerCase());
-      for (const loc of locs) {
-        if (loc === "remote") locationPatterns.push("location.ilike.%Remote%");
-        if (loc === "usa") {
+      // Keep original casing — ILIKE is case-insensitive
+      const locs = location.split(",").map(l => l.trim());
+      for (const raw of locs) {
+        const loc = raw.toLowerCase();
+        if (!loc || loc.length < 2) continue;
+
+        if (loc === "remote") {
           locationPatterns.push(
-            "location.ilike.%United States%", "location.ilike.%New York%",
-            "location.ilike.%San Francisco%", "location.ilike.%Seattle%",
-            "location.ilike.%Los Angeles%", "location.ilike.%Chicago%",
-            "location.ilike.%Boston%", "location.ilike.%Austin%",
-            "location.ilike.% CA%", "location.ilike.% NY%",
-            "location.ilike.% WA%", "location.ilike.% TX%"
+            "location.ilike.Remote",
+            "location.ilike.Remote %",
+            `location.ilike."Remote, %"`,
+            `location.ilike."%, Remote"`,
+            `location.ilike."%, Remote, %"`,
+            `location.ilike."%, Remote %"`,
           );
+          continue;
+        }
+        if (loc === "usa") {
+          for (const term of [
+            "United States", "New York", "San Francisco", "Seattle",
+            "Los Angeles", "Chicago", "Boston", "Austin",
+          ]) {
+            locationPatterns.push(...strictLocationPatterns(term));
+          }
+          // State abbreviations — keep as suffix patterns only
+          locationPatterns.push(
+            `location.ilike."%, CA"`, `location.ilike."%, NY"`,
+            `location.ilike."%, WA"`, `location.ilike."%, TX"`,
+            `location.ilike."%, CA %"`, `location.ilike."%, NY %"`,
+          );
+          continue;
         }
         if (loc === "europe") {
-          locationPatterns.push(
-            "location.ilike.%London%", "location.ilike.%Berlin%",
-            "location.ilike.%Paris%", "location.ilike.%Amsterdam%",
-            "location.ilike.%Dublin%", "location.ilike.%Europe%", "location.ilike.%EMEA%"
-          );
+          for (const term of ["London", "Berlin", "Paris", "Amsterdam", "Dublin", "Europe", "EMEA"]) {
+            locationPatterns.push(...strictLocationPatterns(term));
+          }
+          continue;
         }
         if (loc === "latam") {
-          locationPatterns.push(
-            "location.ilike.%Brazil%", "location.ilike.%Mexico%",
-            "location.ilike.%Colombia%", "location.ilike.%LATAM%"
-          );
+          for (const term of ["Brazil", "Mexico", "Colombia", "LATAM"]) {
+            locationPatterns.push(...strictLocationPatterns(term));
+          }
+          continue;
         }
-        // Free-text location — pass through directly
-        if (!["remote", "usa", "europe", "latam"].includes(loc) && loc.length > 1) {
-          locationPatterns.push(`location.ilike.%${loc}%`);
-        }
+        // Free-text: use strict boundary patterns with the original casing
+        locationPatterns.push(...strictLocationPatterns(raw));
       }
     }
 
