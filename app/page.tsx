@@ -742,7 +742,7 @@ export default function Home() {
               <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${freshOnly ? "left-6" : "left-1"}`} />
             </button>
           </div>
-          <button onClick={handleSearch} disabled={loading}
+          <button onClick={() => handleSearch()} disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold py-3 rounded-xl transition-colors">
             {loading ? "Searching..." : "Search Jobs"}
           </button>

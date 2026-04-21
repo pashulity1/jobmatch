@@ -35,9 +35,7 @@ const US_STATES: Record<string, string[]> = {
 };
 
 // Expand a user-typed location to all recognizable DB variants.
-// "florida" → ["florida", "FL", "Florida"]
-// "FL"      → ["FL", "Florida"]
-// "france"  → ["france"]
+// "florida" → ["florida", "FL", "Florida"]  "FL" → ["FL", "Florida"]
 function expandLocation(input: string): string[] {
   const lower = input.toLowerCase().trim();
   if (US_STATES[lower]) return [input, ...US_STATES[lower]];
@@ -47,32 +45,6 @@ function expandLocation(input: string): string[] {
     }
   }
   return [input];
-}
-
-// Build OR filter fragments for one location term.
-// IMPORTANT: values must NEVER contain commas — PostgREST splits .or() on commas.
-// Short abbreviations (≤2 chars like "CA") skip the starts-with pattern to
-// avoid false positives like "CA%" matching "Canada".
-function termPatterns(term: string): string[] {
-  const v = term.trim();
-  if (v.length <= 2) {
-    return [
-      `location.ilike.%${v}`,    // "San Francisco, CA"
-      `location.ilike.% ${v}`,   // "San Francisco CA"
-      `location.ilike.% ${v}%`,  // "San Francisco, CA, US"
-    ];
-  }
-  return [
-    `location.ilike.${v}%`,    // "France", "France, Paris", "France (Remote)"
-    `location.ilike.%${v}`,    // "Paris, France", "Île-de-France"
-    `location.ilike.% ${v}`,   // "Paris France"
-    `location.ilike.% ${v}%`,  // "Paris, France, EU"
-  ];
-}
-
-// Kept for the named-region special cases (europe, latam, usa city list)
-function strictLocationPatterns(term: string): string[] {
-  return termPatterns(term);
 }
 
 export async function GET(req: NextRequest) {
@@ -104,67 +76,57 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ titles });
     }
 
-    // Build location patterns
-    const locationPatterns: string[] = [];
+    // Build location OR filter string
+    // Simple %term% substring match — reliable in PostgREST, no false positives
+    // ("berlin" will NOT match "Arlington" — substring match is exact)
+    let locationOrString = "";
     if (location) {
-      // Keep original casing — ILIKE is case-insensitive
-      const locs = location.split(",").map(l => l.trim());
-      for (const raw of locs) {
-        const loc = raw.toLowerCase();
-        if (!loc || loc.length < 2) continue;
+      const inputLocs = location.split(",").map(l => l.trim()).filter(Boolean);
+      const allTerms = new Set<string>();
 
-        if (loc === "remote") {
-          locationPatterns.push(
-            "location.ilike.Remote%",   // "Remote", "Remote, France"
-            "location.ilike.%Remote",   // "France, Remote"
-            "location.ilike.% Remote",  // "Paris Remote"
-            "location.ilike.% Remote%", // "Paris, Remote, EU"
-          );
+      for (const raw of inputLocs) {
+        const lower = raw.toLowerCase();
+
+        if (lower === "remote") {
+          allTerms.add("Remote");
           continue;
         }
-        if (loc === "usa") {
-          for (const term of [
-            "United States", "New York", "San Francisco", "Seattle",
-            "Los Angeles", "Chicago", "Boston", "Austin", "US",
-          ]) {
-            locationPatterns.push(...termPatterns(term));
-          }
-          // Common state abbreviations — suffix-only to avoid "CA%" matching "Canada"
-          for (const abbr of ["CA", "NY", "WA", "TX", "MA", "IL", "CO", "GA", "FL"]) {
-            locationPatterns.push(...termPatterns(abbr));
-          }
+        if (lower === "usa") {
+          for (const t of ["United States", " US,", " US ", "New York", "San Francisco",
+            "Seattle", "Los Angeles", "Chicago", "Boston", "Austin",
+            " CA,", " NY,", " TX,", " WA,", " FL,", " MA,", " IL,", " CO,", " GA,"])
+            allTerms.add(t.trim());
           continue;
         }
-        if (loc === "europe") {
-          for (const term of ["London", "Berlin", "Paris", "Amsterdam", "Dublin", "Europe", "EMEA"]) {
-            locationPatterns.push(...strictLocationPatterns(term));
-          }
+        if (lower === "europe") {
+          for (const t of ["London", "Berlin", "Paris", "Amsterdam", "Dublin", "Europe", "EMEA"])
+            allTerms.add(t);
           continue;
         }
-        if (loc === "latam") {
-          for (const term of ["Brazil", "Mexico", "Colombia", "LATAM"]) {
-            locationPatterns.push(...strictLocationPatterns(term));
-          }
+        if (lower === "latam") {
+          for (const t of ["Brazil", "Mexico", "Colombia", "LATAM"]) allTerms.add(t);
           continue;
         }
-        // Free-text: expand US states to all variants (FL, Florida, etc.) then build patterns
-        const variants = expandLocation(raw);
-        for (const v of variants) {
-          locationPatterns.push(...termPatterns(v));
-        }
+
+        // Expand US states, then add every variant
+        for (const v of expandLocation(raw)) allTerms.add(v);
       }
-    }
 
-    if (locationPatterns.length > 0) {
-      console.log("Location OR string:", locationPatterns.join(","));
+      const unique = [...allTerms];
+      locationOrString = unique.map(t => `location.ilike.%${t}%`).join(",");
+
+      console.log("=== LOCATION FILTER ===");
+      console.log("Input:", location);
+      console.log("Expanded terms:", unique);
+      console.log("OR string:", locationOrString);
     }
 
     if (keyword) {
-      return fullTextSearch(supabase, keyword, locationPatterns, jobType, limit, offset, fresh ? thirtyDaysAgo : null);
+      return fullTextSearch(supabase, keyword, locationOrString, jobType, limit, offset, fresh ? thirtyDaysAgo : null);
     } else {
       // No keyword — return latest jobs with optional filters
       let query = supabase.from("jobs").select("*", { count: "exact" });
-      if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
+      if (locationOrString) query = query.or(locationOrString);
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
       if (fresh) query = query.gte("posted_at", thirtyDaysAgo);
 
@@ -172,6 +134,7 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
+      console.log("No-keyword query — error:", error?.message ?? "none", "count:", count, "first locations:", (jobs || []).slice(0, 3).map((j: any) => j.location));
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({
         jobs: (jobs || []).map(normalizeJob),
@@ -188,29 +151,21 @@ export async function GET(req: NextRequest) {
 async function fullTextSearch(
   supabase: any,
   keyword: string,
-  locationPatterns: string[],
+  locationOrString: string,
   jobType: string,
   limit: number,
   offset: number,
   freshCutoff: string | null = null
 ) {
-  // LEVEL_WORDS — only pure seniority modifiers, NOT role names.
-  // "manager" and "director" are part of the role title, not the level.
   const LEVEL_WORDS = new Set([
     "senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head"
   ]);
 
   const words = keyword.split(/\s+/).filter(w => w.length > 0);
   const coreWords = words.filter(w => !LEVEL_WORDS.has(w));
-
-  // Only strip level words if we keep at least half the original words.
-  // Prevents "Product Manager" → "Product" (losing the role entirely).
   const searchWords =
     coreWords.length >= Math.ceil(words.length / 2) ? coreWords : words;
 
-  // VARIANT B: title must contain ALL search words.
-  // FTS ranks results by relevance, title filter eliminates noise.
-  // Applied with .or() per word so each word is independently required.
   try {
     let query = supabase
       .from("jobs")
@@ -220,12 +175,11 @@ async function fullTextSearch(
         config: "english",
       });
 
-    // Require every search word to appear in the title
     for (const word of searchWords) {
       query = query.ilike("title", `%${word}%`);
     }
 
-    if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
+    if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
     if (freshCutoff) query = query.gte("posted_at", freshCutoff);
 
@@ -240,19 +194,18 @@ async function fullTextSearch(
       });
     }
 
-    // FTS+title returned 0 — fallback to title ILIKE only
-    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset, freshCutoff);
+    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff);
 
   } catch {
-    return titleSearchFallback(supabase, searchWords, locationPatterns, jobType, limit, offset);
+    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset);
   }
 }
 
-// Fallback: title ILIKE only — each search word must appear in title
+// Fallback: title ILIKE only
 async function titleSearchFallback(
   supabase: any,
   searchWords: string[],
-  locationPatterns: string[],
+  locationOrString: string,
   jobType: string,
   limit: number,
   offset: number,
@@ -275,7 +228,7 @@ async function titleSearchFallback(
     }
   }
 
-  if (locationPatterns.length > 0) query = query.or(locationPatterns.join(","));
+  if (locationOrString) query = query.or(locationOrString);
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
   if (freshCutoff) query = query.gte("posted_at", freshCutoff);
 
