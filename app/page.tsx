@@ -76,8 +76,18 @@ function extractWorkMode(description: string, location: string): string {
   return "";
 }
 
-function cleanLocation(location: string): string {
-  return (location || "").replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
+function cleanLocation(location: string | null): string {
+  if (!location) return "";
+  const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i;
+  if (ukPostcodeRegex.test(location.trim())) return "United Kingdom";
+  return location.replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
+}
+
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 const RECENT_LOCATIONS_KEY = "jm_recent_locations";
@@ -806,7 +816,7 @@ export default function Home() {
 
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                     <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
-                      {job.postedDate && <span>{job.postedDate}</span>}
+                      {formatDate(job.postedDate) && <span>{formatDate(job.postedDate)}</span>}
                       {(() => {
                         const badge = getJobAgeBadge(job.postedAt);
                         return badge ? (
