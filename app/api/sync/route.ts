@@ -846,6 +846,46 @@ async function fetchJobdata(query: string): Promise<any[]> {
   } catch { return []; }
 }
 
+async function fetchMuse(): Promise<any[]> {
+  const allJobs: any[] = [];
+  const MAX_PAGES = 10;
+  try {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const res = await fetch(
+        `https://www.themuse.com/api/public/jobs?page=${page}&descending=true`,
+        { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) break;
+      for (const job of data.results) {
+        allJobs.push({
+          id: `muse_${job.id}`,
+          title: job.name || "",
+          company: job.company?.name || "",
+          location: job.locations?.[0]?.name || "Remote",
+          salary: "",
+          job_type: job.levels?.[0]?.short_name || "Full-time",
+          source: "TheMuse",
+          posted_date: job.publication_date
+            ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+            : "",
+          apply_url: job.refs?.landing_page || "",
+          description: job.categories?.[0]?.name || "",
+          posted_at: job.publication_date || null,
+        });
+      }
+      if (page >= data.page_count - 1) break;
+      await new Promise(r => setTimeout(r, 300));
+    }
+    console.log(`TheMuse: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("TheMuse error:", e.message);
+    return allJobs;
+  }
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
   let saved = 0, errors = 0;
@@ -898,11 +938,12 @@ export async function GET(req: NextRequest) {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
     jobs.push(...results.flat());
   }
-  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "all") {
+  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "all") {
     const settled = await Promise.allSettled([
       source === "remotive" || source === "all" ? fetchRemotive() : Promise.resolve([]),
       source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
       source === "jobicy" || source === "all" ? fetchJobicy() : Promise.resolve([]),
+      source === "themuse" || source === "all" ? fetchMuse() : Promise.resolve([]),
     ]);
     for (const r of settled) {
       if (r.status === "fulfilled") jobs.push(...r.value);
