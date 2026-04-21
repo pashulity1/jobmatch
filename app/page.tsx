@@ -19,10 +19,28 @@ type Job = {
   postedAt?: string | null;
 };
 
+const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+
+function parseJobDate(s: string | null | undefined): Date | null {
+  if (!s) return null;
+  // ISO / RFC formats
+  const d1 = new Date(s);
+  if (!isNaN(d1.getTime())) return d1;
+  // "January 2024" — treat as 1st of that month
+  const m = s.trim().match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if (m) {
+    const idx = MONTH_NAMES.indexOf(m[1].toLowerCase());
+    if (idx !== -1) return new Date(parseInt(m[2]), idx, 1);
+  }
+  return null;
+}
+
 function getJobAgeBadge(postedAt: string | null | undefined) {
-  if (!postedAt) return null;
-  const days = Math.floor((Date.now() - new Date(postedAt).getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 3)  return { label: "New", color: "green" };
+  const d = parseJobDate(postedAt);
+  if (!d) return null;
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days < 0 || isNaN(days)) return null;
+  if (days <= 3)  return { label: "🟢 New", color: "green" };
   if (days <= 14) return { label: `${days}d ago`, color: "blue" };
   if (days <= 30) return { label: `${days}d ago`, color: "gray" };
   if (days <= 60) return { label: `⚠️ ${days}d ago`, color: "amber" };
@@ -827,7 +845,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                       {formatDate(job.postedDate) && <span>{formatDate(job.postedDate)}</span>}
                       {(() => {
-                        const badge = getJobAgeBadge(job.postedAt);
+                        const badge = getJobAgeBadge(job.postedAt || job.postedDate);
                         return badge ? (
                           <span className={`px-1.5 py-0.5 rounded-md font-medium ${BADGE_CLASSES[badge.color]}`}>
                             {badge.label}
