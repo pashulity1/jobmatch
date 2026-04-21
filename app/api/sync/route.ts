@@ -787,20 +787,40 @@ async function fetchReed(keyword: string): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
 
-    return (data.results || []).map((job: any) => ({
-      id: `reed_${job.jobId}`,
-      title: job.jobTitle || "",
-      company: job.employerName || "Unknown",
-      location: job.locationName || "UK",
-      salary: job.minimumSalary
-        ? `£${Math.round(job.minimumSalary / 1000)}k${job.maximumSalary ? ` - £${Math.round(job.maximumSalary / 1000)}k` : "+"}`
-        : "",
-      job_type: job.contractType === "Permanent" ? "Full-time" : job.contractType || "Full-time",
-      source: "Reed",
-      posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.jobUrl || `https://www.reed.co.uk/jobs/${job.jobId}`,
-      description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
+    return (data.results || []).map((job: any) => {
+      // Reed returns /Date(epoch)/ or ISO — parse both
+      let postedDate = "";
+      if (job.date) {
+        const msMatch = String(job.date).match(/\/Date\((\d+)/);
+        const d = msMatch ? new Date(parseInt(msMatch[1])) : new Date(job.date);
+        if (!isNaN(d.getTime())) {
+          postedDate = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        }
+      }
+
+      // Salary: skip if both values round to 0
+      let salary = "";
+      const sMin = job.minimumSalary || 0;
+      const sMax = job.maximumSalary || 0;
+      const rMin = Math.round(sMin / 1000);
+      const rMax = Math.round(sMax / 1000);
+      if (rMin > 0 || rMax > 0) {
+        salary = rMax > rMin ? `£${rMin}k - £${rMax}k` : `£${rMin || rMax}k+`;
+      }
+
+      return {
+        id: `reed_${job.jobId}`,
+        title: job.jobTitle || "",
+        company: job.employerName || "Unknown",
+        location: job.locationName || "UK",
+        salary,
+        job_type: job.contractType === "Permanent" ? "Full-time" : job.contractType || "Full-time",
+        source: "Reed",
+        posted_date: postedDate,
+        apply_url: job.jobUrl || `https://www.reed.co.uk/jobs/${job.jobId}`,
+        description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+      };
+    });
   } catch { return []; }
 }
 

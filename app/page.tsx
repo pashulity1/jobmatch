@@ -78,13 +78,16 @@ function extractWorkMode(description: string, location: string): string {
 
 function cleanLocation(location: string | null): string {
   if (!location) return "";
-  const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i;
+  // Handles AN, ANN, AAN, AANN, ANA, AANA outward codes — with or without space before inward code
+  const ukPostcodeRegex = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i;
   if (ukPostcodeRegex.test(location.trim())) return "United Kingdom";
   return location.replace(/remote/i, "").replace(/^\s*[-,]\s*/, "").replace(/\s*[-,]\s*$/, "").trim();
 }
 
 function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
+  if (!dateStr || dateStr === "Invalid Date") return "";
+  // Already formatted as "Month YYYY" — pass through directly
+  if (/^[A-Za-z]+ \d{4}$/.test(dateStr.trim())) return dateStr.trim();
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
