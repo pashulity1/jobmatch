@@ -82,11 +82,12 @@ function cleanLocation(location: string): string {
 
 const RECENT_LOCATIONS_KEY = "jm_recent_locations";
 
-function saveRecentLocation(loc: string) {
+function saveRecentLocations(locs: string[]) {
+  if (!locs.length) return;
   try {
     const prev = JSON.parse(localStorage.getItem(RECENT_LOCATIONS_KEY) || "[]") as string[];
-    const deduped = prev.filter(l => l.toLowerCase() !== loc.toLowerCase());
-    localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify([loc, ...deduped].slice(0, 10)));
+    const merged = [...new Set([...locs, ...prev])].slice(0, 8);
+    localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(merged));
   } catch {}
 }
 
@@ -516,6 +517,14 @@ export default function Home() {
   };
 
   const handleSearch = async (locOverride?: string[]) => {
+    const activeLocs = locOverride ?? selectedLocations;
+    if (activeLocs.length) {
+      saveRecentLocations(activeLocs);
+      setRecentLocations(prev => {
+        const merged = [...new Set([...activeLocs, ...prev])].slice(0, 8);
+        return merged;
+      });
+    }
     setLoading(true); setError(""); setJobs([]); setCurrentOffset(0); setTotalFound(0); setHasMore(false);
     try {
       const res = await fetch(buildUrl(0, locOverride));
@@ -695,19 +704,7 @@ export default function Home() {
             <LocationDropdown
               selected={selectedLocations}
               recentLocations={recentLocations}
-              onChange={(locs) => {
-                setSelectedLocations(locs);
-                // Save newly added locations to history
-                const added = locs.filter(l => !selectedLocations.includes(l));
-                added.forEach(l => {
-                  saveRecentLocation(l);
-                  setRecentLocations(prev => {
-                    const deduped = prev.filter(r => r.toLowerCase() !== l.toLowerCase());
-                    return [l, ...deduped].slice(0, 10);
-                  });
-                });
-                handleSearch(locs);
-              }}
+              onChange={(locs) => { setSelectedLocations(locs); handleSearch(locs); }}
             />
           </div>
           <div>
