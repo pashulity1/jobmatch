@@ -875,8 +875,6 @@ async function fetchMuse(): Promise<any[]> {
           apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
           description: job.categories?.[0]?.name || "",
         };
-        // Only include posted_at when present — explicit null violates NOT NULL constraint
-        if (job.publication_date) record.posted_at = job.publication_date;
         allJobs.push(record);
       }
       if (page === 0 && allJobs[0]) {
