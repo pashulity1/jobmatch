@@ -787,25 +787,33 @@ async function fetchReed(keyword: string): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
 
+    if (data.results?.length) {
+      console.log("Reed job fields:", Object.keys(data.results[0]));
+      console.log("Reed job[0] sample:", JSON.stringify(data.results[0]).substring(0, 300));
+    }
+
+    const now = new Date();
     return (data.results || []).map((job: any) => {
-      // Reed returns /Date(epoch)/ or ISO — parse both
+      // Try posting date fields in priority order; reject future dates (those are expirationDate)
       let postedDate = "";
-      if (job.date) {
-        const msMatch = String(job.date).match(/\/Date\((\d+)/);
-        const d = msMatch ? new Date(parseInt(msMatch[1])) : new Date(job.date);
-        if (!isNaN(d.getTime())) {
+      for (const raw of [job.datePosted, job.publishedDate, job.date]) {
+        if (!raw) continue;
+        const msMatch = String(raw).match(/\/Date\((\d+)/);
+        const d = msMatch ? new Date(parseInt(msMatch[1])) : new Date(raw);
+        if (!isNaN(d.getTime()) && d <= now) {
           postedDate = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+          break;
         }
       }
 
-      // Salary: skip if both values round to 0
+      // Salary: skip hourly/daily rates (max < 5000) and zero values
       let salary = "";
       const sMin = job.minimumSalary || 0;
       const sMax = job.maximumSalary || 0;
-      const rMin = Math.round(sMin / 1000);
-      const rMax = Math.round(sMax / 1000);
-      if (rMin > 0 || rMax > 0) {
-        salary = rMax > rMin ? `£${rMin}k - £${rMax}k` : `£${rMin || rMax}k+`;
+      if (sMax >= 5000 || sMin >= 5000) {
+        const rMin = Math.round(sMin / 1000);
+        const rMax = Math.round(sMax / 1000);
+        salary = rMax > rMin ? `£${rMin}k - £${rMax}k` : `£${rMin || rMax}k`;
       }
 
       return {
