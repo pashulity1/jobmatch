@@ -92,15 +92,16 @@ export async function GET(req: NextRequest) {
           continue;
         }
         if (lower === "usa" || lower === "united states") {
-          // Use city names and state abbrevs WITHOUT commas — commas in ilike values
-          // break the PostgREST OR string (comma is the separator between conditions)
+          // Full state names instead of abbreviations — "CA" matches Canada, "WA" matches Warsaw etc.
           for (const t of [
-            "United States", "New York", "San Francisco", "Seattle",
-            "Los Angeles", "Chicago", "Boston", "Austin", "Atlanta",
-            "Denver", "Miami", "Portland", "Nashville", "Houston",
-            " CA", " NY", " TX", " WA", " FL", " MA", " IL", " CO", " GA",
-            " VA", " PA", " OH", " NC", " AZ", " MN", " OR",
-          ]) allTerms.add(t.trim());
+            "United States",
+            "California", "New York", "Texas", "Washington",
+            "Massachusetts", "Illinois", "Colorado", "Georgia",
+            "Florida", "Virginia", "Pennsylvania", "Ohio",
+            "North Carolina", "Arizona", "Michigan",
+            "Seattle", "San Francisco", "Los Angeles", "Chicago",
+            "Austin", "Boston", "Miami", "Denver", "Atlanta",
+          ]) allTerms.add(t);
           continue;
         }
         if (lower === "europe") {
