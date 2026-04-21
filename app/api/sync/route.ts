@@ -859,20 +859,14 @@ async function fetchMuse(): Promise<any[]> {
       const data = await res.json();
       if (!data.results || data.results.length === 0) break;
 
-      if (page === 0 && data.results[0]) {
-        console.log("Muse sample:", JSON.stringify(data.results[0], null, 2));
-      }
-
       for (const job of data.results) {
         if (!job.id || !job.name) continue;
-        allJobs.push({
+        const record: any = {
           id: `muse_${String(job.id)}`,
           title: job.name,
           company: job.company?.name || "",
           location: job.locations?.[0]?.name || "Remote",
           salary: "",
-          // levels[0].short_name is seniority ("entry","mid","senior"), NOT job type
-          // The Muse listing API doesn't expose employment type — default to Full-time
           job_type: "Full-time",
           source: "TheMuse",
           posted_date: job.publication_date
@@ -880,8 +874,13 @@ async function fetchMuse(): Promise<any[]> {
             : "",
           apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
           description: job.categories?.[0]?.name || "",
-          posted_at: job.publication_date || null,
-        });
+        };
+        // Only include posted_at when present — explicit null violates NOT NULL constraint
+        if (job.publication_date) record.posted_at = job.publication_date;
+        allJobs.push(record);
+      }
+      if (page === 0 && allJobs[0]) {
+        console.log("Muse job sample:", JSON.stringify(allJobs[0]));
       }
       if (page >= data.page_count - 1) break;
       await new Promise(r => setTimeout(r, 300));
