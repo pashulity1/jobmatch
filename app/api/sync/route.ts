@@ -787,11 +787,6 @@ async function fetchReed(keyword: string): Promise<any[]> {
     if (!res.ok) return [];
     const data = await res.json();
 
-    if (data.results?.length && keyword === REED_KEYWORDS[0]) {
-      console.log("Reed job fields:", Object.keys(data.results[0]));
-      console.log("Reed job[0] sample:", JSON.stringify(data.results[0]).substring(0, 300));
-    }
-
     const now = new Date();
     return (data.results || []).map((job: any) => {
       // Try posting date fields in priority order; reject future dates (those are expirationDate)
