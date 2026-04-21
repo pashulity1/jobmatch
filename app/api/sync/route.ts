@@ -293,6 +293,8 @@ const WORKABLE_COMPANIES = [
   "semrush", "ahrefs", "moz", "sproutsocial", "buffer",
   "hootsuite", "mailchimp", "klaviyo", "hubspot",
   "pleo", "spendesk", "moss", "payhawk", "soldo",
+  "adyen", "travelperk", "attio", "tinybird",
+  "puulse-marketing", "clarity-ai", "cognigy",
 ];
 
 const ADZUNA_CATEGORIES = [
