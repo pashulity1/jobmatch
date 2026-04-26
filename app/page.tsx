@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { calculateMatchScore, getMatchColor, getMatchLabel, ResumeProfile } from "@/lib/matcher";
 
 // Quick-pick options shown in the location dropdown
@@ -313,27 +314,26 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (us
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const supabase = createClient();
 
   const handleSubmit = async () => {
     setLoading(true); setError("");
     try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: mode, email, password, name }),
-      });
-      const data = await res.json();
-      if (data.error) { setError(data.error); return; }
       if (mode === "signup") {
-        setError(""); 
-        setMode("signin");
+        const { error: err } = await supabase.auth.signUp({
+          email, password,
+          options: { data: { full_name: name } },
+        });
+        if (err) { setError(err.message); return; }
         setError("Account created! Please sign in.");
+        setMode("signin");
         return;
       }
-      // Save session
-      localStorage.setItem("jm_token", data.session.access_token);
-      localStorage.setItem("jm_user", JSON.stringify(data.user));
-      onSuccess(data.user, data.session.access_token);
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) { setError(err.message); return; }
+      if (data.session && data.user) {
+        onSuccess(data.user as User, data.session.access_token);
+      }
     } catch { setError("Something went wrong."); }
     finally { setLoading(false); }
   };
@@ -374,13 +374,10 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (us
         <button onClick={async () => {
           setLoading(true);
           try {
-            const res = await fetch("/api/auth", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "google" }),
+            await supabase.auth.signInWithOAuth({
+              provider: "google",
+              options: { redirectTo: `${window.location.origin}/auth/callback` },
             });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
           } catch { setError("Google sign-in failed."); }
           finally { setLoading(false); }
         }} disabled={loading}
@@ -489,19 +486,28 @@ export default function Home() {
 
   // Load saved session on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem("jm_token");
-    const savedUser = localStorage.getItem("jm_user");
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-        loadProfile(savedToken);
-      } catch {}
-    }
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setToken(session.access_token);
+        setUser(session.user as User);
+        loadProfile(session.access_token);
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session) {
+        setToken(session.access_token);
+        setUser(session.user as User);
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    });
     try {
       const recent = JSON.parse(localStorage.getItem(RECENT_LOCATIONS_KEY) || "[]");
       if (Array.isArray(recent)) setRecentLocations(recent);
     } catch {}
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadProfile = async (t: string) => {
@@ -528,9 +534,8 @@ export default function Home() {
     loadProfile(t);
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("jm_token");
-    localStorage.removeItem("jm_user");
+  const handleSignOut = async () => {
+    await createClient().auth.signOut();
     setUser(null); setToken(null); setProfile(null); setAnalysisCount(0); setSavedJobIds(new Set());
     setJobs(prev => prev.map(j => ({ ...j, matchScore: undefined })));
   };
