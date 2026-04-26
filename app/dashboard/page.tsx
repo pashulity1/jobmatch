@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type User = { id: string; email: string };
 type Profile = {
@@ -80,17 +81,19 @@ export default function Dashboard() {
   const [showAlertSuggestions, setShowAlertSuggestions] = useState(false);
 
   useEffect(() => {
-    const rawToken = localStorage.getItem("jm_token");
-    console.log("RAW TOKEN FROM STORAGE:", rawToken ? rawToken.substring(0, 20) : "NULL");
-    const savedToken = localStorage.getItem("jm_token");
-    const savedUser = localStorage.getItem("jm_user");
-    if (!savedToken || !savedUser) { router.push("/"); return; }
-    try {
-      const u = JSON.parse(savedUser);
-      setToken(savedToken);
-      setUser(u);
-      loadAll(savedToken);
-    } catch { router.push("/"); }
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { router.push("/"); return; }
+      setToken(session.access_token);
+      setUser(session.user as User);
+      loadAll(session.access_token);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session) { router.push("/"); return; }
+      setToken(session.access_token);
+      setUser(session.user as User);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadAll = async (t: string) => {
@@ -138,9 +141,8 @@ export default function Dashboard() {
     } catch {}
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("jm_token");
-    localStorage.removeItem("jm_user");
+  const handleSignOut = async () => {
+    await createClient().auth.signOut();
     router.push("/");
   };
 
