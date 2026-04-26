@@ -59,7 +59,18 @@ export async function GET(req: NextRequest) {
   const offset = parseInt(searchParams.get("offset") || "0");
   const suggestMode = searchParams.get("suggest") === "true";
   const fresh = searchParams.get("fresh") === "true";
+  const datePosted = searchParams.get("datePosted") || "";
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  function getDateCutoff(): string | null {
+    if (datePosted === "Last 24h") return new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
+    if (datePosted === "3 days")  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    if (datePosted === "Week")    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    if (datePosted === "Month")   return thirtyDaysAgo;
+    if (fresh) return thirtyDaysAgo;
+    return null;
+  }
+  const dateCutoff = getDateCutoff();
 
   try {
     const supabase = getSupabaseAdmin();
@@ -124,13 +135,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (keyword) {
-      return fullTextSearch(supabase, keyword, locationOrString, jobType, limit, offset, fresh ? thirtyDaysAgo : null);
+      return fullTextSearch(supabase, keyword, locationOrString, jobType, limit, offset, dateCutoff);
     } else {
       // No keyword — return latest jobs with optional filters
       let query = supabase.from("jobs").select("*", { count: "exact" });
       if (locationOrString) query = query.or(locationOrString);
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-      if (fresh) query = query.gte("posted_at", thirtyDaysAgo);
+      if (dateCutoff) query = query.gte("posted_at", dateCutoff);
 
       const { data: jobs, error, count } = await query
         .order("created_at", { ascending: false })
