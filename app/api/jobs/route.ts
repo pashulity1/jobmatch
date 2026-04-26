@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
       let query = supabase.from("jobs").select("*", { count: "exact" });
       if (locationOrString) query = query.or(locationOrString);
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-      if (dateCutoff) query = query.gte("posted_at", dateCutoff);
+      if (dateCutoff) query = query.gte("created_at", dateCutoff);
 
       const { data: jobs, error, count } = await query
         .order("created_at", { ascending: false })
@@ -194,7 +194,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    if (freshCutoff) query = query.gte("posted_at", freshCutoff);
+    if (freshCutoff) query = query.gte("created_at", freshCutoff);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
