@@ -30,70 +30,102 @@ function matchLabel(score: number) {
   return score >= 80 ? "STRONG MATCH" : score >= 60 ? "GOOD MATCH" : score >= 40 ? "FAIR MATCH" : "WEAK MATCH";
 }
 
-// MatchCircle renders the match score indicator with a sweep-fill loading animation.
-// Loading phase: arc sweeps from 0% to 100% over 1s (teal color).
-// Score phase: arc transitions from 100% down to the actual match % (match color).
-// Timed out with no score: shows "–" with an empty arc.
+// MatchCircle — speedometer-style animation.
+// Phase 1 (loading): number counts 0→100, arc fills up, teal color, over 2s.
+// Phase 2 (score arrives): number and arc descend from current position to actual score over 0.8s.
+// If score was cached and arrives instantly: skip straight to final value, no animation.
 function MatchCircle({ score, loading, timedOut }: { score?: number; loading?: boolean; timedOut?: boolean }) {
   const r = 17;
-  const circ = 2 * Math.PI * r; // full circumference ≈ 106.8
+  const circ = 2 * Math.PI * r; // ≈ 106.8
 
-  // Current animated fill length (0..circ), driven by useEffect below
-  const [fill, setFill] = useState<number>(() =>
-    // If score already exists on mount (cached), start at the real value immediately — no animation
-    score !== undefined ? (score / 100) * circ : 0
+  // displayVal drives both the arc fill and the label text (0–100)
+  const [displayVal, setDisplayVal] = useState<number>(() =>
+    score !== undefined && !loading ? score : 0
   );
-  // True while we're in the teal "sweep to 100%" phase
-  const [sweeping, setSweeping] = useState(false);
+  // "sweeping" = counting up phase; "descending" = going to real score; "done" = final
+  const [phase, setPhase] = useState<"idle" | "sweeping" | "descending" | "done">(() =>
+    score !== undefined && !loading ? "done" : "idle"
+  );
 
-  // When loading begins: reset arc to 0, then sweep to full over 1s
+  const rafRef = useRef<number | null>(null);
+  // Mirror of displayVal as a ref so score-arrival effect always reads the current live value
+  const valRef = useRef<number>(score !== undefined && !loading ? score : 0);
+
+  const cancelAnim = () => {
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+  };
+
+  // Phase 1: when loading starts, count up 0→100 over 2s with ease-out
   useEffect(() => {
-    if (loading && !timedOut) {
-      setSweeping(true);
-      setFill(0);
-      // Small delay so React paints the 0-state before the CSS transition fires
-      const t = setTimeout(() => setFill(circ), 40);
-      return () => clearTimeout(t);
-    }
-  }, [loading, timedOut, circ]);
+    if (!loading || timedOut) return;
+    cancelAnim();
+    valRef.current = 0;
+    setDisplayVal(0);
+    setPhase("sweeping");
+    const start = performance.now();
+    const duration = 2000;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 2); // ease-out quad: fast at start, slows near 100
+      const val = Math.round(eased * 100);
+      valRef.current = val;
+      setDisplayVal(val);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return cancelAnim;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, timedOut]);
 
-  // When score arrives (loading → false): transition arc from current fill to actual score
+  // Phase 2: when score arrives, animate from wherever the sweep stopped down to actual score
   useEffect(() => {
-    if (!loading && score !== undefined) {
-      setSweeping(false);
-      setFill((score / 100) * circ);
+    if (loading || score === undefined) return;
+    cancelAnim();
+    const from = valRef.current; // live value at the moment score arrived
+    const to = score;
+    // If the score was cached and came back instantly (from ≈ 0), snap without long animation
+    const duration = from > 5 ? 800 : 0;
+    setPhase("descending");
+    if (duration === 0) {
+      valRef.current = to;
+      setDisplayVal(to);
+      setPhase("done");
+      return;
     }
-    // Timeout with no score: collapse the arc to show "–"
-    if (!loading && score === undefined && timedOut) {
-      setSweeping(false);
-      setFill(0);
-    }
-  }, [loading, score, timedOut, circ]);
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic: snappy then settles
+      const val = Math.round(from + (to - from) * eased);
+      valRef.current = val;
+      setDisplayVal(val);
+      if (t < 1) { rafRef.current = requestAnimationFrame(tick); }
+      else { setPhase("done"); }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return cancelAnim;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, score]);
 
-  // Teal while sweeping, match-color once score is known
-  const arcColor = sweeping
-    ? "rgba(20,184,166,0.75)"
+  const fill = (displayVal / 100) * circ;
+  // Teal while counting up, match-color while descending / done
+  const arcColor = phase === "sweeping"
+    ? "rgba(20,184,166,0.8)"
     : score !== undefined ? matchColor(score) : "#6b7280";
 
-  // Slow ease-out while sweeping to 100%, faster snappy transition when showing the real score
-  const transition = sweeping
-    ? "stroke-dasharray 1s ease-out, stroke 0.3s ease"
-    : "stroke-dasharray 0.6s ease, stroke 0.4s ease";
-
-  const label = score !== undefined ? `${score}%` : timedOut ? "–" : "…";
-  const labelColor = score !== undefined ? matchColor(score) : "#6b7280";
-  const labelSize = score !== undefined ? "9.5" : "8";
+  const label = timedOut && score === undefined ? "–"
+    : phase === "idle" ? "…"
+    : `${displayVal}%`;
 
   return (
     <svg width="42" height="42" viewBox="0 0 42 42" style={{ flexShrink: 0 }}>
-      {/* Static background track */}
       <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
-      {/* Animated arc — CSS transition handles both the sweep and the score reveal */}
+      {/* Arc — no CSS transition needed, rAF updates every frame */}
       <circle cx="21" cy="21" r={r} fill="none" stroke={arcColor} strokeWidth="3.5"
         strokeDasharray={`${fill} ${circ}`} strokeLinecap="round"
         transform="rotate(-90 21 21)"
-        style={{ transition }} />
-      <text x="21" y="25" textAnchor="middle" fontSize={labelSize} fontWeight="700" fill={labelColor}>
+        style={{ transition: "stroke 0.4s ease" }} />
+      <text x="21" y="25" textAnchor="middle" fontSize="9.5" fontWeight="700" fill={arcColor}>
         {label}
       </text>
     </svg>
