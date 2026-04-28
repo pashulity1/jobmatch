@@ -72,6 +72,11 @@ export async function GET(req: NextRequest) {
   }
   const dateCutoff = getDateCutoff();
 
+  // Apply date filter: posted_at when set, fallback to created_at for jobs without posting date
+  function applyDateFilter(q: any, cutoff: string) {
+    return q.or(`posted_at.gte.${cutoff},and(posted_at.is.null,created_at.gte.${cutoff})`);
+  }
+
   try {
     const supabase = getSupabaseAdmin();
 
@@ -141,7 +146,7 @@ export async function GET(req: NextRequest) {
       let query = supabase.from("jobs").select("*", { count: "exact" });
       if (locationOrString) query = query.or(locationOrString);
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-      if (dateCutoff) query = query.gte("created_at", dateCutoff);
+      if (dateCutoff) query = applyDateFilter(query, dateCutoff);
 
       const { data: jobs, error, count } = await query
         .order("created_at", { ascending: false })
@@ -194,7 +199,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    if (freshCutoff) query = query.gte("created_at", freshCutoff);
+    if (freshCutoff) query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -243,7 +248,7 @@ async function titleSearchFallback(
 
   if (locationOrString) query = query.or(locationOrString);
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-  if (freshCutoff) query = query.gte("posted_at", freshCutoff);
+  if (freshCutoff) query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
