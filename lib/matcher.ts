@@ -32,27 +32,41 @@ export function calculateMatchScore(profile: ResumeProfile, job: Job): number {
   const profileSkills = profile.skills.map((s) => s.toLowerCase());
 
   // 1. Title match (40% weight)
-  // Extract core words from title — ignore level words like senior/junior/lead/staff
   const LEVEL_WORDS = ["senior", "junior", "lead", "staff", "principal", "associate",
     "sr", "jr", "mid", "entry", "head", "chief", "vp", "director", "manager"];
 
+  // Strip punctuation/special chars before splitting so "Motion Designer | 2D / 3D" parses cleanly
   const coreWords = (title: string) =>
-    title.split(/\s+/).filter(w => w.length > 2 && !LEVEL_WORDS.includes(w));
+    title.replace(/[|/\\&,()[\]]+/g, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !LEVEL_WORDS.includes(w));
 
   const profileCoreWords = coreWords(profileTitle);
   const jobCoreWords = coreWords(jobTitle);
 
   let titleScore = 0;
   if (profileCoreWords.length > 0 && jobCoreWords.length > 0) {
-    // How many profile core words appear in job title
-    const matched = profileCoreWords.filter(w =>
+    const jobInProfile = jobCoreWords.filter(w =>
+      profileCoreWords.some(pw => pw.includes(w) || w.includes(pw))
+    ).length;
+    const profileInJob = profileCoreWords.filter(w =>
       jobCoreWords.some(jw => jw.includes(w) || w.includes(jw))
-    );
-    titleScore = matched.length / profileCoreWords.length;
+    ).length;
+    // Use the better direction: how much of the JOB is covered by the profile
+    // (avoids penalizing a broad profile title when job title is narrower)
+    const jobCoverage = jobInProfile / jobCoreWords.length;
+    const profileCoverage = profileInJob / profileCoreWords.length;
+    titleScore = Math.max(jobCoverage, profileCoverage);
   }
 
-  // Boost if titles are very similar (e.g. "Motion Designer" in "Senior Motion Designer")
-  if (jobTitle.includes(profileTitle) || profileTitle.includes(jobTitle)) {
+  // Boost if titles are very similar (e.g. profile "motion designer | ..." covers job "motion designer")
+  const profileFirstPart = profileTitle.split(/[|,]/)[0].trim();
+  if (
+    jobTitle.includes(profileFirstPart) ||
+    profileFirstPart.includes(jobTitle) ||
+    jobTitle.includes(profileTitle) ||
+    profileTitle.includes(jobTitle)
+  ) {
     titleScore = Math.max(titleScore, 0.9);
   }
 
