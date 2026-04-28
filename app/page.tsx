@@ -30,25 +30,71 @@ function matchLabel(score: number) {
   return score >= 80 ? "STRONG MATCH" : score >= 60 ? "GOOD MATCH" : score >= 40 ? "FAIR MATCH" : "WEAK MATCH";
 }
 
-function MatchCircle({ score, loading }: { score?: number; loading?: boolean }) {
+// MatchCircle renders the match score indicator.
+// When loading=true and no score yet: shows a spinning teal arc (spinner).
+// When timedOut=true and still no score: shows "–" fallback.
+// When score arrives: spinner fades out, score circle fades in (300ms transition).
+// Both SVG layers are stacked in the same 42×42 box — no layout shift.
+function MatchCircle({ score, loading, timedOut }: { score?: number; loading?: boolean; timedOut?: boolean }) {
   const r = 17;
   const circ = 2 * Math.PI * r;
+
+  // Show spinner whenever loading — even if a preliminary local score exists.
+  // The score layer sits behind it and is ready to reveal the moment loading stops.
+  const showSpinner = !!loading && !timedOut;
+  // Arc fill for the score circle (0 when no score)
   const filled = score !== undefined ? (score / 100) * circ : 0;
   const color = score !== undefined ? matchColor(score) : "#6b7280";
+  // Label inside the score circle: %, "–" on timeout, "…" as initial placeholder
+  const label = score !== undefined ? `${score}%` : timedOut ? "–" : "…";
+  const labelSize = score !== undefined ? "9.5" : "8";
 
   return (
-    <svg width="42" height="42" viewBox="0 0 42 42" className={loading && score === undefined ? "opacity-40 animate-pulse" : ""}>
-      <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
-      <circle cx="21" cy="21" r={r} fill="none" stroke={color} strokeWidth="3.5"
-        strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
-        transform="rotate(-90 21 21)"
-        style={{ transition: "stroke-dasharray 0.6s ease" }} />
-      {score !== undefined ? (
-        <text x="21" y="25" textAnchor="middle" fontSize="9.5" fontWeight="700" fill={color}>{score}%</text>
-      ) : (
-        <text x="21" y="25" textAnchor="middle" fontSize="8" fill="#6b7280">…</text>
-      )}
-    </svg>
+    // Fixed-size container so both layers overlap without shifting layout
+    <div style={{ position: "relative", width: 42, height: 42, flexShrink: 0 }}>
+
+      {/* ── Spinner layer — fades out when score arrives ── */}
+      {/* animate-spin rotates the SVG; both circles share center (21,21) so only the arc visibly spins */}
+      <svg
+        width="42" height="42" viewBox="0 0 42 42"
+        className={showSpinner ? "animate-spin" : ""}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          opacity: showSpinner ? 1 : 0,
+          transition: "opacity 0.3s ease",
+          pointerEvents: "none",
+        }}
+      >
+        {/* Background track */}
+        <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
+        {/* Spinning arc — teal brand color at 0.4 opacity, ~30% of circumference */}
+        <circle cx="21" cy="21" r={r} fill="none"
+          stroke="rgba(20,184,166,0.4)" strokeWidth="3.5"
+          strokeDasharray={`${circ * 0.3} ${circ * 0.7}`}
+          strokeLinecap="round" />
+      </svg>
+
+      {/* ── Score circle layer — fades in when score arrives ── */}
+      <svg
+        width="42" height="42" viewBox="0 0 42 42"
+        style={{
+          position: "absolute", top: 0, left: 0,
+          opacity: showSpinner ? 0 : 1,
+          transition: "opacity 0.3s ease",
+        }}
+      >
+        {/* Background track */}
+        <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
+        {/* Filled arc — animates smoothly as score value changes */}
+        <circle cx="21" cy="21" r={r} fill="none" stroke={color} strokeWidth="3.5"
+          strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
+          transform="rotate(-90 21 21)"
+          style={{ transition: "stroke-dasharray 0.6s ease" }} />
+        <text x="21" y="25" textAnchor="middle" fontSize={labelSize} fontWeight="700" fill={color}>
+          {label}
+        </text>
+      </svg>
+    </div>
   );
 }
 
@@ -505,6 +551,7 @@ export default function Home() {
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
@@ -519,6 +566,14 @@ export default function Home() {
   // Gemini match scores cache
   const [geminiScores, setGeminiScores] = useState<Record<string, GeminiScore>>({});
   const [matchLoading, setMatchLoading] = useState(false);
+  // True after 8s with no score — cards still loading show "–" instead of the spinner
+  const [matchTimedOut, setMatchTimedOut] = useState(false);
+  // Start an 8s timer whenever AI scoring begins; reset when it finishes
+  useEffect(() => {
+    if (!matchLoading) { setMatchTimedOut(false); return; }
+    const timer = setTimeout(() => setMatchTimedOut(true), 8000);
+    return () => clearTimeout(timer);
+  }, [matchLoading]);
   const freshOnlyMounted = useRef(false);
 
   // Re-search when freshOnly toggle changes
@@ -537,6 +592,7 @@ export default function Home() {
         setUser(session.user as User);
         loadProfile(session.access_token);
       }
+      setIsAuthReady(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
@@ -592,13 +648,23 @@ export default function Home() {
     return jobList.map(job => ({ ...job, matchScore: calculateMatchScore(p, job) }));
   }, []);
 
-  const fetchGeminiScores = useCallback(async (jobList: Job[]) => {
-    if (!token || !profile || jobList.length === 0) return;
+  const fetchGeminiScores = useCallback(async (jobList: Job[], tokenOverride?: string) => {
+    const activeToken = tokenOverride ?? token;
+    console.log("[AI match] fetchGeminiScores called", {
+      hasToken: !!activeToken,
+      hasProfile: !!profile,
+      jobCount: jobList.length,
+      isAuthReady,
+    });
+    if (!activeToken || !profile || jobList.length === 0) {
+      console.log("[AI match] Skipping — missing token, profile, or jobs");
+      return;
+    }
     setMatchLoading(true);
     try {
       const res = await fetch("/api/match", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeToken}` },
         body: JSON.stringify({ jobIds: jobList.map(j => j.id) }),
       });
       const data = await res.json();
@@ -606,11 +672,12 @@ export default function Home() {
         console.error("[AI match] API error:", res.status, data);
         return;
       }
+      console.log("[AI match] Scores received:", Object.keys(data.scores || {}).length);
       if (data.scores) setGeminiScores(prev => ({ ...prev, ...data.scores }));
     } catch (e) {
       console.error("[AI match] fetch failed:", e);
     } finally { setMatchLoading(false); }
-  }, [token, profile]);
+  }, [token, profile, isAuthReady]);
 
   const processJobs = (raw: any[], p: ResumeProfile | null) => {
     const cleaned = raw.map((job: any) => ({
@@ -653,7 +720,7 @@ export default function Home() {
       setJobs(withScores);
       const total = data.meta?.total || withScores.length;
       setTotalFound(total); setHasMore(total > PAGE_SIZE); setCurrentOffset(PAGE_SIZE);
-      fetchGeminiScores(withScores);
+      fetchGeminiScores(withScores, token ?? undefined);
     } catch { setError("Something went wrong."); }
     finally { setLoading(false); }
   };
@@ -668,7 +735,7 @@ export default function Home() {
         setJobs(prev => [...prev, ...withScores]);
         const newOffset = currentOffset + PAGE_SIZE;
         setCurrentOffset(newOffset); setHasMore(newOffset < (data.meta?.total || 0));
-        fetchGeminiScores(withScores);
+        fetchGeminiScores(withScores, token ?? undefined);
       }
     } catch {} finally { setLoadingMore(false); }
   };
@@ -935,8 +1002,9 @@ export default function Home() {
                     <div className="flex items-start justify-between gap-2">
                       <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
                       <div className="flex items-center gap-2 shrink-0">
-                        {(displayScore !== undefined || isLoadingMatch) && (
-                          <MatchCircle score={displayScore} loading={isLoadingMatch} />
+                        {/* Show circle whenever: AI is scoring, timed out, or a score is ready */}
+                        {(isLoadingMatch || matchTimedOut || displayScore !== undefined) && (
+                          <MatchCircle score={displayScore} loading={isLoadingMatch} timedOut={matchTimedOut} />
                         )}
                         {/* Chevron — rotates when expanded */}
                         <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
@@ -1014,13 +1082,21 @@ export default function Home() {
                   {/* ── Expanded section ── */}
                   {isExpanded && (
                     <div className="px-4 pb-5 border-t border-gray-800" onClick={e => e.stopPropagation()}>
-                      {gemini && (
+                      {isLoadingMatch && !gemini ? (
+                        <div className="flex items-center gap-2 pt-3 pb-1 text-xs text-gray-500">
+                          <svg className="animate-spin w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                          </svg>
+                          <span className="text-blue-400">AI analyzing…</span>
+                        </div>
+                      ) : gemini ? (
                         <div className="flex gap-4 pt-3 pb-1 text-xs text-gray-400">
                           <span>Skills: <span style={{ color: matchColor(gemini.skills) }} className="font-semibold">{gemini.skills}%</span></span>
                           <span>Level: <span style={{ color: matchColor(gemini.level) }} className="font-semibold">{gemini.level}%</span></span>
                           <span>Industry: <span style={{ color: matchColor(gemini.industry) }} className="font-semibold">{gemini.industry}%</span></span>
                         </div>
-                      )}
+                      ) : null}
                       {/* Prominent Apply button at top of expanded view */}
                       <div className="flex items-center justify-between py-3">
                         <span className="text-xs text-gray-500">Full description</span>
