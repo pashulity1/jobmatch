@@ -24,7 +24,7 @@ async function scoreWithClaude(resumeJson: any, job: { id: string; title: string
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
 
-  const prompt = `You are a job matching expert. Compare a candidate's profile with a job posting and return match scores.
+  const prompt = `You are a strict job matching expert. Compare a candidate's profile with a job posting.
 
 CANDIDATE PROFILE:
 ${JSON.stringify(resumeJson, null, 2)}
@@ -33,21 +33,22 @@ JOB POSTING:
 Title: ${job.title}
 Description: ${job.description?.substring(0, 3000) || "No description"}
 
-Return ONLY a JSON object, no markdown, no explanation:
+Return ONLY a JSON object, no markdown:
 {
-  "score_total": <0-100, overall match>,
-  "score_skills": <0-100, technical skills match>,
-  "score_level": <0-100, seniority/experience level match>,
-  "score_industry": <0-100, industry/domain match>
+  "score_total": <0-100>,
+  "score_skills": <0-100, do specific tools/software match?>,
+  "score_level": <0-100, does seniority level match?>,
+  "score_industry": <0-100, does industry/domain match the candidate's experience?>
 }
 
-Scoring guide:
-- 80-100: Excellent match
-- 60-79: Good match
-- 40-59: Partial match
-- 0-39: Weak match
-
-Be precise. Consider ALL aspects: tools, software, methodologies, domain experience, years of experience, seniority level.`;
+STRICT scoring rules:
+- score_total must USE THE FULL 0-100 RANGE. Don't cluster around 40-60.
+- If the job requires completely different tools/domain (e.g. candidate is motion designer but job is UX/web design): score_total 10-25
+- If job title and core skills match well but some tools differ: score_total 55-70
+- If job is an excellent match (same title, same tools, right level): score_total 75-95
+- Junior job for senior candidate OR senior job for junior: deduct 20-30 points from score_level
+- score_total = weighted average: skills 40% + level 35% + industry 25%
+- Be strict and differentiated. A motion designer vs a UX designer role is a BIG difference.`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -96,7 +97,8 @@ export async function POST(req: NextRequest) {
   const userId = getUserId(token);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { jobIds } = await req.json();
+  const body = await req.json();
+  const { jobIds, force = false } = body;
   if (!Array.isArray(jobIds) || jobIds.length === 0) {
     return NextResponse.json({ error: "jobIds required" }, { status: 400 });
   }
@@ -116,13 +118,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Check cached scores
-  const { data: cached } = await supabase
+  const { data: cached } = force ? { data: [] } : await supabase
     .from("match_scores")
     .select("job_id, score_total, score_skills, score_level, score_industry")
     .eq("user_id", userId)
     .in("job_id", jobIds);
 
-  const cachedMap = new Map((cached || []).map(r => [r.job_id, r]));
+  const cachedMap = new Map((cached || []).map((r: any) => [r.job_id, r]));
   const uncachedIds = jobIds.filter(id => !cachedMap.has(id));
 
   const scores: Record<string, any> = {};

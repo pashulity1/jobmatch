@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { calculateMatchScore, getMatchColor, getMatchLabel, ResumeProfile } from "@/lib/matcher";
+import { calculateMatchScore, ResumeProfile } from "@/lib/matcher";
 
 // Quick-pick options shown in the location dropdown
 const LOCATION_QUICK_PICKS = [
@@ -19,6 +19,38 @@ type Job = {
   applyUrl: string; description: string; matchScore?: number;
   postedAt?: string | null;
 };
+
+type GeminiScore = { total: number; skills: number; level: number; industry: number };
+
+function matchColor(score: number) {
+  return score >= 80 ? "#22c55e" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444";
+}
+
+function matchLabel(score: number) {
+  return score >= 80 ? "STRONG MATCH" : score >= 60 ? "GOOD MATCH" : score >= 40 ? "FAIR MATCH" : "WEAK MATCH";
+}
+
+function MatchCircle({ score, loading }: { score?: number; loading?: boolean }) {
+  const r = 17;
+  const circ = 2 * Math.PI * r;
+  const filled = score !== undefined ? (score / 100) * circ : 0;
+  const color = score !== undefined ? matchColor(score) : "#6b7280";
+
+  return (
+    <svg width="42" height="42" viewBox="0 0 42 42" className={loading && score === undefined ? "opacity-40 animate-pulse" : ""}>
+      <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
+      <circle cx="21" cy="21" r={r} fill="none" stroke={color} strokeWidth="3.5"
+        strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
+        transform="rotate(-90 21 21)"
+        style={{ transition: "stroke-dasharray 0.6s ease" }} />
+      {score !== undefined ? (
+        <text x="21" y="25" textAnchor="middle" fontSize="9.5" fontWeight="700" fill={color}>{score}%</text>
+      ) : (
+        <text x="21" y="25" textAnchor="middle" fontSize="8" fill="#6b7280">…</text>
+      )}
+    </svg>
+  );
+}
 
 const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 
@@ -484,6 +516,18 @@ export default function Home() {
   const [analysisCount, setAnalysisCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Gemini match scores cache
+  const [geminiScores, setGeminiScores] = useState<Record<string, GeminiScore>>({});
+  const [matchLoading, setMatchLoading] = useState(false);
+  const freshOnlyMounted = useRef(false);
+
+  // Re-search when freshOnly toggle changes
+  useEffect(() => {
+    if (!freshOnlyMounted.current) { freshOnlyMounted.current = true; return; }
+    handleSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freshOnly]);
+
   // Load saved session on mount
   useEffect(() => {
     const supabase = createClient();
@@ -548,6 +592,26 @@ export default function Home() {
     return jobList.map(job => ({ ...job, matchScore: calculateMatchScore(p, job) }));
   }, []);
 
+  const fetchGeminiScores = useCallback(async (jobList: Job[]) => {
+    if (!token || !profile || jobList.length === 0) return;
+    setMatchLoading(true);
+    try {
+      const res = await fetch("/api/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobIds: jobList.map(j => j.id) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("[AI match] API error:", res.status, data);
+        return;
+      }
+      if (data.scores) setGeminiScores(prev => ({ ...prev, ...data.scores }));
+    } catch (e) {
+      console.error("[AI match] fetch failed:", e);
+    } finally { setMatchLoading(false); }
+  }, [token, profile]);
+
   const processJobs = (raw: any[], p: ResumeProfile | null) => {
     const cleaned = raw.map((job: any) => ({
       id: job.id, title: job.title, company: job.company, location: job.location,
@@ -589,6 +653,7 @@ export default function Home() {
       setJobs(withScores);
       const total = data.meta?.total || withScores.length;
       setTotalFound(total); setHasMore(total > PAGE_SIZE); setCurrentOffset(PAGE_SIZE);
+      fetchGeminiScores(withScores);
     } catch { setError("Something went wrong."); }
     finally { setLoading(false); }
   };
@@ -603,6 +668,7 @@ export default function Home() {
         setJobs(prev => [...prev, ...withScores]);
         const newOffset = currentOffset + PAGE_SIZE;
         setCurrentOffset(newOffset); setHasMore(newOffset < (data.meta?.total || 0));
+        fetchGeminiScores(withScores);
       }
     } catch {} finally { setLoadingMore(false); }
   };
@@ -614,7 +680,11 @@ export default function Home() {
     setAnalyzingResume(true); setResumeError("");
     try {
       const formData = new FormData(); formData.append("resume", file);
-      const res = await fetch("/api/analyze-resume", { method: "POST", body: formData });
+      const res = await fetch("/api/analyze-resume", {
+        method: "POST",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       if (!res.ok || data.error) { setResumeError(data.error || "Failed"); return; }
 
@@ -648,9 +718,16 @@ export default function Home() {
     }
   };
 
-  const displayedJobs = sortByMatch && profile
-    ? [...jobs].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const freshFiltered = freshOnly
+    ? jobs.filter(job => {
+        const d = parseJobDate(job.postedAt || job.postedDate);
+        return !d || (Date.now() - d.getTime()) <= THIRTY_DAYS_MS;
+      })
     : jobs;
+  const displayedJobs = sortByMatch && profile
+    ? [...freshFiltered].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+    : freshFiltered;
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4">
@@ -842,7 +919,10 @@ export default function Home() {
               const yearsExp = extractYearsExp(desc);
               const workMode = extractWorkMode(desc, job.location);
               const locationClean = cleanLocation(job.location);
-              const isLowMatch = job.matchScore !== undefined && job.matchScore < 30;
+              const gemini = geminiScores[job.id];
+              const displayScore = gemini ? gemini.total : job.matchScore;
+              const isLoadingMatch = matchLoading && !gemini && !!profile && !!token;
+              const isLowMatch = displayScore !== undefined && displayScore < 30;
               const isExpanded = expandedId === job.id;
 
               return (
@@ -855,15 +935,8 @@ export default function Home() {
                     <div className="flex items-start justify-between gap-2">
                       <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
                       <div className="flex items-center gap-2 shrink-0">
-                        {job.matchScore !== undefined && (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-                            style={{
-                              backgroundColor: `${getMatchColor(job.matchScore)}20`,
-                              color: getMatchColor(job.matchScore),
-                              border: `1px solid ${getMatchColor(job.matchScore)}40`,
-                            }}>
-                            {job.matchScore}%
-                          </span>
+                        {(displayScore !== undefined || isLoadingMatch) && (
+                          <MatchCircle score={displayScore} loading={isLoadingMatch} />
                         )}
                         {/* Chevron — rotates when expanded */}
                         <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
@@ -895,8 +968,8 @@ export default function Home() {
                             </span>
                           ) : null;
                         })()}
-                        {job.matchScore !== undefined && (
-                          <span style={{ color: getMatchColor(job.matchScore) }}>· {getMatchLabel(job.matchScore)}</span>
+                        {displayScore !== undefined && (
+                          <span style={{ color: matchColor(displayScore) }}>· {matchLabel(displayScore)}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -941,6 +1014,13 @@ export default function Home() {
                   {/* ── Expanded section ── */}
                   {isExpanded && (
                     <div className="px-4 pb-5 border-t border-gray-800" onClick={e => e.stopPropagation()}>
+                      {gemini && (
+                        <div className="flex gap-4 pt-3 pb-1 text-xs text-gray-400">
+                          <span>Skills: <span style={{ color: matchColor(gemini.skills) }} className="font-semibold">{gemini.skills}%</span></span>
+                          <span>Level: <span style={{ color: matchColor(gemini.level) }} className="font-semibold">{gemini.level}%</span></span>
+                          <span>Industry: <span style={{ color: matchColor(gemini.industry) }} className="font-semibold">{gemini.industry}%</span></span>
+                        </div>
+                      )}
                       {/* Prominent Apply button at top of expanded view */}
                       <div className="flex items-center justify-between py-3">
                         <span className="text-xs text-gray-500">Full description</span>
