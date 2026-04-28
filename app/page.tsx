@@ -30,71 +30,73 @@ function matchLabel(score: number) {
   return score >= 80 ? "STRONG MATCH" : score >= 60 ? "GOOD MATCH" : score >= 40 ? "FAIR MATCH" : "WEAK MATCH";
 }
 
-// MatchCircle renders the match score indicator.
-// When loading=true and no score yet: shows a spinning teal arc (spinner).
-// When timedOut=true and still no score: shows "–" fallback.
-// When score arrives: spinner fades out, score circle fades in (300ms transition).
-// Both SVG layers are stacked in the same 42×42 box — no layout shift.
+// MatchCircle renders the match score indicator with a sweep-fill loading animation.
+// Loading phase: arc sweeps from 0% to 100% over 1s (teal color).
+// Score phase: arc transitions from 100% down to the actual match % (match color).
+// Timed out with no score: shows "–" with an empty arc.
 function MatchCircle({ score, loading, timedOut }: { score?: number; loading?: boolean; timedOut?: boolean }) {
   const r = 17;
-  const circ = 2 * Math.PI * r;
+  const circ = 2 * Math.PI * r; // full circumference ≈ 106.8
 
-  // Show spinner whenever loading — even if a preliminary local score exists.
-  // The score layer sits behind it and is ready to reveal the moment loading stops.
-  const showSpinner = !!loading && !timedOut;
-  // Arc fill for the score circle (0 when no score)
-  const filled = score !== undefined ? (score / 100) * circ : 0;
-  const color = score !== undefined ? matchColor(score) : "#6b7280";
-  // Label inside the score circle: %, "–" on timeout, "…" as initial placeholder
+  // Current animated fill length (0..circ), driven by useEffect below
+  const [fill, setFill] = useState<number>(() =>
+    // If score already exists on mount (cached), start at the real value immediately — no animation
+    score !== undefined ? (score / 100) * circ : 0
+  );
+  // True while we're in the teal "sweep to 100%" phase
+  const [sweeping, setSweeping] = useState(false);
+
+  // When loading begins: reset arc to 0, then sweep to full over 1s
+  useEffect(() => {
+    if (loading && !timedOut) {
+      setSweeping(true);
+      setFill(0);
+      // Small delay so React paints the 0-state before the CSS transition fires
+      const t = setTimeout(() => setFill(circ), 40);
+      return () => clearTimeout(t);
+    }
+  }, [loading, timedOut, circ]);
+
+  // When score arrives (loading → false): transition arc from current fill to actual score
+  useEffect(() => {
+    if (!loading && score !== undefined) {
+      setSweeping(false);
+      setFill((score / 100) * circ);
+    }
+    // Timeout with no score: collapse the arc to show "–"
+    if (!loading && score === undefined && timedOut) {
+      setSweeping(false);
+      setFill(0);
+    }
+  }, [loading, score, timedOut, circ]);
+
+  // Teal while sweeping, match-color once score is known
+  const arcColor = sweeping
+    ? "rgba(20,184,166,0.75)"
+    : score !== undefined ? matchColor(score) : "#6b7280";
+
+  // Slow ease-out while sweeping to 100%, faster snappy transition when showing the real score
+  const transition = sweeping
+    ? "stroke-dasharray 1s ease-out, stroke 0.3s ease"
+    : "stroke-dasharray 0.6s ease, stroke 0.4s ease";
+
   const label = score !== undefined ? `${score}%` : timedOut ? "–" : "…";
+  const labelColor = score !== undefined ? matchColor(score) : "#6b7280";
   const labelSize = score !== undefined ? "9.5" : "8";
 
   return (
-    // Fixed-size container so both layers overlap without shifting layout
-    <div style={{ position: "relative", width: 42, height: 42, flexShrink: 0 }}>
-
-      {/* ── Spinner layer — fades out when score arrives ── */}
-      {/* animate-spin rotates the SVG; both circles share center (21,21) so only the arc visibly spins */}
-      <svg
-        width="42" height="42" viewBox="0 0 42 42"
-        className={showSpinner ? "animate-spin" : ""}
-        style={{
-          position: "absolute", top: 0, left: 0,
-          opacity: showSpinner ? 1 : 0,
-          transition: "opacity 0.3s ease",
-          pointerEvents: "none",
-        }}
-      >
-        {/* Background track */}
-        <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
-        {/* Spinning arc — teal brand color at 0.4 opacity, ~30% of circumference */}
-        <circle cx="21" cy="21" r={r} fill="none"
-          stroke="rgba(20,184,166,0.4)" strokeWidth="3.5"
-          strokeDasharray={`${circ * 0.3} ${circ * 0.7}`}
-          strokeLinecap="round" />
-      </svg>
-
-      {/* ── Score circle layer — fades in when score arrives ── */}
-      <svg
-        width="42" height="42" viewBox="0 0 42 42"
-        style={{
-          position: "absolute", top: 0, left: 0,
-          opacity: showSpinner ? 0 : 1,
-          transition: "opacity 0.3s ease",
-        }}
-      >
-        {/* Background track */}
-        <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
-        {/* Filled arc — animates smoothly as score value changes */}
-        <circle cx="21" cy="21" r={r} fill="none" stroke={color} strokeWidth="3.5"
-          strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
-          transform="rotate(-90 21 21)"
-          style={{ transition: "stroke-dasharray 0.6s ease" }} />
-        <text x="21" y="25" textAnchor="middle" fontSize={labelSize} fontWeight="700" fill={color}>
-          {label}
-        </text>
-      </svg>
-    </div>
+    <svg width="42" height="42" viewBox="0 0 42 42" style={{ flexShrink: 0 }}>
+      {/* Static background track */}
+      <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
+      {/* Animated arc — CSS transition handles both the sweep and the score reveal */}
+      <circle cx="21" cy="21" r={r} fill="none" stroke={arcColor} strokeWidth="3.5"
+        strokeDasharray={`${fill} ${circ}`} strokeLinecap="round"
+        transform="rotate(-90 21 21)"
+        style={{ transition }} />
+      <text x="21" y="25" textAnchor="middle" fontSize={labelSize} fontWeight="700" fill={labelColor}>
+        {label}
+      </text>
+    </svg>
   );
 }
 
