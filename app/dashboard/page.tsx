@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { calculateMatchScore, getMatchColor, getMatchLabel } from "@/lib/matcher";
 
 type User = { id: string; email: string };
 type Profile = {
@@ -356,7 +357,19 @@ export default function Dashboard() {
                   className="text-blue-400 text-sm hover:text-blue-300">Browse jobs →</button>
               </div>
             ) : (
-              savedJobs.map(job => (
+              savedJobs.map(job => {
+                const resumeData = profile?.resume_profile;
+                const matchScore = resumeData
+                  ? calculateMatchScore(resumeData, {
+                      id: job.job_id, title: job.title, company: job.company,
+                      location: job.location, salary: job.salary || "",
+                      jobType: job.job_type, source: job.source,
+                      postedDate: job.posted_date, applyUrl: job.apply_url,
+                      description: "",
+                    })
+                  : undefined;
+
+                return (
                 <div key={job.id} className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
@@ -368,10 +381,27 @@ export default function Dashboard() {
                         {job.salary && <span className="text-green-400">· {job.salary}</span>}
                       </div>
                     </div>
-                    <button onClick={() => handleUnsaveJob(job.job_id)}
-                      className="text-red-400 hover:text-red-300 text-2xl leading-none shrink-0 mt-0.5">
-                      ♥
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {matchScore !== undefined && (
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{
+                              backgroundColor: `${getMatchColor(matchScore)}20`,
+                              color: getMatchColor(matchScore),
+                              border: `1px solid ${getMatchColor(matchScore)}40`,
+                            }}>
+                            {matchScore}%
+                          </span>
+                          <span className="text-[10px] mt-0.5" style={{ color: getMatchColor(matchScore) }}>
+                            {getMatchLabel(matchScore)}
+                          </span>
+                        </div>
+                      )}
+                      <button onClick={() => handleUnsaveJob(job.job_id)}
+                        className="text-red-400 hover:text-red-300 text-2xl leading-none mt-0.5">
+                        ♥
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                     <span className="text-xs text-gray-500">{job.source} · {job.posted_date}</span>
@@ -381,7 +411,8 @@ export default function Dashboard() {
                     </a>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
