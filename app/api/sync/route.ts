@@ -1586,7 +1586,7 @@ async function fetchAmazon(): Promise<any[]> {
           source: "Amazon Jobs",
           posted_date: job.posted_date ? new Date(job.posted_date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
           apply_url: `https://www.amazon.jobs${job.url_next_step || `/en/jobs/${job.id_icims}`}`,
-          description: (job.description || job.basic_qualifications || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+          description: (job.description || job.basic_qualifications || "").replace(/<[^>]+>/g, " ").substring(0, 500),
         });
       }
       if (jobs.length < 10) break;
@@ -1601,40 +1601,8 @@ async function fetchAmazon(): Promise<any[]> {
 }
 
 async function fetchMicrosoft(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let pg = 1; pg <= 10; pg++) {
-      const res = await fetch(
-        `https://gcsservices.careers.microsoft.com/search/api/v1/search?q=&l=en_us&pg=${pg}&pgSz=20&o=Relevance&flt=true`,
-        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.operationResult?.result?.jobs || [];
-      if (!jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `ms_${job.jobId}`,
-          title: job.title || "",
-          company: "Microsoft",
-          location: job.primaryLocation || "Remote",
-          salary: "",
-          job_type: job.employmentType || "Full-time",
-          source: "Microsoft Careers",
-          posted_date: job.postingDate ? new Date(job.postingDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-          apply_url: `https://careers.microsoft.com/en/us/job/${job.jobId}`,
-          description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 20) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Microsoft Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Microsoft Careers error:", e.message);
-    return [];
-  }
+  // Microsoft uses Workday — use their Workday API
+  return fetchWorkday({ tenant: "microsoft", instance: "wd5", board: "External", name: "Microsoft" });
 }
 
 async function fetchMeta(): Promise<any[]> {
