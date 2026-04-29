@@ -114,6 +114,147 @@ const GREENHOUSE_COMPANIES = [
   "arcadia", "stem", "fluence",
   "turntide", "freewire", "ev-connect", "blink",
   "terrasos", "verra", "goldstandard",
+  // Batch 6 — Enterprise SaaS
+  "salesforce", "servicenow", "workday", "sap", "oracle",
+  "box", "dropbox", "docusign", "zoom", "slack",
+  "zendesk", "freshworks", "kayako", "helpscout",
+  "jira", "confluence", "trello", "asana", "monday",
+  "pipedrive", "close", "copper", "freshsales", "nutshell",
+  "zendesk", "hootsuite", "sproutsocial", "buffer",
+  "marketo", "pardot", "eloqua", "act-on", "sharpspring",
+  // Batch 6 — Consumer Tech
+  "eventbrite", "meetup", "ticketmaster", "seatgeek",
+  "stubhub", "vivid-seats", "tix", "gametime",
+  "airbnb-experiences", "viator", "getyourguide",
+  "tripadvisor", "yelp", "foursquare",
+  "grubhub", "doordash", "uber-eats", "seamless",
+  "gopuff", "getir", "gorillas", "flink",
+  "turo", "getaround", "zipcar", "enterprise",
+  // Batch 6 — Healthcare & Life Sciences
+  "epic", "cerner", "allscripts", "athenahealth",
+  "modernhealth", "cerebral", "brightline",
+  "privia", "aledade", "iora", "cityblock",
+  "hinge-health", "sword-health", "kaia-health",
+  "transcarent", "accolade", "quantum-health",
+  "evolent", "alignment", "devoted",
+  "recursion", "relay-therapeutics", "insitro",
+  "vividion", "scorpion", "arrakis",
+  "biomea", "dice", "nuvalent",
+  // Batch 6 — Security & Infrastructure
+  "palo-alto-networks", "fortinet", "checkpoint",
+  "rapid7", "qualys", "tenable", "nessus",
+  "sailpoint", "saviynt", "ping", "onelogin",
+  "duo", "cyberark", "thycotic", "beyondtrust",
+  "darktrace", "vectra", "exabeam", "securonix",
+  "illumio", "zscaler", "netskope", "lookout",
+  "axonius", "sevco", "runzero", "spiderfoot",
+  // Batch 6 — Data & Analytics
+  "dbt-labs", "fivetran", "stitch", "matillion",
+  "informatica", "talend", "attunity", "rivery",
+  "dremio", "starburst", "ahana", "incorta",
+  "atscale", "kyligence", "imply", "apache",
+  "monte-carlo", "acceldata", "great-expectations", "anomalo",
+  "lightdash", "metabase", "redash", "count",
+  "hex", "deepnote", "noteable", "querybook",
+  // Batch 6 — Developer Tools
+  "github", "gitlab", "bitbucket", "azure-devops",
+  "jfrog", "sonatype", "artifactory", "nexus-repo",
+  "snyk", "whitesource", "black-duck", "checkmarx",
+  "semgrep", "codeql", "coverity", "klocwork",
+  "harness", "spinnaker", "argo", "flux",
+  "pulumi", "crossplane", "env0", "spacelift",
+  "logz", "elastic-apm", "instana", "lightstep",
+  "honeycomb", "jaeger", "zipkin", "opentelemetry",
+  // Batch 6 — AI/ML
+  "openai", "deepmind", "google-deepmind", "meta-ai",
+  "stability-ai", "midjourney", "runway", "pika",
+  "eleven-labs", "murf", "play-ht", "resemble",
+  "jasper", "copy-ai", "writesonic", "rytr",
+  "synthesis", "synthesia", "heygen", "d-id",
+  "assembled", "cresta", "balto", "invoca",
+  "observe", "tethr", "callminer", "nice",
+  // Batch 6 — Edtech
+  "duolingo", "busuu", "babbel", "pimsleur",
+  "coursera", "edx", "udemy", "skillshare",
+  "brilliant", "khan-academy", "codecademy", "treehouse",
+  "pluralsight", "linkedin-learning", "oreilly", "udacity",
+  "springboard", "lambda-school", "thinkful", "flatiron",
+  "outschool", "varsity-tutors", "tutor", "wyzant",
+  // Batch 6 — Fintech expanded
+  "nerdwallet", "creditkarma", "experian", "equifax",
+  "transunion", "fico", "vantagescore",
+  "lendingclub", "prosper", "avant", "best-egg",
+  "sofi", "earnest", "credible", "elfi",
+  "blend", "better", "home-point", "loansnap",
+  "opendoor", "offerpad", "orchard", "homeward",
+  "divvy", "landis", "ownup", "arrive",
+  // Batch 7 — Enterprise & Fortune 500
+  "accenture", "deloitte", "pwc", "kpmg", "ey-us", "mckinsey", "bain",
+  "ibm", "oracle", "sap-us", "cisco", "hp", "dell", "lenovo",
+  "boeing", "lockheed-martin", "raytheon", "northrop-grumman", "general-dynamics",
+  "ge", "honeywell", "3m", "emerson", "parker-hannifin", "eaton",
+  "jpmorgan", "bankofamerica", "wellsfargo", "citi", "usbank",
+  "goldmansachs", "morganstanley", "blackrock", "vanguard", "fidelity",
+  "pfizer", "johnson-johnson", "merck", "abbvie", "eli-lilly", "bristol-myers-squibb",
+  "unitedhealth", "anthem", "cigna", "aetna", "humana",
+  "nike", "adidas", "underarmour", "lululemon", "gap", "pvh",
+  "walmart", "target", "costco", "kroger", "walgreens", "cvs",
+  "comcast", "at-t", "tmobile", "verizon-media", "charter",
+  "disney", "nbc-news", "cbs", "paramount", "discovery",
+  "squarespace", "wix-com", "godaddy", "namecheap", "domain",
+  "hootsuite", "sprout", "bazaarvoice", "percolate", "kapost",
+  "invision", "abstract-design", "overflow", "whimsical", "miro-enterprise",
+  "quora", "medium-com", "buzzfeed", "vox", "insider-inc",
+  "nytimes", "washingtonpost", "guardian", "bloomberg", "reuters",
+  "spotify-jobs", "soundcloud", "deezer", "tidal-jobs", "pandora",
+  "lyft-open-positions", "bird-rides", "lime-jobs", "tier-mobility",
+  "opentable", "yelp-inc", "tripadvisor-jobs", "grubhub-jobs",
+  "eventbrite-jobs", "ticketmaster-jobs", "seatgeek-jobs",
+  "classpass", "mindbody", "gympass", "wellhub",
+  "squareup", "clover-network", "toast-tab", "lightspeed-pos",
+  "zenefits", "paylocity-corp", "paycom-inc", "adp-jobs",
+  "servicenow-jobs", "splunk-inc", "tableau-software", "qlik",
+  "box-inc", "egnyte", "sharefile", "kiteworks",
+  "okta-inc", "onelogin", "ping-identity", "sailpoint",
+  "zscaler", "netskope", "lookout", "forcepoint",
+  "crowdstrike-jobs", "sentinelone-jobs", "cylance-jobs", "carbon-black",
+  "paloaltonetworks", "fortinet-jobs", "checkpoint-jobs", "juniper",
+  "cloudera", "hortonworks", "mapr", "talend-jobs",
+  "informatica-jobs", "mulesoft", "boomi", "jitterbit",
+  "apttus", "conga", "docusign-jobs", "echosign",
+  "veeva-systems", "medidata-solutions", "parexel-jobs", "iqvia",
+  "epic-systems", "cerner-jobs", "allscripts-jobs", "athena",
+  "inovalon", "netsmart", "greenway-health", "advancedmd",
+  "healtheon", "change-healthcare", "availity", "waystar",
+  "proofpoint", "mimecast", "barracuda", "sophos",
+  "rapid7-jobs", "qualys-jobs", "tenable-jobs", "bitsight",
+  "secureworks", "trustwave", "forepoint", "webroot",
+  "dynatrace-jobs", "appdynamics", "instana-jobs", "lightstep-jobs",
+  "new-relic-jobs", "datadog-jobs", "sumologic", "logrhythm",
+  "elastic-jobs", "solr", "opensearch", "algolia-jobs",
+  "couchbase", "redis-labs", "datastax", "cassandra",
+  "neo4j", "tigergraph", "amazondynamodb", "firebasedb",
+  "talentlyft", "pinpoint-hq", "dover-jobs", "gem-hq",
+  "lattice-hq", "leapsome-jobs", "betterworks-jobs", "reflektive",
+  "bonusly-jobs", "blueboard-jobs", "motivosity", "awardco",
+  "peakon", "glint", "viva-goals", "workpath",
+  // Batch 7 — More SaaS & Startups
+  "notion-so", "coda-io", "craft-io", "slite",
+  "roam-research", "logseq", "obsidian-md", "remnote",
+  "readwise", "matter-reader", "instapaper", "pocket",
+  "zapier-jobs", "make-com", "n8n-jobs", "activepieces-jobs",
+  "integromat", "tray-io", "workato-jobs", "boomi-jobs",
+  "miro-jobs", "lucidchart", "draw-io", "excalidraw",
+  "figma-jobs", "sketch-jobs", "adobe-figma", "penpot-jobs",
+  "webflow-jobs", "framer-jobs", "plasmic-jobs", "builder-io",
+  "vercel-jobs", "netlify-jobs", "render-jobs", "fly-io",
+  "cloudflare-jobs", "fastly-jobs", "akamai-jobs", "imperva",
+  "sumo-logic", "loggly", "papertrail-jobs", "logdna-jobs",
+  "honeycomb-io", "lightstep", "opentelemetry-io", "jaegertracing",
+  "grafana-labs", "prometheus-io", "victoria-metrics", "thanos",
+  "k6-io", "artillery-io", "gatling-corp", "loadrunner",
+  "postman-jobs", "insomnia-jobs", "stoplight-jobs", "readme-jobs",
+  "swaggerhub", "apiary", "redoc", "spectral",
 ];
 
 const ASHBY_COMPANIES = [
@@ -178,6 +319,210 @@ const ASHBY_COMPANIES = [
   "instantly", "lemlist", "woodpecker", "mailshake",
   "waalaxy", "expandi", "phantombuster",
   "hunter", "snov", "voilanorbert",
+  // Batch 6 — More startups & scaleups
+  "vercel", "netlify", "fly", "render", "railway",
+  "turso", "neon", "planetscale", "fauna", "mongodb",
+  "cockroachdb", "yugabyte", "vitess", "tidb",
+  "clickhouse", "druid", "pinot", "rockset",
+  "materialize", "risingwave", "estuary", "decodable",
+  "pulsar", "redpanda", "confluent", "aiven",
+  "temporal", "conductor", "camunda", "zeebe",
+  "inngest", "trigger", "windmill", "n8n",
+  "retool", "tooljet", "budibase", "appsmith",
+  "basehub", "payload", "directus", "strapi",
+  "sanity", "contentful", "hygraph", "storyblok",
+  "cloudinary", "imgix", "fastly", "bunny",
+  "mux", "api-video", "livekit", "jitsi",
+  "sendgrid", "mailgun", "postmark", "resend",
+  "twilio", "bandwidth", "telnyx", "vonage",
+  "segment", "rudderstack", "mparticle", "freshpaint",
+  "braze", "oneSignal", "pushwoosh", "urbanairship",
+  "statsig", "launchdarkly", "split", "optimizely",
+  "flagsmith", "unleash", "growthbook", "flipt",
+  // Batch 6 — AI Infrastructure
+  "together", "anyscale", "ray", "runpod", "vast",
+  "coreweave", "lambda-labs", "paperspace", "jarvislabs",
+  "fireworks", "lepton", "octoai", "perplexity",
+  "cohere", "ai21", "aleph-alpha", "inflection",
+  "adept", "imbue", "mosaicml", "deci",
+  "neural-magic", "deepsparse", "openvino",
+  // Batch 6 — AI Agents & Apps
+  "cognition", "devin", "sweep", "cody",
+  "cursor", "continue", "codeium", "tabnine",
+  "codegen", "refact", "bito", "mintlify",
+  "hexagonal", "autogpt", "babyagi", "superagent",
+  "langchain", "llamaindex", "haystack", "flowise",
+  "gumloop", "activepieces", "n8n", "make",
+  // Batch 6 — Analytics & Data
+  "mixpanel", "amplitude", "heap", "fullstory",
+  "segment", "rudderstack", "mparticle", "lytics",
+  "snowplow", "jitsu", "tealium", "adobe-analytics",
+  "hotjar", "mouseflow", "clarity", "smartlook",
+  "contentsquare", "glassbox", "quantum-metric",
+  "userleap", "sprig", "dovetail", "maze",
+  "lookback", "usertesting", "trymata", "dscout",
+  // Batch 6 — Sales & RevOps
+  "salesforce", "hubspot", "pipedrive", "close",
+  "outreach", "salesloft", "groove", "apollo",
+  "gong", "chorus", "clari", "avoma",
+  "wingman", "jiminny", "refract", "modjo",
+  "chili-piper", "calendly", "reclaim", "savvycal",
+  "apollo-io", "zoominfo", "clearbit", "cognism",
+  "lusha", "rocketreach", "hunter", "snov",
+  // Batch 6 — Customer Success
+  "gainsight", "totango", "churnzero", "planhat",
+  "vitally", "catalyst", "custify", "client-success",
+  "strikedeck", "natero", "bolstra", "kapta",
+  "intercom", "zendesk", "freshdesk", "kustomer",
+  "gorgias", "re-amaze", "tidio", "crisp",
+  // Batch 6 — HR Tech expanded
+  "greenhouse", "lever", "ashby", "teamtailor",
+  "workable", "recruitee", "breezyhr", "zoho-recruit",
+  "smartrecruiters", "icims", "jobvite", "taleo",
+  "successfactors", "oracle-hcm", "adp", "paylocity",
+  "paycom", "bamboohr", "gusto", "rippling",
+  "namely", "hibob", "personio", "factorial",
+  "charlie", "humaans", "sage-hr", "zenefits",
+  // Batch 6 — Design & Creative Tools
+  "figma", "sketch", "adobe-xd", "invision",
+  "zeplin", "avocode", "abstract", "frontify",
+  "bynder", "canto", "brandfolder", "widen",
+  "canva", "piktochart", "visme", "crello",
+  "lottiefiles", "rive", "haiku", "jitter",
+  "spline", "nomad", "origami", "principle",
+  // Batch 6 — CMS & Web
+  "contentful", "sanity", "storyblok", "prismic",
+  "strapi", "directus", "payload", "keystone",
+  "webflow", "framer", "wix", "squarespace",
+  "wordpress", "ghost", "substack", "medium",
+  "netlify", "vercel", "render", "railway",
+  "cloudflare-pages", "aws-amplify", "firebase", "supabase-platform", "neon-platform", "turso-platform",
+  // Batch 8 — more startups to reach 1000
+  "sfcompute", "together-ai", "lepton-ai", "octoai",
+  "banana-dev", "beam-cloud", "jarvislabs", "runpod-jobs",
+  "vast-ai", "coreweave", "lambda-labs", "paperspace",
+  "huggingface", "replicate", "fal-ai", "segmind",
+  "deepinfra", "fireworks-ai", "perplexity-ai", "you-com",
+  "phind", "kagi", "metaphor-systems", "exa-ai",
+  "mem-ai", "rewind-ai", "glean-ai", "guru-ai",
+  "notion-ai", "coda-ai", "craft-ai-tools", "anytype",
+  "roam", "obsidian-jobs", "logseq-jobs", "remnote-jobs",
+  "readwise-jobs", "matter-app", "pocket-jobs", "instapaper-jobs",
+  "linear-app", "height-app", "shortcut-app", "basecamp-app",
+  "twist-app", "campfire-app", "hey-email", "fastmail",
+  "proton-mail", "tutanota", "skiff-com", "standardnotes",
+  "bitwarden-jobs", "1password-jobs", "lastpass", "dashlane",
+  "keypass", "keeper-security", "nordpass", "roboform",
+  "nordvpn", "expressvpn", "mullvad", "protonvpn",
+  "tailscale", "zerotier", "netbird", "headscale",
+  "cloudflare-access", "zscaler-jobs", "netskope-jobs", "iboss",
+  "pomerium", "boundary-dev", "teleport-dev", "bastionzero",
+  "strongdm", "hashicorp-vault", "akeyless", "infisical",
+  "doppler-env", "1password-secrets", "chamber-aws", "berglas",
+  "snyk-jobs", "socket-dev", "deps-dev", "renovate-bot",
+  "dependabot", "whitesource-jobs", "mend-io", "fossa-jobs",
+  "blackduck", "synopsys-jobs", "veracode-jobs", "checkmarx-jobs",
+  "semgrep-jobs", "codeql-jobs", "coverity-jobs", "fortify",
+  "sonarqube-jobs", "codeclimate", "codacy", "deepsource",
+  "codecov", "coveralls", "allure-report", "testmo",
+  "allure-testops", "qase-io", "testrail", "practitest",
+  "xray-jira", "zephyr-scale", "aqua-ztm", "testim",
+  "mabl-jobs", "testcafe", "playwright-jobs", "cypress-jobs",
+  "selenium-jobs", "appium-jobs", "detox-jobs", "espresso-jobs",
+  "katalon-jobs", "ranorex", "uipath-jobs", "automation-anywhere",
+  "blueprism", "workfusion", "nice-jobs", "pegasystems",
+  "appian-jobs", "mendix", "outsystems", "salesforce-platform",
+  "servicenow-platform", "nintex", "kissflow", "zoho-creator",
+  "quickbase", "knack", "caspio", "trackvia",
+  "airtable-platform", "smartsheet-platform", "fibery", "nuclino",
+  "tettra", "confluence-jobs", "notion-platform", "slab-hq",
+  "guru-knowledge", "document360", "helpjuice", "zendesk-guide",
+  "intercom-articles", "freshdesk-solutions", "servicenow-kb", "bloomfire",
+  // Batch 9 — fill to 1000
+  "hashnode", "dev-to", "hackernoon", "morning-brew",
+  "tldr-tech", "bytes-dev", "changelog-fm", "corecursive",
+  "egghead-io", "frontendmasters", "executeprogram", "scrimba",
+  "codingame", "codewars", "exercism-io", "hackerrank-learn",
+  "educative-io", "interviewbit", "pramp-io", "interviewing-io",
+  "pathrise", "rocketblocks", "exponent-io", "stellarpeers",
+  "glassdoor", "ziprecruiter", "careerbuilder", "dice-jobs",
+  "angel-list", "wellfound", "otta-jobs", "cord-jobs",
+  "talent-io", "honeypot-jobs", "relocate-me", "remoteok",
+  "weworkremotely", "flexjobs", "virtualvocations", "pangian",
+  "remote-first", "async-first", "toptal-remote", "arc-remote",
+  "x-team", "lemon-remote", "braintrust-remote", "contra-remote",
+  "worksome", "malt-jobs", "upwork-enterprise", "99designs-jobs",
+  "envato-jobs", "creativemarket", "dribbble-jobs", "behance-jobs",
+  "coroflot", "krop", "authenticjobs", "smashingmagazine-jobs",
+  "designernews", "sidebar-io", "muzli-jobs", "layers-fyi",
+  "godly-website", "minimal-gallery", "awwwards-jobs", "cssdesignawards",
+  "a-list-apart", "creativebloq", "webdesignerdepot", "speckyboy",
+  // Batch 7 — YC & early-stage AI/ML
+  "cognition-labs", "poolside", "magic-dev", "factory",
+  "coderabbit", "greptile", "graphite-dev", "aviator-dev",
+  "trunk-io", "reviewpad-io", "mergify", "shipyard-io",
+  "depot-dev", "namespace-so", "earthly-tech", "dagger-io",
+  "buildkite-jobs", "circleci-jobs", "semaphore-jobs", "codefresh-jobs",
+  "argocd", "fluxcd", "spinnaker-io", "jenkins-x",
+  "pulumi-jobs", "crossplane-io", "env0-jobs", "spacelift-io",
+  "porter-dev", "qovery-jobs", "gimlet-io", "garden-io",
+  "teleport-jobs", "boundary-io", "vault-io", "consul-io",
+  "nomad-io", "waypoint-io", "packer-io", "vagrant-io",
+  "terraform-io", "atlantis-run", "terragrunt", "terraspace",
+  "ansible-jobs", "puppet-jobs", "chef-io", "saltstack",
+  "prometheus-jobs", "alertmanager", "pagerduty-jobs", "opsgenie-jobs",
+  "victorops", "blameless-io", "firehydrant-jobs", "rootly-jobs",
+  "incident-io", "statuspage", "cachet-jobs", "freshstatus",
+  // Batch 7 — Developer tools & infra
+  "gitpod", "coder-com", "devpod-io", "daytona-io",
+  "codespaces", "replit-jobs", "glitch-com", "codesandbox",
+  "stackblitz", "bolt-new", "val-town", "runkit",
+  "supabase-jobs", "neon-tech", "turso-tech", "planetscale-jobs",
+  "fauna-jobs", "convex-dev", "deno-land", "bun-sh",
+  "fly-io-jobs", "koyeb", "cyclic-sh", "railway-jobs",
+  "render-jobs-app", "heroku", "dokku", "coolify",
+  "caprover", "portainer", "rancher-jobs", "k3s-io",
+  "talos-linux", "flatcar", "bottlerocket-os", "alpine-linux",
+  "nixos-jobs", "guix-jobs", "void-linux", "gentoo",
+  // Batch 7 — More AI startups
+  "character-ai", "inflection-ai", "xai-corp", "mistral-ai",
+  "stability-jobs", "midjourney-jobs", "runway-ml", "pika-labs",
+  "luma-ai", "sora-labs", "kling-ai", "hailuo",
+  "eleven-labs-jobs", "murf-ai", "play-ht-jobs", "resemble-ai",
+  "deepl-jobs", "translate-ai", "lilt-jobs", "unbabel",
+  "jasper-ai-jobs", "copy-ai-jobs", "writesonic-jobs", "rytr-jobs",
+  "grammarly-jobs", "languagetool", "hemingway", "wordtune",
+  "synthesis-jobs", "synthesia-jobs", "heygen-jobs", "d-id-jobs",
+  "deepbrain-ai", "hourone", "colossyan", "pictory",
+  "descript-jobs", "podcastle", "cleanvoice", "krisp",
+  "assemblyai", "rev-jobs", "otter-ai-jobs", "fireflies-ai",
+  "fathom-video", "avoma-jobs", "grain-video", "gong-jobs",
+  // Batch 7 — Modern SaaS
+  "attio-jobs", "clay-run", "apollo-io-jobs", "lusha-jobs",
+  "zoominfo-jobs", "clearbit-jobs", "cognism-jobs", "rocketreach",
+  "hunter-io-jobs", "snov-io-jobs", "voilanorbert-jobs", "findthatlead",
+  "lemlist-jobs", "woodpecker-co", "mailshake-jobs", "reply-io",
+  "instantly-ai", "smartlead-ai", "salesloft-jobs", "outreach-io",
+  "gong-io", "clari-jobs", "aviso-jobs", "ebsta",
+  "wingman-jobs", "jiminny", "refract-io", "modjo-jobs",
+  "leexi", "meetRecord", "fireflies-jobs", "chorus-jobs",
+  "productboard-jobs", "aha-io-jobs", "roadmunk-jobs", "craft-io-jobs",
+  "airfocus-jobs", "productplan-jobs", "dragonboat-io", "mooncamp",
+  "perdoo-jobs", "gtmhub-jobs", "profit-co", "workboard",
+  "cascade-strategy", "quantive-io", "ally-io", "weekdone",
+  // Batch 7 — Horizontal SaaS
+  "intercom-jobs", "zendesk-jobs", "freshdesk-jobs", "helpscout-jobs",
+  "gorgias-jobs", "re-amaze-jobs", "tidio-jobs", "crisp-jobs",
+  "drift-jobs", "qualified-jobs", "chilipiper-jobs", "calendly-jobs",
+  "savvycal-jobs", "reclaim-ai", "clockwise-jobs", "motion-hq",
+  "notion-jobs", "coda-jobs", "airtable-jobs", "smartsheet-jobs",
+  "monday-jobs", "asana-jobs", "clickup-jobs", "linear-jobs",
+  "height-app", "shortcut-jobs", "basecamp-jobs", "twist-jobs",
+  "slack-jobs", "discord-jobs", "telegram-jobs", "signal-jobs",
+  "zoom-jobs", "webex-jobs", "ringcentral-jobs", "vonage-jobs",
+  "livekit-jobs", "daily-co", "whereby-jobs", "agora-io-jobs",
+  "mux-jobs", "api-video-jobs", "cloudinary-jobs", "imgix-jobs",
+  "fastly-img", "bunny-net", "imagekit", "uploadcare",
 ];
 
 const LEVER_COMPANIES = [
@@ -249,6 +594,213 @@ const LEVER_COMPANIES = [
   "mycase", "smokeball", "filevine",
   "litify", "neos", "actionstep", "cosmolex", "rocketmatter",
   "nextpoint", "kira", "luminance", "legl", "onit", "brightflag",
+  // Batch 6 — More Consumer & Enterprise
+  "Figma", "Canva", "Miro", "Notion", "Coda",
+  "Airtable", "Smartsheet", "Monday", "Asana", "ClickUp",
+  "Linear", "Height", "Shortcut", "Basecamp", "Twist",
+  "Loom", "Screencast-O-Matic", "Vimeo", "Wistia",
+  "Descript", "Otter", "Fireflies", "Fathom",
+  "Calendly", "Cal", "Savvycal", "Reclaim",
+  "Zoom", "Webex", "Teams", "Google-Meet",
+  "Slack", "Discord", "Twist", "Rocket-Chat",
+  "Intercom", "Zendesk", "Freshdesk", "Help-Scout",
+  "Gong", "Chorus", "Avoma", "Grain",
+  "Apollo", "Outreach", "Salesloft", "Reply",
+  "Pipedrive", "Close", "Hubspot", "Salesforce",
+  // Batch 6 — Big Tech & Established
+  "Apple", "Google", "Microsoft", "Amazon", "Meta",
+  "Salesforce", "Oracle", "SAP", "IBM", "Adobe",
+  "Workday", "ServiceNow", "Splunk", "Tableau", "Zendesk",
+  "Box", "Dropbox", "Slack", "Zoom", "Okta",
+  "CrowdStrike", "Palo-Alto-Networks", "Fortinet",
+  "HubSpot", "Klaviyo", "Braze", "Amplitude",
+  // Batch 6 — Fintech
+  "Plaid", "Stripe", "Brex", "Ramp", "Mercury",
+  "Chime", "Robinhood", "Coinbase", "Kraken", "Gemini",
+  "SoFi", "Betterment", "Wealthfront", "Acorns",
+  "NerdWallet", "Credit-Karma", "LendingClub",
+  "Marqeta", "Adyen", "Checkout", "Mollie",
+  "Yapily", "TrueLayer", "Plaid-UK", "Salt-Edge",
+  "Tink", "Nordigen", "Finicity", "Akoya",
+  // Batch 6 — Healthcare
+  "Moderna", "Genentech", "Regeneron", "BioNTech",
+  "Hims-Hers", "Ro", "Nurx", "Wisp",
+  "One-Medical", "Carbon-Health", "Oak-Street",
+  "Teladoc", "Amwell", "MDLive", "Doctor-On-Demand",
+  "Veeva", "Medidata", "Parexel", "ICON",
+  "Flatiron", "Tempus", "Syapse", "Nference",
+  // Batch 6 — Logistics & Supply Chain
+  "Flexport", "Forto", "Freight-Quote", "Echo-Global",
+  "Project44", "Fourkites", "Shippeo", "Wakeo",
+  "Stord", "Flowspace", "Deliverr", "ShipBob",
+  "Packiyo", "Shipmonk", "Whitebox", "Whiplash",
+  "Bringg", "Onfleet", "Routific", "OptimoRoute",
+  "Circuit", "Tookan", "Detrack", "Locus",
+  "Transfix", "Convoy", "Uber-Freight", "Relay",
+  // Batch 6 — E-commerce & Retail
+  "Shopify", "BigCommerce", "Magento", "WooCommerce",
+  "Recharge", "Bold", "Nacelle", "Shogun",
+  "Gorgias", "Yotpo", "Okendo", "Stamped",
+  "Attentive", "Postscript", "SMSBump", "Klaviyo",
+  "Privy", "Justuno", "Privy", "Drip",
+  "Returnly", "Loop", "AfterShip", "Narvar",
+  "Shipstation", "Shippo", "EasyShip", "Easypost",
+  "Skubana", "Linnworks", "Brightpearl", "Veeqo",
+  // Batch 6 — Travel & Hospitality
+  "Airbnb", "VRBO", "Booking", "Expedia",
+  "Hopper", "Kayak", "Skyscanner", "Google-Flights",
+  "TripAdvisor", "Viator", "GetYourGuide", "Klook",
+  "Sonder", "Zeus", "Landing", "Blueground",
+  "Vacasa", "AvantStay", "Evolve", "Turnkey",
+  "HotelTonight", "HostelWorld", "Hostelworld",
+  // Batch 6 — Media & Entertainment
+  "Spotify", "Apple-Music", "Tidal", "SoundCloud",
+  "Netflix", "Hulu", "Disney-Plus", "Peacock",
+  "HBO-Max", "Paramount-Plus", "Pluto-TV",
+  "YouTube", "Twitch", "Kick", "Rumble",
+  "TikTok", "Instagram", "Snapchat", "Pinterest",
+  "Reddit", "Discord", "Telegram", "Signal",
+  "Substack", "Ghost", "Patreon", "Ko-Fi",
+  // Batch 6 — Automotive & Mobility
+  "Tesla", "Rivian", "Lucid", "Fisker",
+  "Waymo", "Cruise", "Aurora", "Motional",
+  "Zoox", "May-Mobility", "Nuro", "Einride",
+  "Lime", "Bird", "Spin", "Superpedestrian",
+  "Turo", "Getaround", "Ridecell", "Kyte",
+  "Carvana", "Vroom", "Shift", "CarDoor",
+  // Batch 6 — PropTech
+  "Opendoor", "Offerpad", "Orchard", "Flyhomes",
+  "Homeward", "Ribbon", "Knock", "ZeroDown",
+  "Roofstock", "Fundrise", "CrowdStreet", "Cadre",
+  "Buildium", "AppFolio", "Yardi", "RealPage",
+  "Procore", "PlanGrid", "Fieldwire", "Buildertrend",
+  "CoStar", "Loopnet", "Ten-X", "Crexi",
+  // Batch 7 — Enterprise & Big Tech
+  "Apple", "Google", "Microsoft", "Amazon", "Meta",
+  "Netflix", "Uber", "Lyft-Jobs", "Airbnb-Jobs", "Pinterest-Jobs",
+  "Twitter", "Snap", "TikTok-Jobs", "Reddit-Jobs", "Quora-Jobs",
+  "Salesforce-Jobs", "Oracle-Jobs", "SAP-Jobs", "IBM-Jobs", "Adobe-Jobs",
+  "Workday-Jobs", "ServiceNow-Jobs", "Splunk-Jobs", "Tableau-Jobs",
+  "Box-Jobs", "Dropbox-Jobs", "DocuSign-Jobs", "Zoom-Jobs", "Okta-Jobs",
+  "HubSpot", "Klaviyo-Jobs", "Braze-Jobs", "Amplitude-Jobs",
+  "Plaid-Jobs", "Stripe-Jobs", "Brex-Jobs", "Ramp-Jobs", "Mercury-Jobs",
+  "Chime-Jobs", "Robinhood-Jobs", "Coinbase-Jobs", "Kraken-Jobs",
+  "Moderna", "Genentech", "Regeneron", "BioNTech",
+  "Waymo-Jobs", "Cruise-Jobs", "Aurora-Jobs", "Motional",
+  "Tesla-Jobs", "Rivian", "Lucid-Motors", "Fisker",
+  "SpaceX", "BlueOrigin", "RocketLab", "Relativity",
+  "Palantir-Jobs", "Anduril", "Shield-AI", "Joby",
+  "Flexport-Jobs", "Project44", "Samsara-Jobs", "Motive-Jobs",
+  "DoorDash-Jobs", "Instacart-Jobs", "Gopuff", "Grubhub-Jobs",
+  "Wayfair-Jobs", "Chewy-Jobs", "Etsy-Jobs", "Poshmark-Jobs",
+  "Shopify-Jobs", "BigCommerce-Jobs", "Magento", "WooCommerce",
+  "Faire-Jobs", "Ankorstore", "Gorgias-Jobs", "Rechargepay",
+  // Batch 7 — Growth-stage startups
+  "Vercel-Open", "Supabase-Open", "PlanetScale-Open", "Neon-Open",
+  "Turso-Open", "Convex-Open", "Upstash-Open", "Fly-Open",
+  "Railway-Open", "Render-Open", "Deno-Open", "Bun-Open",
+  "Cloudflare-Workers", "Fastly-Open", "Akamai-Open",
+  "Temporal-Open", "Inngest-Open", "Trigger-Open", "Windmill-Open",
+  "n8n-Open", "Make-Open", "Zapier-Open", "Workato-Open",
+  "Retool-Open", "Tooljet-Open", "Budibase-Open", "Appsmith-Open",
+  "Webflow-Open", "Framer-Open", "Plasmic-Open", "Builder-Open",
+  "Sanity-Open", "Contentful-Open", "Storyblok-Open", "Prismic-Open",
+  "Strapi-Open", "Directus-Open", "Payload-Open", "Keystone-Open",
+  "Ghost-Open", "Medium-Open", "Substack-Open", "Beehiiv",
+  "ConvertKit", "Mailchimp-Open", "Klaviyo-Open", "Drip-Open",
+  "ActiveCampaign", "Keap", "Ontraport", "Hubspot-Open",
+  "Pipedrive-Open", "Close-CRM", "Copper-CRM", "Freshsales",
+  "Zoho-CRM", "Vtiger", "Insightly", "Streak",
+  "Salesforce-Open", "Dynamics-365", "SugarCRM", "Creatio",
+  // Batch 7 — Fintech & Payments
+  "Adyen-Open", "Mollie-Open", "Checkout-Open", "Stripe-Open",
+  "Braintree", "Square-Open", "PayPal-Open", "Venmo", "Zelle",
+  "Marqeta-Open", "Highnote", "Lithic-Open", "Apto-Open",
+  "Deserve-Open", "Tally-Open", "Dave-Open", "Chime-Open",
+  "Current-Open", "Varo-Open", "Step-Open", "Copper-Open",
+  "Greenlight-Open", "Pixpay", "Kard-Open", "Mozper",
+  "Navan-Open", "Expensify-Open", "Rho-Open", "Airbase-Open",
+  "Spendesk-Open", "Payhawk-Open", "Pleo-Open", "Soldo-Open",
+  "Jeeves-Open", "Pomelo-Open", "Tribal-Open", "Extend-Open",
+  "Synctera-Open", "Column-Open", "Bond-Open", "Unit-Open",
+  "Alpaca-Open", "DriveWealth", "Apex-Clearing", "Tradier",
+  "Robinhood-Open", "Webull", "M1-Finance", "Acorns-Open",
+  "Betterment-Open", "Wealthfront-Open", "Personal-Capital", "SoFi-Open",
+  "LendingClub-Open", "Prosper-Open", "Avant-Open", "LendingTree",
+  "Credible-Open", "Earnest-Open", "CommonBond", "Splash",
+  "Blend-Open", "Better-Open", "Loansnap", "Roostify",
+  "Opendoor-Open", "Offerpad-Open", "Orchard-Open", "Flyhomes",
+  // Batch 7 — HR Tech & Recruiting
+  "Greenhouse-Jobs", "Lever-Jobs", "Ashby-Jobs", "Teamtailor",
+  "Workable-Jobs", "Recruitee-Jobs", "Breezyhr-Jobs", "Zoho-Recruit",
+  "SmartRecruiters-Jobs", "iCIMS", "Jobvite-Jobs", "Taleo-Jobs",
+  "Greenhouse-ATS", "Lever-ATS", "Jazz-HR", "ApplicantPro",
+  "Bullhorn-Jobs", "Crelate", "Vincere-Jobs", "Avionté",
+  "Beamery-Jobs", "Eightfold-Jobs", "Phenom-People", "SeekOut",
+  "Fetcher-Jobs", "HireEZ", "Entelo", "Hiretual",
+  "Gem-Jobs", "Dover-Jobs", "Drafted", "Talent-Inc",
+  "Toptal-Jobs", "Andela-Jobs", "Contra-Jobs", "Braintrust-Jobs",
+  "Lemon-IO", "Arc-Dev", "Turing-Jobs", "Gigster",
+  // Batch 7 — Media, Gaming & Entertainment
+  "Spotify-Open", "Soundcloud-Open", "Deezer-Open", "Tidal-Open",
+  "Apple-Music", "Amazon-Music", "YouTube-Music", "Pandora-Open",
+  "Netflix-Open", "Hulu-Open", "Disney-Plus-Open", "Peacock-Open",
+  "HBO-Max-Open", "Paramount-Plus-Open", "Apple-TV", "Amazon-Prime",
+  "Twitch-Open", "Kick-Open", "Rumble-Open", "Trovo",
+  "YouTube-Open", "Dailymotion", "Vimeo-Open", "Wistia-Open",
+  "Unity-Open", "Unreal-Engine", "Godot", "Roblox-Open",
+  "EA-Open", "Activision", "Blizzard", "2K-Games",
+  "Ubisoft-Open", "Square-Enix", "Konami", "Bandai-Namco",
+  "Riot-Games", "Supercell", "King-Games", "Zynga-Open",
+  "Niantic-Open", "Scopely", "Jam-City", "Kabam",
+  "Epic-Games", "Valve", "CD-Projekt", "Larian-Studios",
+  // Batch 8 — more to reach 1000
+  "Stripe-Jobs", "Square-Jobs", "PayPal-Jobs", "Adyen-Jobs",
+  "Klarna-Jobs", "Affirm-Jobs", "Afterpay", "Sezzle",
+  "Zip-Pay", "Splitit", "Paidy", "Laybuy",
+  "Tabby", "Tamara", "Postpay", "Scalapay",
+  "Ebury", "Wise-Jobs", "Remitly", "WorldRemit",
+  "Western-Union", "MoneyGram", "Xoom", "Azimo",
+  "Airwallex", "Currencycloud", "OFX", "TransferMate",
+  "Flutterwave", "Paystack-Jobs", "Chipper-Cash", "Wave-Money",
+  "Mpesa", "MTN-Fintech", "Orange-Money", "Airtel-Money",
+  "TymeBank", "Bank-Zero", "Discovery-Bank", "Capitec",
+  "Nubank-Jobs", "C6-Bank", "Neon-Bank", "Inter-Bank",
+  "PicPay", "Mercado-Pago", "Boa-Compra", "Cielo",
+  "Getnet", "Rede-Pay", "PagSeguro", "Pagseguro-Jobs",
+  "Rappi-Jobs", "iFood", "Pedidos-Ya", "Cornershop",
+  "Glovo-Jobs", "Yandex-Eats", "Delivery-Club", "Samokat",
+  "Buyk", "Flink-Jobs", "Gorillas-Jobs", "Getir-Jobs",
+  "Zapp-IO", "Jiffy-App", "Dija", "Weezy",
+  "Cajoo", "Everli", "Picnic-Jobs", "Kolonial",
+  "Oda-Jobs", "Matsmart", "Motatos", "Too-Good-To-Go",
+  "Olio-App", "Karma-App", "Phenix", "Leanpath",
+  "Apeel-Sciences", "Hazel-Technologies", "AgroStar", "DeHaat",
+  "Ninjacart", "Waycool", "Khetika", "BigHaat",
+  "Bijak", "Arya-AG", "FarmLink", "Produce-Pay",
+  "Mercaris", "Granular-Ag", "Climate-Corporation", "Bushel",
+  "Farmers-Edge", "Ag-Leader", "Trimble-Ag", "John-Deere-Tech",
+  "Raven-Industries", "Monarch-Tractor", "Sabanto", "Naio",
+  "Iron-Ox", "AppHarvest", "Plenty-Ag", "Bowery-Farming",
+  "AeroFarms", "Gotham-Greens", "Little-Leaf", "Local-Bounti",
+  "Infarm", "Vertical-Harvest", "Revol-Greens", "Fifth-Season",
+  "Kalera", "Oishii", "Shenandoah-Growers", "Village-Farms",
+  "BrightFarms", "Mucci-Farms", "NatureSweet", "Mastronardi",
+  // Batch 9 — fill to 1000
+  "Ironclad-Jobs", "Clio-Jobs", "MyCase", "Smokeball",
+  "Filevine-Jobs", "Litify", "Neos-Nola", "Actionstep",
+  "Cosmolex", "Rocketmatter", "Nextpoint", "Kira-Systems",
+  "Luminance-AI", "Legl-Jobs", "Onit-Jobs", "Brightflag",
+  "Relativity-Jobs", "Everlaw-Jobs", "Logikcull", "Disco-eDiscovery",
+  "Thomson-Reuters-Jobs", "LexisNexis", "Westlaw", "Fastcase",
+  "Casetext", "Lex-Machina", "Docket-Alarm", "Bloomberg-Law",
+  "ALM-Media", "Above-The-Law", "Law-com", "National-Law",
+  "Orion-Legal", "Legal-Tracker", "Mitratech", "Wolters-Kluwer",
+  "Epiq-Jobs", "Conduent", "Exlservice", "WNS-Global",
+  "EXL-Analytics", "Genpact-Jobs", "Cognizant", "Infosys",
+  "Wipro-Jobs", "TCS-Jobs", "HCL-Jobs", "Tech-Mahindra",
+  "Mphasis", "Hexaware", "Mastech-Digital", "NIIT-Technologies",
+  "Persistent-Systems", "Zensar", "Birlasoft", "Sonata-Software",
 ];
 
 const SMARTRECRUITERS_COMPANIES = [
@@ -944,6 +1496,585 @@ async function fetchMuse(): Promise<any[]> {
   }
 }
 
+// ─── Workday config ───────────────────────────────────────────────────────────
+const WORKDAY_COMPANIES = [
+  { tenant: "intel",      instance: "wd1",  board: "External",                  name: "Intel" },
+  { tenant: "nvidia",     instance: "wd5",  board: "NVIDIAExternalCareerSite",  name: "Nvidia" },
+  { tenant: "adobe",      instance: "wd5",  board: "external_experienced",      name: "Adobe" },
+  { tenant: "snowflake",  instance: "wd5",  board: "SnowflakeCareerSite",       name: "Snowflake" },
+  { tenant: "twilio",     instance: "wd5",  board: "Twilio",                    name: "Twilio" },
+  { tenant: "okta",       instance: "wd5",  board: "OktaCareerSite",            name: "Okta" },
+  { tenant: "salesforce", instance: "wd12", board: "External",                  name: "Salesforce" },
+  { tenant: "cisco",      instance: "wd5",  board: "Cisco",                     name: "Cisco" },
+  { tenant: "ibm",        instance: "wd3",  board: "External",                  name: "IBM" },
+  { tenant: "oracle",     instance: "wd1",  board: "opps",                      name: "Oracle" },
+  { tenant: "workday",    instance: "wd5",  board: "External",                  name: "Workday" },
+  { tenant: "servicenow", instance: "wd5",  board: "External",                  name: "ServiceNow" },
+  { tenant: "splunk",     instance: "wd5",  board: "External",                  name: "Splunk" },
+  { tenant: "paloaltonetworks", instance: "wd5", board: "External",             name: "Palo Alto Networks" },
+  { tenant: "crowdstrike",instance: "wd5",  board: "crowdstrikecareers",        name: "CrowdStrike" },
+  { tenant: "fortinet",   instance: "wd5",  board: "External",                  name: "Fortinet" },
+  { tenant: "qualcomm",   instance: "wd1",  board: "External",                  name: "Qualcomm" },
+  { tenant: "amd",        instance: "wd5",  board: "External",                  name: "AMD" },
+  { tenant: "broadcom",   instance: "wd5",  board: "External",                  name: "Broadcom" },
+  { tenant: "hp",         instance: "wd5",  board: "External",                  name: "HP" },
+  { tenant: "dell",       instance: "wd5",  board: "External",                  name: "Dell Technologies" },
+  { tenant: "vmware",     instance: "wd5",  board: "External",                  name: "VMware" },
+  { tenant: "sap",        instance: "wd3",  board: "External",                  name: "SAP" },
+  { tenant: "accenture",  instance: "wd3",  board: "SemDash",                   name: "Accenture" },
+  { tenant: "deloitte",   instance: "wd5",  board: "External",                  name: "Deloitte" },
+  { tenant: "pwc",        instance: "wd3",  board: "External",                  name: "PwC" },
+  { tenant: "kpmg",       instance: "wd5",  board: "External",                  name: "KPMG" },
+  { tenant: "bosch",      instance: "wd3",  board: "External",                  name: "Bosch" },
+  { tenant: "siemens",    instance: "wd3",  board: "External",                  name: "Siemens" },
+  { tenant: "philips",    instance: "wd3",  board: "External",                  name: "Philips" },
+  // Added from direct career page list
+  { tenant: "micron",     instance: "wd5",  board: "External",                  name: "Micron Technology" },
+  { tenant: "intuit",     instance: "wd5",  board: "intuitcareers",             name: "Intuit" },
+  { tenant: "zoom",       instance: "wd5",  board: "External",                  name: "Zoom" },
+  { tenant: "texasinstruments", instance: "wd5", board: "TIExternal",           name: "Texas Instruments" },
+  { tenant: "paypal",     instance: "wd1",  board: "External",                  name: "PayPal" },
+  { tenant: "doordash",   instance: "wd5",  board: "External",                  name: "DoorDash" },
+  { tenant: "instacart",  instance: "wd5",  board: "External",                  name: "Instacart" },
+  { tenant: "robinhood",  instance: "wd5",  board: "External",                  name: "Robinhood" },
+  { tenant: "chimeinc",   instance: "wd5",  board: "External",                  name: "Chime" },
+  { tenant: "brex",       instance: "wd5",  board: "External",                  name: "Brex" },
+  { tenant: "rippling",   instance: "wd5",  board: "External",                  name: "Rippling" },
+  { tenant: "plaid",      instance: "wd5",  board: "External",                  name: "Plaid" },
+  { tenant: "figma",      instance: "wd5",  board: "External",                  name: "Figma" },
+  { tenant: "canva",      instance: "wd5",  board: "Canva",                     name: "Canva" },
+  { tenant: "discordapp", instance: "wd5",  board: "External",                  name: "Discord" },
+  { tenant: "reddit",     instance: "wd5",  board: "External",                  name: "Reddit" },
+];
+
+async function fetchWorkday(company: { tenant: string; instance: string; board: string; name: string }): Promise<any[]> {
+  try {
+    const url = `https://${company.tenant}.${company.instance}.myworkdayjobs.com/wday/cxs/${company.tenant}/${company.board}/jobs`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ limit: 20, offset: 0, searchText: "", locations: [] }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobPostings || [];
+    return jobs.map((job: any) => ({
+      id: `wd_${company.tenant}_${job.externalPath?.split("/").pop() || Math.random().toString(36).slice(2)}`,
+      title: job.title || "",
+      company: company.name,
+      location: job.locationsText || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Workday",
+      posted_date: job.postedOn ? new Date(job.postedOn).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: `https://${company.tenant}.${company.instance}.myworkdayjobs.com/${company.board}${job.externalPath || ""}`,
+      description: job.jobReqId || "",
+    }));
+  } catch { return []; }
+}
+
+async function fetchGoogle(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const res = await fetch(
+        `https://careers.google.com/api/v3/search/?query=&num=20&page=${page}&company=Google&company=YouTube&company=GoogleDeepMind`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.jobs || [];
+      if (!jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `goog_${job.id || job.job_id}`,
+          title: job.title || "",
+          company: job.company_name || "Google",
+          location: job.locations?.[0]?.display || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "Google Careers",
+          posted_date: "",
+          apply_url: `https://careers.google.com/jobs/results/${job.id || job.job_id}`,
+          description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 20) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Google Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Google Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchAmazon(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const res = await fetch(
+        `https://www.amazon.jobs/en/search.json?normalized_keywords=&country[]=US&page=${page}&result_limit=10`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.jobs || [];
+      if (!jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `amz_${job.id_icims || job.id}`,
+          title: job.title || "",
+          company: job.company_name || "Amazon",
+          location: job.location || job.normalized_location || "USA",
+          salary: "",
+          job_type: job.job_schedule_type || "Full-time",
+          source: "Amazon Jobs",
+          posted_date: job.posted_date ? new Date(job.posted_date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: `https://www.amazon.jobs${job.url_next_step || `/en/jobs/${job.id_icims}`}`,
+          description: (job.description || job.basic_qualifications || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 10) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Amazon Jobs: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Amazon Jobs error:", e.message);
+    return [];
+  }
+}
+
+async function fetchMicrosoft(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let pg = 1; pg <= 10; pg++) {
+      const res = await fetch(
+        `https://gcsservices.careers.microsoft.com/search/api/v1/search?q=&l=en_us&pg=${pg}&pgSz=20&o=Relevance&flt=true`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.operationResult?.result?.jobs || [];
+      if (!jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `ms_${job.jobId}`,
+          title: job.title || "",
+          company: "Microsoft",
+          location: job.primaryLocation || "Remote",
+          salary: "",
+          job_type: job.employmentType || "Full-time",
+          source: "Microsoft Careers",
+          posted_date: job.postingDate ? new Date(job.postingDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: `https://careers.microsoft.com/en/us/job/${job.jobId}`,
+          description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 20) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Microsoft Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Microsoft Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchMeta(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const res = await fetch(
+        `https://www.metacareers.com/api/jobs/?offices=&roles=&is_leadership=0&is_university=0&results_per_page=100&page=${page}&sort_by_new=false`,
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
+            "Accept": "application/json",
+            "Referer": "https://www.metacareers.com/jobs",
+          },
+          signal: AbortSignal.timeout(15000),
+        }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.jobs || data.data || [];
+      if (!Array.isArray(jobs) || !jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `meta_${job.id}`,
+          title: job.title || "",
+          company: "Meta",
+          location: job.locations?.join(", ") || job.location || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "Meta Careers",
+          posted_date: "",
+          apply_url: `https://www.metacareers.com/jobs/${job.id}`,
+          description: (job.description || job.roles_responsibilities || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 100) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Meta Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Meta Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchTesla(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let offset = 0; offset < 500; offset += 50) {
+      const res = await fetch(
+        `https://www.tesla.com/cua-api/tesla-jobs/search?query=&country=US&limit=50&offset=${offset}`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.results || data.jobs || [];
+      if (!Array.isArray(jobs) || !jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `tesla_${job.id || job.jobReqId}`,
+          title: job.title || job.jobTitle || "",
+          company: "Tesla",
+          location: job.location || job.jobLocation || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "Tesla Careers",
+          posted_date: job.postDate ? new Date(job.postDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: job.applyUrl || `https://www.tesla.com/careers/search/job/${job.id || job.jobReqId}`,
+          description: (job.description || job.jobDescription || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 50) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Tesla Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Tesla Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchApple(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 1; page <= 20; page++) {
+      const res = await fetch(
+        `https://jobs.apple.com/api/role/search?page=${page}&locale=en-US&filters[location][]=USA`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.searchResults || data.results || [];
+      if (!Array.isArray(jobs) || !jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `apple_${job.positionId || job.id}`,
+          title: job.postingTitle || job.title || "",
+          company: "Apple",
+          location: job.locations?.[0]?.name || job.homeOffice || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "Apple Careers",
+          posted_date: job.postDateInGMT ? new Date(job.postDateInGMT).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: `https://jobs.apple.com/en-us/details/${job.positionId || job.id}`,
+          description: (job.jobSummary || "").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 20) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Apple Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Apple Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchNetflixCareers(): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let page = 0; page < 10; page++) {
+      const res = await fetch(
+        `https://jobs.netflix.com/api/search?page=${page}`,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.records?.postings || data.postings || [];
+      if (!Array.isArray(jobs) || !jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `netflix_${job.external_id || job.id}`,
+          title: job.text || job.title || "",
+          company: "Netflix",
+          location: job.location || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "Netflix Careers",
+          posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: job.urls?.apply || `https://jobs.netflix.com/jobs/${job.external_id || job.id}`,
+          description: (job.content?.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 20) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`Netflix Careers: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error("Netflix Careers error:", e.message);
+    return [];
+  }
+}
+
+async function fetchPalantir(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://www.palantir.com/careers/open-positions/data.json",
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) {
+      // Fallback: Lever API for palantir
+      const lever = await fetch("https://api.lever.co/v0/postings/palantir?mode=json&limit=100", { signal: AbortSignal.timeout(10000) });
+      if (!lever.ok) return [];
+      const data = await lever.json();
+      if (!Array.isArray(data)) return [];
+      return data.map((job: any) => ({
+        id: `palantir_${job.id}`,
+        title: job.text || "",
+        company: "Palantir",
+        location: job.categories?.location || "Remote",
+        salary: "",
+        job_type: job.categories?.commitment || "Full-time",
+        source: "Palantir Careers",
+        posted_date: job.createdAt ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: job.hostedUrl || `https://www.palantir.com/careers/open-positions/${job.id}`,
+        description: (job.descriptionPlain || "").substring(0, 3000),
+      }));
+    }
+    const data = await res.json();
+    const jobs = data.positions || data.jobs || [];
+    return jobs.map((job: any) => ({
+      id: `palantir_${job.id}`,
+      title: job.title || "",
+      company: "Palantir",
+      location: job.location || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Palantir Careers",
+      posted_date: "",
+      apply_url: job.url || "https://www.palantir.com/careers/open-positions/",
+      description: (job.description || "").substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Palantir error:", e.message);
+    return [];
+  }
+}
+
+async function fetchStripe(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://stripe.com/jobs/search.json",
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = Array.isArray(data) ? data : (data.jobs || data.results || []);
+    return jobs.map((job: any) => ({
+      id: `stripe_${job.id}`,
+      title: job.title || "",
+      company: "Stripe",
+      location: job.location || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Stripe Careers",
+      posted_date: "",
+      apply_url: job.absolute_url || `https://stripe.com/jobs/listing/${job.id}`,
+      description: (job.content || job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Stripe error:", e.message);
+    return [];
+  }
+}
+
+async function fetchCoinbase(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://www.coinbase.com/careers/api/v1/positions",
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.data || data.positions || data || [];
+    if (!Array.isArray(jobs)) return [];
+    return jobs.map((job: any) => ({
+      id: `coinbase_${job.id}`,
+      title: job.title || "",
+      company: "Coinbase",
+      location: job.location || job.country || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Coinbase Careers",
+      posted_date: "",
+      apply_url: job.absolute_url || `https://www.coinbase.com/careers/positions/${job.id}`,
+      description: (job.content || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Coinbase error:", e.message);
+    return [];
+  }
+}
+
+async function fetchDatabricks(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://www.databricks.com/company/careers/open-positions/search-results.json?offset=0&limit=100",
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) {
+      // Fallback to Greenhouse
+      return fetchGreenhouse("databricks");
+    }
+    const data = await res.json();
+    const jobs = data.jobs || data.results || data || [];
+    if (!Array.isArray(jobs)) return fetchGreenhouse("databricks");
+    return jobs.map((job: any) => ({
+      id: `db_${job.id}`,
+      title: job.title || "",
+      company: "Databricks",
+      location: job.location || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Databricks Careers",
+      posted_date: "",
+      apply_url: job.url || `https://www.databricks.com/company/careers/open-positions/${job.id}`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch { return fetchGreenhouse("databricks"); }
+}
+
+async function fetchUber(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://www.uber.com/api/loadSearchJobsResults?params=%7B%22query%22%3A%22%22%2C%22location%22%3A%22%22%2C%22department%22%3A%22%22%2C%22team%22%3A%22%22%2C%22country%22%3A%22USA%22%7D",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
+          "Accept": "application/json",
+          "x-csrf-jwt": "v1",
+        },
+        signal: AbortSignal.timeout(15000),
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.data?.results || data.results || [];
+    return jobs.map((job: any) => ({
+      id: `uber_${job.id}`,
+      title: job.title || "",
+      company: "Uber",
+      location: job.location || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Uber Careers",
+      posted_date: "",
+      apply_url: job.url || `https://www.uber.com/us/en/careers/list/${job.id}/`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Uber error:", e.message);
+    return [];
+  }
+}
+
+async function fetchAtlassian(): Promise<any[]> {
+  try {
+    const res = await fetch(
+      "https://www.atlassian.com/company/careers/detail/api/jobs",
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = data.jobs || data.results || data || [];
+    if (!Array.isArray(jobs)) return [];
+    return jobs.map((job: any) => ({
+      id: `atl_${job.id}`,
+      title: job.title || "",
+      company: "Atlassian",
+      location: job.location || "Remote",
+      salary: "",
+      job_type: "Full-time",
+      source: "Atlassian Careers",
+      posted_date: "",
+      apply_url: job.url || `https://www.atlassian.com/company/careers/detail/${job.id}`,
+      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+  } catch (e: any) {
+    console.error("Atlassian error:", e.message);
+    return [];
+  }
+}
+
+// ─── EightFold config ─────────────────────────────────────────────────────────
+const EIGHTFOLD_COMPANIES = [
+  { host: "paypal",  domain: "paypal.com",  name: "PayPal" },
+  { host: "target",  domain: "target.com",  name: "Target" },
+  { host: "walmart", domain: "walmart.com", name: "Walmart" },
+  { host: "nike",    domain: "nike.com",    name: "Nike" },
+];
+
+async function fetchEightfold(company: { host: string; domain: string; name: string }): Promise<any[]> {
+  try {
+    const allJobs: any[] = [];
+    for (let offset = 0; offset < 200; offset += 20) {
+      const res = await fetch(
+        `https://${company.host}.eightfold.ai/api/apply/v2/jobs?domain=${company.domain}&num=20&offset=${offset}`,
+        { headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)" }, signal: AbortSignal.timeout(15000) }
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const jobs = data.positions || data.jobs || [];
+      if (!Array.isArray(jobs) || !jobs.length) break;
+      for (const job of jobs) {
+        allJobs.push({
+          id: `ef_${company.host}_${job.id}`,
+          title: job.name || job.title || "",
+          company: company.name,
+          location: job.location || job.city || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "EightFold",
+          posted_date: job.t_update ? new Date(job.t_update * 1000).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+          apply_url: `https://${company.host}.eightfold.ai/careers/job/${job.id}`,
+          description: (job.description || job.job_description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
+        });
+      }
+      if (jobs.length < 20) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    console.log(`EightFold ${company.name}: fetched ${allJobs.length} jobs`);
+    return allJobs;
+  } catch (e: any) {
+    console.error(`EightFold ${company.name} error:`, e.message);
+    return [];
+  }
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
 
@@ -963,17 +2094,23 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
   const validJobs = cleanedJobs.filter(j => j.id && j.title && j.source);
 
   let saved = 0, errors = 0;
-  const BATCH = 100;
+  const BATCH = 50;
 
   for (let i = 0; i < validJobs.length; i += BATCH) {
     const batch = validJobs.slice(i, i + BATCH);
-    const { error } = await supabase.from("jobs").upsert(batch, { onConflict: "id" });
-    if (error) {
-      console.error("Upsert error:", error.message, error.code);
-      errors++;
-    } else {
-      saved += batch.length;
+    let lastError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error } = await supabase.from("jobs").upsert(batch, { onConflict: "id" });
+      if (!error) { saved += batch.length; lastError = null; break; }
+      lastError = error;
+      await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     }
+    if (lastError) {
+      console.error("Upsert error:", lastError.message, lastError.code);
+      errors++;
+    }
+    // Small pause every 10 batches to avoid overwhelming Supabase
+    if (i > 0 && (i / BATCH) % 10 === 0) await new Promise(r => setTimeout(r, 300));
   }
 
   return { saved, errors };
@@ -981,6 +2118,12 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+
+  const secret = searchParams.get("secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const source = searchParams.get("source") || "all";
   let jobs: any[] = [];
 
@@ -1048,6 +2191,55 @@ export async function GET(req: NextRequest) {
   }
   if (source === "jobdata" || source === "all") {
     const results = await Promise.all(JOBDATA_QUERIES.map(fetchJobdata));
+    jobs.push(...results.flat());
+  }
+
+  // ─── Direct career pages ──────────────────────────────────────────────────
+  if (source === "workday" || source === "all") {
+    const results = await Promise.all(WORKDAY_COMPANIES.map(fetchWorkday));
+    jobs.push(...results.flat());
+  }
+  if (source === "google" || source === "all") {
+    jobs.push(...await fetchGoogle());
+  }
+  if (source === "amazon" || source === "all") {
+    jobs.push(...await fetchAmazon());
+  }
+  if (source === "microsoft" || source === "all") {
+    jobs.push(...await fetchMicrosoft());
+  }
+  if (source === "meta" || source === "all") {
+    jobs.push(...await fetchMeta());
+  }
+  if (source === "tesla" || source === "all") {
+    jobs.push(...await fetchTesla());
+  }
+  if (source === "apple" || source === "all") {
+    jobs.push(...await fetchApple());
+  }
+  if (source === "netflix" || source === "all") {
+    jobs.push(...await fetchNetflixCareers());
+  }
+  if (source === "palantir" || source === "all") {
+    jobs.push(...await fetchPalantir());
+  }
+  if (source === "stripe" || source === "all") {
+    jobs.push(...await fetchStripe());
+  }
+  if (source === "coinbase" || source === "all") {
+    jobs.push(...await fetchCoinbase());
+  }
+  if (source === "databricks" || source === "all") {
+    jobs.push(...await fetchDatabricks());
+  }
+  if (source === "uber" || source === "all") {
+    jobs.push(...await fetchUber());
+  }
+  if (source === "atlassian" || source === "all") {
+    jobs.push(...await fetchAtlassian());
+  }
+  if (source === "eightfold" || source === "all") {
+    const results = await Promise.all(EIGHTFOLD_COMPANIES.map(fetchEightfold));
     jobs.push(...results.flat());
   }
 

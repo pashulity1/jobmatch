@@ -61,14 +61,15 @@ export async function GET(req: NextRequest) {
   const fresh = searchParams.get("fresh") === "true";
   const datePosted = searchParams.get("datePosted") || "";
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
-  function getDateCutoff(): string | null {
+  function getDateCutoff(): string {
     if (datePosted === "Last 24h") return new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "3 days")  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Week")    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Month")   return thirtyDaysAgo;
     if (fresh) return thirtyDaysAgo;
-    return null;
+    return ninetyDaysAgo;
   }
   const dateCutoff = getDateCutoff();
 
@@ -146,7 +147,7 @@ export async function GET(req: NextRequest) {
       let query = supabase.from("jobs").select("*", { count: "exact" });
       if (locationOrString) query = query.or(locationOrString);
       if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-      if (dateCutoff) query = applyDateFilter(query, dateCutoff);
+      query = applyDateFilter(query, dateCutoff);
 
       const { data: jobs, error, count } = await query
         .order("created_at", { ascending: false })
@@ -173,7 +174,7 @@ async function fullTextSearch(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string | null = null
+  freshCutoff: string
 ) {
   const LEVEL_WORDS = new Set([
     "senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head"
@@ -199,7 +200,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    if (freshCutoff) query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
+    query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -215,7 +216,7 @@ async function fullTextSearch(
     return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff);
 
   } catch {
-    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset);
+    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff);
   }
 }
 
@@ -227,7 +228,7 @@ async function titleSearchFallback(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string | null = null
+  freshCutoff: string
 ) {
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
@@ -248,7 +249,7 @@ async function titleSearchFallback(
 
   if (locationOrString) query = query.or(locationOrString);
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-  if (freshCutoff) query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
+  query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
