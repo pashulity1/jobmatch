@@ -2077,122 +2077,101 @@ export async function GET(req: NextRequest) {
   }
 
   const source = searchParams.get("source") || "all";
-  let jobs: any[] = [];
+
+  // Stream-save: deduplicate with a Set, flush to DB after each source to avoid OOM
+  const seenIds = new Set<string>();
+  let totalFetched = 0, totalSaved = 0, totalErrors = 0;
+
+  async function flush(jobs: any[]) {
+    const fresh = jobs.filter(j => j.id && j.title && !seenIds.has(j.id));
+    fresh.forEach(j => seenIds.add(j.id));
+    totalFetched += jobs.length;
+    if (!fresh.length) return;
+    const { saved, errors } = await saveToDb(fresh);
+    totalSaved += saved;
+    totalErrors += errors;
+  }
 
   if (source === "greenhouse" || source === "all") {
     const results = await Promise.all(GREENHOUSE_COMPANIES.map(fetchGreenhouse));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "ashby" || source === "all") {
     const results = await Promise.all(ASHBY_COMPANIES.map(fetchAshby));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "lever" || source === "all") {
     const results = await Promise.all(LEVER_COMPANIES.map(fetchLever));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "smartrecruiters" || source === "all") {
     const results = await Promise.all(SMARTRECRUITERS_COMPANIES.map(fetchSmartRecruiters));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "recruitee" || source === "all") {
     const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "workable" || source === "all") {
     const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "adzuna" || source === "all") {
     const results = await Promise.all(ADZUNA_CATEGORIES.map(c => fetchAdzuna(c)));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "usajobs" || source === "all") {
     const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "remotejobs" || source === "all") {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "all") {
     const settled = await Promise.allSettled([
-      source === "remotive" || source === "all" ? fetchRemotive() : Promise.resolve([]),
+      source === "remotive"  || source === "all" ? fetchRemotive()  : Promise.resolve([]),
       source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
-      source === "jobicy" || source === "all" ? fetchJobicy() : Promise.resolve([]),
-      source === "themuse" || source === "all" ? fetchMuse() : Promise.resolve([]),
+      source === "jobicy"    || source === "all" ? fetchJobicy()    : Promise.resolve([]),
+      source === "themuse"   || source === "all" ? fetchMuse()      : Promise.resolve([]),
     ]);
     for (const r of settled) {
-      if (r.status === "fulfilled") jobs.push(...r.value);
+      if (r.status === "fulfilled") await flush(r.value);
       else console.error("Source failed:", r.reason);
     }
   }
   if (source === "himalayas" || source === "all") {
-    const result = await fetchHimalayas();
-    jobs.push(...result);
+    await flush(await fetchHimalayas());
   }
-
-  // ─── New sources ─────────────────────────────────────────────────────────────
   if (source === "reed" || source === "all") {
     const results = await Promise.all(REED_KEYWORDS.map(fetchReed));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
   if (source === "jooble" || source === "all") {
     const results = await Promise.all(JOOBLE_QUERIES.map(fetchJooble));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
-
-  // ─── Direct career pages ──────────────────────────────────────────────────
   if (source === "workday" || source === "all") {
     const results = await Promise.all(WORKDAY_COMPANIES.map(fetchWorkday));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
-  if (source === "google" || source === "all") {
-    jobs.push(...await fetchGoogle());
-  }
-  if (source === "amazon" || source === "all") {
-    jobs.push(...await fetchAmazon());
-  }
-  if (source === "microsoft" || source === "all") {
-    jobs.push(...await fetchMicrosoft());
-  }
-  if (source === "meta" || source === "all") {
-    jobs.push(...await fetchMeta());
-  }
-  if (source === "tesla" || source === "all") {
-    jobs.push(...await fetchTesla());
-  }
-  if (source === "apple" || source === "all") {
-    jobs.push(...await fetchApple());
-  }
-  if (source === "netflix" || source === "all") {
-    jobs.push(...await fetchNetflixCareers());
-  }
-  if (source === "palantir" || source === "all") {
-    jobs.push(...await fetchPalantir());
-  }
-  if (source === "stripe" || source === "all") {
-    jobs.push(...await fetchStripe());
-  }
-  if (source === "coinbase" || source === "all") {
-    jobs.push(...await fetchCoinbase());
-  }
-  if (source === "databricks" || source === "all") {
-    jobs.push(...await fetchDatabricks());
-  }
-  if (source === "uber" || source === "all") {
-    jobs.push(...await fetchUber());
-  }
-  if (source === "atlassian" || source === "all") {
-    jobs.push(...await fetchAtlassian());
-  }
-  if (source === "eightfold" || source === "all") {
+  if (source === "amazon"     || source === "all") { await flush(await fetchAmazon()); }
+  if (source === "microsoft"  || source === "all") { await flush(await fetchMicrosoft()); }
+  if (source === "google"     || source === "all") { await flush(await fetchGoogle()); }
+  if (source === "meta"       || source === "all") { await flush(await fetchMeta()); }
+  if (source === "tesla"      || source === "all") { await flush(await fetchTesla()); }
+  if (source === "apple"      || source === "all") { await flush(await fetchApple()); }
+  if (source === "netflix"    || source === "all") { await flush(await fetchNetflixCareers()); }
+  if (source === "palantir"   || source === "all") { await flush(await fetchPalantir()); }
+  if (source === "stripe"     || source === "all") { await flush(await fetchStripe()); }
+  if (source === "coinbase"   || source === "all") { await flush(await fetchCoinbase()); }
+  if (source === "databricks" || source === "all") { await flush(await fetchDatabricks()); }
+  if (source === "uber"       || source === "all") { await flush(await fetchUber()); }
+  if (source === "atlassian"  || source === "all") { await flush(await fetchAtlassian()); }
+  if (source === "eightfold"  || source === "all") {
     const results = await Promise.all(EIGHTFOLD_COMPANIES.map(fetchEightfold));
-    jobs.push(...results.flat());
+    await flush(results.flat());
   }
 
-  // Deduplicate by id before saving — prevents duplicates from overlapping company lists
-  const uniqueJobs = Array.from(new Map(jobs.map(j => [j.id, j])).values());
-  const { saved, errors } = await saveToDb(uniqueJobs);
-  return NextResponse.json({ success: true, source, fetched: jobs.length, saved, errors });
+  return NextResponse.json({ success: true, source, fetched: totalFetched, saved: totalSaved, errors: totalErrors });
 }
