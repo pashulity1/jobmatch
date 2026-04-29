@@ -1404,12 +1404,11 @@ async function fetchMuse(): Promise<any[]> {
   const allJobs: any[] = [];
   const MAX_PAGES = 5;
   const apiKey = process.env.THE_MUSE_API_KEY;
-  const categories = "category=Design+%26+UX&category=Creative+%26+Design&category=Project+Management&category=Data+Science&category=Engineering";
   try {
     for (let page = 0; page < MAX_PAGES; page++) {
       const keyParam = apiKey ? `&api_key=${apiKey}` : "";
       const res = await fetch(
-        `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&${categories}${keyParam}`,
+        `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
         { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
       );
       if (!res.ok) break;
@@ -1466,11 +1465,10 @@ const WORKDAY_COMPANIES = [
   { tenant: "paloaltonetworks", instance: "wd5", board: "External",             name: "Palo Alto Networks" },
   { tenant: "crowdstrike",instance: "wd5",  board: "crowdstrikecareers",        name: "CrowdStrike" },
   { tenant: "fortinet",   instance: "wd5",  board: "External",                  name: "Fortinet" },
-  { tenant: "qualcomm",   instance: "wd1",  board: "External",                  name: "Qualcomm" },
-  { tenant: "amd",        instance: "wd5",  board: "External",                  name: "AMD" },
+  // qualcomm and amd use EightFold (blocked) — removed
   { tenant: "broadcom",   instance: "wd5",  board: "External",                  name: "Broadcom" },
   { tenant: "hp",         instance: "wd5",  board: "External",                  name: "HP" },
-  { tenant: "dell",       instance: "wd5",  board: "External",                  name: "Dell Technologies" },
+  { tenant: "dell",       instance: "wd1",  board: "External",                  name: "Dell Technologies" },
   { tenant: "vmware",     instance: "wd5",  board: "External",                  name: "VMware" },
   { tenant: "sap",        instance: "wd3",  board: "External",                  name: "SAP" },
   { tenant: "accenture",  instance: "wd3",  board: "SemDash",                   name: "Accenture" },
@@ -1481,7 +1479,7 @@ const WORKDAY_COMPANIES = [
   { tenant: "siemens",    instance: "wd3",  board: "External",                  name: "Siemens" },
   { tenant: "philips",    instance: "wd3",  board: "External",                  name: "Philips" },
   // Added from direct career page list
-  { tenant: "micron",     instance: "wd5",  board: "External",                  name: "Micron Technology" },
+  // micron uses EightFold — moved there
   { tenant: "intuit",     instance: "wd5",  board: "intuitcareers",             name: "Intuit" },
   { tenant: "zoom",       instance: "wd5",  board: "External",                  name: "Zoom" },
   { tenant: "texasinstruments", instance: "wd5", board: "TIExternal",           name: "Texas Instruments" },
@@ -1526,43 +1524,6 @@ async function fetchWorkday(company: { tenant: string; instance: string; board: 
   } catch { return []; }
 }
 
-async function fetchGoogle(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let page = 1; page <= 10; page++) {
-      const res = await fetch(
-        `https://careers.google.com/api/v3/search/?query=&num=20&page=${page}&company=Google&company=YouTube&company=GoogleDeepMind`,
-        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.jobs || [];
-      if (!jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `goog_${job.id || job.job_id}`,
-          title: job.title || "",
-          company: job.company_name || "Google",
-          location: job.locations?.[0]?.display || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "Google Careers",
-          posted_date: "",
-          apply_url: `https://careers.google.com/jobs/results/${job.id || job.job_id}`,
-          description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 20) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Google Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Google Careers error:", e.message);
-    return [];
-  }
-}
-
 async function fetchAmazon(): Promise<any[]> {
   try {
     const allJobs: any[] = [];
@@ -1600,362 +1561,13 @@ async function fetchAmazon(): Promise<any[]> {
   }
 }
 
-async function fetchMicrosoft(): Promise<any[]> {
-  // Microsoft uses Workday — use their Workday API
-  return fetchWorkday({ tenant: "microsoft", instance: "wd5", board: "External", name: "Microsoft" });
-}
-
-async function fetchMeta(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let page = 1; page <= 10; page++) {
-      const res = await fetch(
-        `https://www.metacareers.com/api/jobs/?offices=&roles=&is_leadership=0&is_university=0&results_per_page=100&page=${page}&sort_by_new=false`,
-        {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
-            "Accept": "application/json",
-            "Referer": "https://www.metacareers.com/jobs",
-          },
-          signal: AbortSignal.timeout(15000),
-        }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.jobs || data.data || [];
-      if (!Array.isArray(jobs) || !jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `meta_${job.id}`,
-          title: job.title || "",
-          company: "Meta",
-          location: job.locations?.join(", ") || job.location || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "Meta Careers",
-          posted_date: "",
-          apply_url: `https://www.metacareers.com/jobs/${job.id}`,
-          description: (job.description || job.roles_responsibilities || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 100) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Meta Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Meta Careers error:", e.message);
-    return [];
-  }
-}
-
-async function fetchTesla(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let offset = 0; offset < 500; offset += 50) {
-      const res = await fetch(
-        `https://www.tesla.com/cua-api/tesla-jobs/search?query=&country=US&limit=50&offset=${offset}`,
-        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.results || data.jobs || [];
-      if (!Array.isArray(jobs) || !jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `tesla_${job.id || job.jobReqId}`,
-          title: job.title || job.jobTitle || "",
-          company: "Tesla",
-          location: job.location || job.jobLocation || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "Tesla Careers",
-          posted_date: job.postDate ? new Date(job.postDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-          apply_url: job.applyUrl || `https://www.tesla.com/careers/search/job/${job.id || job.jobReqId}`,
-          description: (job.description || job.jobDescription || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 50) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Tesla Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Tesla Careers error:", e.message);
-    return [];
-  }
-}
-
-async function fetchApple(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let page = 1; page <= 20; page++) {
-      const res = await fetch(
-        `https://jobs.apple.com/api/role/search?page=${page}&locale=en-US&filters[location][]=USA`,
-        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.searchResults || data.results || [];
-      if (!Array.isArray(jobs) || !jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `apple_${job.positionId || job.id}`,
-          title: job.postingTitle || job.title || "",
-          company: "Apple",
-          location: job.locations?.[0]?.name || job.homeOffice || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "Apple Careers",
-          posted_date: job.postDateInGMT ? new Date(job.postDateInGMT).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-          apply_url: `https://jobs.apple.com/en-us/details/${job.positionId || job.id}`,
-          description: (job.jobSummary || "").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 20) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Apple Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Apple Careers error:", e.message);
-    return [];
-  }
-}
-
-async function fetchNetflixCareers(): Promise<any[]> {
-  try {
-    const allJobs: any[] = [];
-    for (let page = 0; page < 10; page++) {
-      const res = await fetch(
-        `https://jobs.netflix.com/api/search?page=${page}`,
-        { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      const jobs = data.records?.postings || data.postings || [];
-      if (!Array.isArray(jobs) || !jobs.length) break;
-      for (const job of jobs) {
-        allJobs.push({
-          id: `netflix_${job.external_id || job.id}`,
-          title: job.text || job.title || "",
-          company: "Netflix",
-          location: job.location || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "Netflix Careers",
-          posted_date: job.created_at ? new Date(job.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-          apply_url: job.urls?.apply || `https://jobs.netflix.com/jobs/${job.external_id || job.id}`,
-          description: (job.content?.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-        });
-      }
-      if (jobs.length < 20) break;
-      await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`Netflix Careers: fetched ${allJobs.length} jobs`);
-    return allJobs;
-  } catch (e: any) {
-    console.error("Netflix Careers error:", e.message);
-    return [];
-  }
-}
-
-async function fetchPalantir(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://www.palantir.com/careers/open-positions/data.json",
-      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) {
-      // Fallback: Lever API for palantir
-      const lever = await fetch("https://api.lever.co/v0/postings/palantir?mode=json&limit=100", { signal: AbortSignal.timeout(10000) });
-      if (!lever.ok) return [];
-      const data = await lever.json();
-      if (!Array.isArray(data)) return [];
-      return data.map((job: any) => ({
-        id: `palantir_${job.id}`,
-        title: job.text || "",
-        company: "Palantir",
-        location: job.categories?.location || "Remote",
-        salary: "",
-        job_type: job.categories?.commitment || "Full-time",
-        source: "Palantir Careers",
-        posted_date: job.createdAt ? new Date(job.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-        apply_url: job.hostedUrl || `https://www.palantir.com/careers/open-positions/${job.id}`,
-        description: (job.descriptionPlain || "").substring(0, 3000),
-      }));
-    }
-    const data = await res.json();
-    const jobs = data.positions || data.jobs || [];
-    return jobs.map((job: any) => ({
-      id: `palantir_${job.id}`,
-      title: job.title || "",
-      company: "Palantir",
-      location: job.location || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Palantir Careers",
-      posted_date: "",
-      apply_url: job.url || "https://www.palantir.com/careers/open-positions/",
-      description: (job.description || "").substring(0, 3000),
-    }));
-  } catch (e: any) {
-    console.error("Palantir error:", e.message);
-    return [];
-  }
-}
-
-async function fetchStripe(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://stripe.com/jobs/search.json",
-      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = Array.isArray(data) ? data : (data.jobs || data.results || []);
-    return jobs.map((job: any) => ({
-      id: `stripe_${job.id}`,
-      title: job.title || "",
-      company: "Stripe",
-      location: job.location || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Stripe Careers",
-      posted_date: "",
-      apply_url: job.absolute_url || `https://stripe.com/jobs/listing/${job.id}`,
-      description: (job.content || job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch (e: any) {
-    console.error("Stripe error:", e.message);
-    return [];
-  }
-}
-
-async function fetchCoinbase(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://www.coinbase.com/careers/api/v1/positions",
-      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.data || data.positions || data || [];
-    if (!Array.isArray(jobs)) return [];
-    return jobs.map((job: any) => ({
-      id: `coinbase_${job.id}`,
-      title: job.title || "",
-      company: "Coinbase",
-      location: job.location || job.country || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Coinbase Careers",
-      posted_date: "",
-      apply_url: job.absolute_url || `https://www.coinbase.com/careers/positions/${job.id}`,
-      description: (job.content || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch (e: any) {
-    console.error("Coinbase error:", e.message);
-    return [];
-  }
-}
-
-async function fetchDatabricks(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://www.databricks.com/company/careers/open-positions/search-results.json?offset=0&limit=100",
-      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) {
-      // Fallback to Greenhouse
-      return fetchGreenhouse("databricks");
-    }
-    const data = await res.json();
-    const jobs = data.jobs || data.results || data || [];
-    if (!Array.isArray(jobs)) return fetchGreenhouse("databricks");
-    return jobs.map((job: any) => ({
-      id: `db_${job.id}`,
-      title: job.title || "",
-      company: "Databricks",
-      location: job.location || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Databricks Careers",
-      posted_date: "",
-      apply_url: job.url || `https://www.databricks.com/company/careers/open-positions/${job.id}`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch { return fetchGreenhouse("databricks"); }
-}
-
-async function fetchUber(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://www.uber.com/api/loadSearchJobsResults?params=%7B%22query%22%3A%22%22%2C%22location%22%3A%22%22%2C%22department%22%3A%22%22%2C%22team%22%3A%22%22%2C%22country%22%3A%22USA%22%7D",
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)",
-          "Accept": "application/json",
-          "x-csrf-jwt": "v1",
-        },
-        signal: AbortSignal.timeout(15000),
-      }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.data?.results || data.results || [];
-    return jobs.map((job: any) => ({
-      id: `uber_${job.id}`,
-      title: job.title || "",
-      company: "Uber",
-      location: job.location || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Uber Careers",
-      posted_date: "",
-      apply_url: job.url || `https://www.uber.com/us/en/careers/list/${job.id}/`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch (e: any) {
-    console.error("Uber error:", e.message);
-    return [];
-  }
-}
-
-async function fetchAtlassian(): Promise<any[]> {
-  try {
-    const res = await fetch(
-      "https://www.atlassian.com/company/careers/detail/api/jobs",
-      { headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = data.jobs || data.results || data || [];
-    if (!Array.isArray(jobs)) return [];
-    return jobs.map((job: any) => ({
-      id: `atl_${job.id}`,
-      title: job.title || "",
-      company: "Atlassian",
-      location: job.location || "Remote",
-      salary: "",
-      job_type: "Full-time",
-      source: "Atlassian Careers",
-      posted_date: "",
-      apply_url: job.url || `https://www.atlassian.com/company/careers/detail/${job.id}`,
-      description: (job.description || "").replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-  } catch (e: any) {
-    console.error("Atlassian error:", e.message);
-    return [];
-  }
-}
-
 // ─── EightFold config ─────────────────────────────────────────────────────────
 const EIGHTFOLD_COMPANIES = [
   { host: "paypal",  domain: "paypal.com",  name: "PayPal" },
   { host: "target",  domain: "target.com",  name: "Target" },
   { host: "walmart", domain: "walmart.com", name: "Walmart" },
   { host: "nike",    domain: "nike.com",    name: "Nike" },
+  { host: "micron",  domain: "micron.com",  name: "Micron Technology" },
 ];
 
 async function fetchEightfold(company: { host: string; domain: string; name: string }): Promise<any[]> {
@@ -2131,19 +1743,9 @@ async function runSync(source: string) {
     const results = await Promise.all(WORKDAY_COMPANIES.map(fetchWorkday));
     await flush(results.flat());
   }
-  if (source === "amazon"     || source === "all") { await flush(await fetchAmazon()); }
-  if (source === "microsoft"  || source === "all") { await flush(await fetchMicrosoft()); }
-  if (source === "google"     || source === "all") { await flush(await fetchGoogle()); }
-  if (source === "meta"       || source === "all") { await flush(await fetchMeta()); }
-  if (source === "tesla"      || source === "all") { await flush(await fetchTesla()); }
-  if (source === "apple"      || source === "all") { await flush(await fetchApple()); }
-  if (source === "netflix"    || source === "all") { await flush(await fetchNetflixCareers()); }
-  if (source === "palantir"   || source === "all") { await flush(await fetchPalantir()); }
-  if (source === "stripe"     || source === "all") { await flush(await fetchStripe()); }
-  if (source === "coinbase"   || source === "all") { await flush(await fetchCoinbase()); }
-  if (source === "databricks" || source === "all") { await flush(await fetchDatabricks()); }
-  if (source === "uber"       || source === "all") { await flush(await fetchUber()); }
-  if (source === "atlassian"  || source === "all") { await flush(await fetchAtlassian()); }
+  // amazon still works
+  if (source === "amazon" || source === "all") { await flush(await fetchAmazon()); }
+  // stripe/coinbase/databricks covered by Greenhouse; others (google/meta/tesla/apple/netflix/uber/atlassian) — APIs broken
   if (source === "eightfold"  || source === "all") {
     const results = await Promise.all(EIGHTFOLD_COMPANIES.map(fetchEightfold));
     await flush(results.flat());
