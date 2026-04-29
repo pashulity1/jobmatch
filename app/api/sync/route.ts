@@ -948,14 +948,6 @@ const JOOBLE_QUERIES = [
   { keywords: "developer", location: "Netherlands" },
 ];
 
-// Jobdata search queries
-const JOBDATA_QUERIES = [
-  "software engineer", "data analyst", "product manager",
-  "devops engineer", "frontend developer", "backend developer",
-  "data scientist", "machine learning", "ux designer",
-  "marketing manager", "sales engineer", "business analyst",
-  "cloud engineer", "security analyst", "mobile developer",
-];
 
 function formatSlug(slug: string): string {
   return decodeURIComponent(slug).split(/[-_ ]/)
@@ -1410,46 +1402,6 @@ async function fetchReed(keyword: string): Promise<any[]> {
 }
 
 
-// ─── NEW: Jobdata API ─────────────────────────────────────────────────────────
-// Register at: https://jobdataapi.com
-// Add to Railway: JOBDATA_API_KEY=your_key_here
-async function fetchJobdata(query: string): Promise<any[]> {
-  try {
-    const apiKey = process.env.JOBDATA_API_KEY;
-    if (!apiKey) return [];
-
-    const res = await fetch(
-      `https://api.jobdataapi.com/api/jobs/?title=${encodeURIComponent(query)}&max_age=30&count=50`,
-      {
-        signal: AbortSignal.timeout(15000),
-        headers: {
-          "Authorization": `Api-Key ${apiKey}`,
-          "Accept": "application/json",
-        },
-      }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    const jobs = data.results || data.jobs || data || [];
-    if (!Array.isArray(jobs)) return [];
-
-    return jobs.map((job: any) => ({
-      id: `jd_${job.id || job.job_id || Math.random().toString(36).slice(2)}`,
-      title: job.title || job.job_title || "",
-      company: job.company?.name || job.company_name || job.employer || "Unknown",
-      location: job.location || job.city || job.country || "Remote",
-      salary: job.salary || job.salary_range || "",
-      job_type: job.job_type || job.employment_type || "Full-time",
-      source: "Jobdata",
-      posted_date: job.date_posted || job.published_at
-        ? new Date(job.date_posted || job.published_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-        : "",
-      apply_url: job.url || job.apply_url || job.link || "",
-      description: (job.description || job.snippet || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
-  } catch { return []; }
-}
 
 async function fetchMuse(): Promise<any[]> {
   const allJobs: any[] = [];
@@ -2187,10 +2139,6 @@ export async function GET(req: NextRequest) {
   }
   if (source === "jooble" || source === "all") {
     const results = await Promise.all(JOOBLE_QUERIES.map(fetchJooble));
-    jobs.push(...results.flat());
-  }
-  if (source === "jobdata" || source === "all") {
-    const results = await Promise.all(JOBDATA_QUERIES.map(fetchJobdata));
     jobs.push(...results.flat());
   }
 
