@@ -2068,15 +2068,7 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
   return { saved, errors };
 }
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-
-  const secret = searchParams.get("secret");
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const source = searchParams.get("source") || "all";
+async function runSync(source: string) {
 
   // Stream-save: deduplicate with a Set, flush to DB after each source to avoid OOM
   const seenIds = new Set<string>();
@@ -2173,5 +2165,19 @@ export async function GET(req: NextRequest) {
     await flush(results.flat());
   }
 
-  return NextResponse.json({ success: true, source, fetched: totalFetched, saved: totalSaved, errors: totalErrors });
+  console.log(`[sync] done — fetched=${totalFetched} saved=${totalSaved} errors=${totalErrors}`);
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const secret = searchParams.get("secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const source = searchParams.get("source") || "all";
+
+  // Fire-and-forget — respond immediately, sync runs in background
+  runSync(source).catch(e => console.error("[sync] fatal:", e));
+
+  return NextResponse.json({ started: true, source, message: "Sync running in background. Check Railway logs for progress." });
 }
