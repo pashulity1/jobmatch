@@ -536,7 +536,7 @@ const LEVER_COMPANIES = [
   "hightouch", "airbyte", "cortex", "rootly",
   "lumos", "drata", "primer", "sardine", "replit", "codeium", "enablecomp",
   // New additions
-  "figma", "notion", "airtable", "webflow", "framer",
+  "notion", "airtable", "webflow", "framer",
   "stripe", "brex", "ramp", "found",
   "attentive", "klaviyo", "yotpo", "drip", "omnisend",
   "heap", "fullstory", "logrocket", "hotjar", "mouseflow",
@@ -550,7 +550,7 @@ const LEVER_COMPANIES = [
   "sprinklr", "brandwatch", "meltwater", "mention",
   "kandji", "mosyle", "addigy", "jamf",
   // New additions
-  "netflix", "uber", "lyft", "airbnb", "dropbox",
+  "lyft", "dropbox",
   "reddit", "duolingo", "discord", "canva",
   // Batch 3
   "spotify", "twitter", "pinterest", "snapchat", "tiktok",
@@ -596,7 +596,7 @@ const LEVER_COMPANIES = [
   "litify", "neos", "actionstep", "cosmolex", "rocketmatter",
   "nextpoint", "kira", "luminance", "legl", "onit", "brightflag",
   // Batch 6 — More Consumer & Enterprise
-  "Figma", "Canva", "Miro", "Notion", "Coda",
+  "Canva", "Miro", "Notion", "Coda",
   "Airtable", "Smartsheet", "Monday", "Asana", "ClickUp",
   "Linear", "Height", "Shortcut", "Basecamp", "Twist",
   "Loom", "Screencast-O-Matic", "Vimeo", "Wistia",
@@ -637,7 +637,7 @@ const LEVER_COMPANIES = [
   "Packiyo", "Shipmonk", "Whitebox", "Whiplash",
   "Bringg", "Onfleet", "Routific", "OptimoRoute",
   "Circuit", "Tookan", "Detrack", "Locus",
-  "Transfix", "Convoy", "Uber-Freight", "Relay",
+  "Transfix", "Convoy", "Relay",
   // Batch 6 — E-commerce & Retail
   "Shopify", "BigCommerce", "Magento", "WooCommerce",
   "Recharge", "Bold", "Nacelle", "Shogun",
@@ -648,7 +648,7 @@ const LEVER_COMPANIES = [
   "Shipstation", "Shippo", "EasyShip", "Easypost",
   "Skubana", "Linnworks", "Brightpearl", "Veeqo",
   // Batch 6 — Travel & Hospitality
-  "Airbnb", "VRBO", "Booking", "Expedia",
+  "VRBO", "Booking", "Expedia",
   "Hopper", "Kayak", "Skyscanner", "Google-Flights",
   "TripAdvisor", "Viator", "GetYourGuide", "Klook",
   "Sonder", "Zeus", "Landing", "Blueground",
@@ -656,7 +656,7 @@ const LEVER_COMPANIES = [
   "HotelTonight", "HostelWorld", "Hostelworld",
   // Batch 6 — Media & Entertainment
   "Spotify", "Apple-Music", "Tidal", "SoundCloud",
-  "Netflix", "Hulu", "Disney-Plus", "Peacock",
+  "Hulu", "Disney-Plus", "Peacock",
   "HBO-Max", "Paramount-Plus", "Pluto-TV",
   "YouTube", "Twitch", "Kick", "Rumble",
   "TikTok", "Instagram", "Snapchat", "Pinterest",
@@ -678,7 +678,7 @@ const LEVER_COMPANIES = [
   "CoStar", "Loopnet", "Ten-X", "Crexi",
   // Batch 7 — Enterprise & Big Tech
   "Apple", "Google", "Microsoft", "Amazon", "Meta",
-  "Netflix", "Uber", "Lyft-Jobs", "Airbnb-Jobs", "Pinterest-Jobs",
+  "Lyft-Jobs", "Pinterest-Jobs",
   "Twitter", "Snap", "TikTok-Jobs", "Reddit-Jobs", "Quora-Jobs",
   "Salesforce-Jobs", "Oracle-Jobs", "SAP-Jobs", "IBM-Jobs", "Adobe-Jobs",
   "Workday-Jobs", "ServiceNow-Jobs", "Splunk-Jobs", "Tableau-Jobs",
@@ -690,7 +690,7 @@ const LEVER_COMPANIES = [
   "Waymo-Jobs", "Cruise-Jobs", "Aurora-Jobs", "Motional",
   "Tesla-Jobs", "Rivian", "Lucid-Motors", "Fisker",
   "SpaceX", "BlueOrigin", "RocketLab", "Relativity",
-  "Palantir-Jobs", "Anduril", "Shield-AI", "Joby",
+  "Anduril", "Shield-AI", "Joby",
   "Flexport-Jobs", "Project44", "Samsara-Jobs", "Motive-Jobs",
   "DoorDash-Jobs", "Instacart-Jobs", "Gopuff", "Grubhub-Jobs",
   "Wayfair-Jobs", "Chewy-Jobs", "Etsy-Jobs", "Poshmark-Jobs",
@@ -745,7 +745,7 @@ const LEVER_COMPANIES = [
   // Batch 7 — Media, Gaming & Entertainment
   "Spotify-Open", "Soundcloud-Open", "Deezer-Open", "Tidal-Open",
   "Apple-Music", "Amazon-Music", "YouTube-Music", "Pandora-Open",
-  "Netflix-Open", "Hulu-Open", "Disney-Plus-Open", "Peacock-Open",
+  "Hulu-Open", "Disney-Plus-Open", "Peacock-Open",
   "HBO-Max-Open", "Paramount-Plus-Open", "Apple-TV", "Amazon-Prime",
   "Twitch-Open", "Kick-Open", "Rumble-Open", "Trovo",
   "YouTube-Open", "Dailymotion", "Vimeo-Open", "Wistia-Open",
