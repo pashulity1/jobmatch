@@ -3,13 +3,6 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const POPULAR_KEYWORDS = [
-  "motion", "designer", "product manager", "software engineer",
-  "frontend", "backend", "fullstack", "data scientist", "devops",
-  "marketing", "content", "copywriter", "recruiter", "hr",
-  "account executive", "customer success", "sales", "analyst",
-  "ios", "android", "react", "python", "java", "golang",
-];
 
 const GREENHOUSE_COMPANIES = [
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
@@ -2002,41 +1995,6 @@ async function fetchEightfold(company: { host: string; domain: string; name: str
   }
 }
 
-async function fetchRemoteOK(): Promise<any[]> {
-  try {
-    const res = await fetch("https://remoteok.com/api", {
-      headers: { "User-Agent": "JobMatch/1.0", "Accept": "application/json" },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) {
-      console.error(`RemoteOK: HTTP ${res.status} ${res.statusText}`);
-      return [];
-    }
-    const data = await res.json();
-    const jobs = Array.isArray(data) ? data.slice(1) : []; // skip legal notice
-    const filtered = jobs.filter((job: any) => {
-      const text = `${job.position || ""} ${(job.tags || []).join(" ")}`.toLowerCase();
-      return POPULAR_KEYWORDS.some(kw => text.includes(kw));
-    });
-    const result = filtered.map((job: any) => ({
-      id: `rok_${job.id}`,
-      title: job.position || "",
-      company: job.company || "Unknown",
-      location: job.location || "Remote",
-      salary: job.salary || "",
-      job_type: "Full-time",
-      source: "RemoteOK",
-      posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || `https://remoteok.com/jobs/${job.id}`,
-      description: (job.description || (job.tags || []).join(", ")).replace(/<[^>]+>/g, " ").substring(0, 3000),
-    }));
-    console.log(`RemoteOK: fetched ${result.length} jobs (filtered from ${jobs.length})`);
-    return result;
-  } catch (e: any) {
-    console.error("RemoteOK error:", e.message);
-    return [];
-  }
-}
 
 function isAdTitle(title: string): boolean {
   const t = title.toLowerCase();
@@ -2146,13 +2104,12 @@ async function runSync(source: string) {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
     await flush(results.flat());
   }
-  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "remoteok" || source === "all") {
+  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "all") {
     const settled = await Promise.allSettled([
       source === "remotive"  || source === "all" ? fetchRemotive()  : Promise.resolve([]),
       source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
       source === "jobicy"    || source === "all" ? fetchJobicy()    : Promise.resolve([]),
       source === "themuse"   || source === "all" ? fetchMuse()      : Promise.resolve([]),
-      source === "remoteok"  || source === "all" ? fetchRemoteOK()  : Promise.resolve([]),
     ]);
     for (const r of settled) {
       if (r.status === "fulfilled") await flush(r.value);
