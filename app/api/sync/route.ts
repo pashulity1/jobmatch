@@ -3,6 +3,14 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+const POPULAR_KEYWORDS = [
+  "motion", "designer", "product manager", "software engineer",
+  "frontend", "backend", "fullstack", "data scientist", "devops",
+  "marketing", "content", "copywriter", "recruiter", "hr",
+  "account executive", "customer success", "sales", "analyst",
+  "ios", "android", "react", "python", "java", "golang",
+];
+
 const GREENHOUSE_COMPANIES = [
   "anthropic", "openai", "notion", "figma", "vercel", "stripe",
   "airbnb", "pinterest", "reddit", "shopify", "dropbox",
@@ -1185,32 +1193,28 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
 
 async function fetchJobicy(): Promise<any[]> {
   try {
-    const industries = ["marketing", "design", "hr", "finance", "all"];
-    const results = await Promise.all(industries.map(async (industry) => {
-      const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&geo=usa&industry=${industry}`, {
-        signal: AbortSignal.timeout(15000),
-        headers: { "User-Agent": "JobMatch/1.0" },
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return (data.jobs || []).map((job: any) => ({
-        id: `jobicy_${job.id}`,
-        title: job.jobTitle || "",
-        company: job.companyName || "Unknown",
-        location: job.jobGeo || "Remote",
-        salary: job.annualSalaryMin
-          ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
-          : "",
-        job_type: job.jobType || "Full-time",
-        source: "Jobicy",
-        posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-        apply_url: job.url || "",
-        description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-      }));
+    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50`, {
+      signal: AbortSignal.timeout(15000),
+      headers: { "User-Agent": "JobMatch/1.0" },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const jobs = (data.jobs || []).map((job: any) => ({
+      id: `jobicy_${job.id}`,
+      title: job.jobTitle || "",
+      company: job.companyName || "Unknown",
+      location: job.jobGeo || "Remote",
+      salary: job.annualSalaryMin
+        ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
+        : "",
+      job_type: job.jobType || "Full-time",
+      source: "Jobicy",
+      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || "",
+      description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
-    const flat = results.flat();
-    console.log(`Jobicy: fetched ${flat.length} jobs`);
-    return flat;
+    console.log(`Jobicy: fetched ${jobs.length} jobs`);
+    return jobs;
   } catch (e: any) {
     console.error("Jobicy error:", e.message);
     return [];
@@ -1405,11 +1409,14 @@ async function fetchReed(keyword: string): Promise<any[]> {
 
 async function fetchMuse(): Promise<any[]> {
   const allJobs: any[] = [];
-  const MAX_PAGES = 10;
+  const MAX_PAGES = 5;
+  const apiKey = process.env.THE_MUSE_API_KEY;
+  const categories = "category=Design+%26+UX&category=Creative+%26+Design&category=Project+Management&category=Data+Science&category=Engineering";
   try {
     for (let page = 0; page < MAX_PAGES; page++) {
+      const keyParam = apiKey ? `&api_key=${apiKey}` : "";
       const res = await fetch(
-        `https://www.themuse.com/api/public/jobs?page=${page}&descending=true`,
+        `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&${categories}${keyParam}`,
         { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
       );
       if (!res.ok) break;
@@ -1995,6 +2002,57 @@ async function fetchEightfold(company: { host: string; domain: string; name: str
   }
 }
 
+async function fetchRemoteOK(): Promise<any[]> {
+  try {
+    const res = await fetch("https://remoteok.com/api", {
+      headers: { "User-Agent": "JobMatch/1.0", "Accept": "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      console.error(`RemoteOK: HTTP ${res.status} ${res.statusText}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs = Array.isArray(data) ? data.slice(1) : []; // skip legal notice
+    const filtered = jobs.filter((job: any) => {
+      const text = `${job.position || ""} ${(job.tags || []).join(" ")}`.toLowerCase();
+      return POPULAR_KEYWORDS.some(kw => text.includes(kw));
+    });
+    const result = filtered.map((job: any) => ({
+      id: `rok_${job.id}`,
+      title: job.position || "",
+      company: job.company || "Unknown",
+      location: job.location || "Remote",
+      salary: job.salary || "",
+      job_type: "Full-time",
+      source: "RemoteOK",
+      posted_date: job.date ? new Date(job.date).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+      apply_url: job.url || `https://remoteok.com/jobs/${job.id}`,
+      description: (job.description || (job.tags || []).join(", ")).replace(/<[^>]+>/g, " ").substring(0, 3000),
+    }));
+    console.log(`RemoteOK: fetched ${result.length} jobs (filtered from ${jobs.length})`);
+    return result;
+  } catch (e: any) {
+    console.error("RemoteOK error:", e.message);
+    return [];
+  }
+}
+
+function isAdTitle(title: string): boolean {
+  const t = title.toLowerCase();
+  return (
+    /earn at least \$/.test(t) ||
+    /trips, guaranteed/.test(t) ||
+    /drive with uber/.test(t) ||
+    /drive with lyft/.test(t) ||
+    /looking for part-time jobs/.test(t) ||
+    /\$[\d,]+ guarantee/.test(t) ||
+    /part-time gig:/.test(t) ||
+    /sign.?up bonus/.test(t) ||
+    /guaranteed bonus/.test(t)
+  );
+}
+
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
 
@@ -2011,7 +2069,7 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
     description: job.description || "",
   }));
 
-  const validJobs = cleanedJobs.filter(j => j.id && j.title && j.source);
+  const validJobs = cleanedJobs.filter(j => j.id && j.title && j.source && !isAdTitle(j.title));
 
   let saved = 0, errors = 0;
   const BATCH = 50;
@@ -2088,12 +2146,13 @@ async function runSync(source: string) {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
     await flush(results.flat());
   }
-  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "all") {
+  if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "remoteok" || source === "all") {
     const settled = await Promise.allSettled([
       source === "remotive"  || source === "all" ? fetchRemotive()  : Promise.resolve([]),
       source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
       source === "jobicy"    || source === "all" ? fetchJobicy()    : Promise.resolve([]),
       source === "themuse"   || source === "all" ? fetchMuse()      : Promise.resolve([]),
+      source === "remoteok"  || source === "all" ? fetchRemoteOK()  : Promise.resolve([]),
     ]);
     for (const r of settled) {
       if (r.status === "fulfilled") await flush(r.value);
@@ -2131,6 +2190,17 @@ async function runSync(source: string) {
   if (source === "eightfold"  || source === "all") {
     const results = await Promise.all(EIGHTFOLD_COMPANIES.map(fetchEightfold));
     await flush(results.flat());
+  }
+
+  // Cleanup jobs older than 30 days
+  try {
+    const supabase = getSupabaseAdmin();
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { error, count } = await supabase.from("jobs").delete({ count: "exact" }).lt("created_at", cutoff);
+    if (error) console.error("[sync] cleanup error:", error.message);
+    else console.log(`[sync] cleanup — deleted ${count ?? 0} old jobs`);
+  } catch (e: any) {
+    console.error("[sync] cleanup fatal:", e.message);
   }
 
   console.log(`[sync] done — fetched=${totalFetched} saved=${totalSaved} errors=${totalErrors}`);

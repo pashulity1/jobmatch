@@ -155,9 +155,10 @@ export async function GET(req: NextRequest) {
 
       console.log("No-keyword query — error:", error?.message ?? "none", "count:", count, "first locations:", (jobs || []).slice(0, 3).map((j: any) => j.location));
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      const filtered = (jobs || []).filter((j: any) => !isAdTitle(j.title));
       return NextResponse.json({
-        jobs: (jobs || []).map(normalizeJob),
-        meta: { total: count || 0, returned: jobs?.length || 0, offset, limit },
+        jobs: filtered.map(normalizeJob),
+        meta: { total: count || 0, returned: filtered.length, offset, limit },
       });
     }
 
@@ -207,9 +208,10 @@ async function fullTextSearch(
       .range(offset, offset + limit - 1);
 
     if (!error && jobs && jobs.length > 0) {
+      const filtered = jobs.filter((j: any) => !isAdTitle(j.title));
       return NextResponse.json({
-        jobs: jobs.map(normalizeJob),
-        meta: { total: count || 0, returned: jobs.length, offset, limit, searchType: "fulltext+title" },
+        jobs: filtered.map(normalizeJob),
+        meta: { total: count || 0, returned: filtered.length, offset, limit, searchType: "fulltext+title" },
       });
     }
 
@@ -257,10 +259,26 @@ async function titleSearchFallback(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const filtered = (jobs || []).filter((j: any) => !isAdTitle(j.title));
   return NextResponse.json({
-    jobs: (jobs || []).map(normalizeJob),
-    meta: { total: count || 0, returned: jobs?.length || 0, offset, limit, searchType: "ilike_title_only" },
+    jobs: filtered.map(normalizeJob),
+    meta: { total: count || 0, returned: filtered.length, offset, limit, searchType: "ilike_title_only" },
   });
+}
+
+function isAdTitle(title: string): boolean {
+  const t = title.toLowerCase();
+  return (
+    /earn at least \$/.test(t) ||
+    /trips, guaranteed/.test(t) ||
+    /drive with uber/.test(t) ||
+    /drive with lyft/.test(t) ||
+    /looking for part-time jobs/.test(t) ||
+    /\$[\d,]+ guarantee/.test(t) ||
+    /part-time gig:/.test(t) ||
+    /sign.?up bonus/.test(t) ||
+    /guaranteed bonus/.test(t)
+  );
 }
 
 function normalizeJob(job: any) {
