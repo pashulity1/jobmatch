@@ -1404,15 +1404,14 @@ async function fetchMuse(): Promise<any[]> {
   const apiKey = process.env.THE_MUSE_API_KEY;
   const keyParam = apiKey ? `&api_key=${apiKey}` : "";
 
-  const fetchPage = async (page: number): Promise<any[]> => {
+  const fetchPage = async (page: number): Promise<{ results: any[]; page_count: number }> => {
     const res = await fetch(
       `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
       { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(20000) }
     );
-    if (!res.ok) return [];
+    if (!res.ok) return { results: [], page_count: 0 };
     const data = await res.json();
-    if (!data.results || data.results.length === 0) return [];
-    return data.results;
+    return { results: data.results || [], page_count: data.page_count || 0 };
   };
 
   try {
@@ -1433,8 +1432,13 @@ async function fetchMuse(): Promise<any[]> {
       "motion", "graphic", "brand", "creative", "copywriter", "content",
     ];
 
-    const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
-    const rawJobs = pages.flat();
+    const first = await fetchPage(0);
+    const totalPages = Math.min(first.page_count, 20);
+    console.log(`TheMuse: total pages=${totalPages}`);
+    const rest = totalPages > 1
+      ? await Promise.all(Array.from({ length: totalPages - 1 }, (_, i) => fetchPage(i + 1)))
+      : [];
+    const rawJobs = [first.results, ...rest.map(p => p.results)].flat();
     const allJobs: any[] = [];
     for (const job of rawJobs) {
       if (!job.id || !job.name) continue;
