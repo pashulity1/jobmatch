@@ -1422,6 +1422,7 @@ async function fetchMuse(): Promise<any[]> {
       "Marketing & Communications", "Sales & Business Development",
       "Business Operations", "Finance", "Legal", "Human Resources & Recruiting",
       "Customer Success", "Content & Writing",
+      "Data and Analytics", "Human Resources and Recruitment", "Product Management", "Customer Service",
     ]);
     const IT_KEYWORDS = [
       "engineer", "developer", "software", "data", "devops", "product manager",
@@ -1433,14 +1434,6 @@ async function fetchMuse(): Promise<any[]> {
 
     const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
     const rawJobs = pages.flat();
-    const allCategories = new Set<string>();
-    for (const job of rawJobs) {
-      const cat = job.categories?.[0]?.name;
-      if (cat) allCategories.add(cat);
-      else allCategories.add("EMPTY");
-    }
-    console.log("Muse all categories:", JSON.stringify([...allCategories].sort()));
-
     const allJobs: any[] = [];
     for (const job of rawJobs) {
       if (!job.id || !job.name) continue;
