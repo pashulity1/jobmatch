@@ -679,30 +679,60 @@ async function fetchUSAJobs(keyword: string): Promise<any[]> {
   } catch { return []; }
 }
 
+const JOBICY_INDUSTRIES = [
+  "dev", "engineering", "design-multimedia", "web-app-design",
+  "data-science", "marketing", "seo", "smm", "management",
+  "hr", "accounting-finance", "legal", "copywriting",
+  "admin-support", "technical-support", "business", "seller",
+];
+
+function mapJobicyJob(job: any): any {
+  return {
+    id: `jobicy_${job.id}`,
+    title: job.jobTitle || "",
+    company: job.companyName || "Unknown",
+    location: job.jobGeo || "Remote",
+    salary: job.annualSalaryMin
+      ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
+      : "",
+    job_type: job.jobType || "Full-time",
+    source: "Jobicy",
+    posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+    apply_url: job.url || "",
+    description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
+  };
+}
+
 async function fetchJobicy(): Promise<any[]> {
   try {
-    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50`, {
+    const allJobs: any[] = [];
+
+    // Base call — no filter, returns up to 100 general jobs
+    const base = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=100`, {
       signal: AbortSignal.timeout(15000),
       headers: { "User-Agent": "JobMatch/1.0" },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const jobs = (data.jobs || []).map((job: any) => ({
-      id: `jobicy_${job.id}`,
-      title: job.jobTitle || "",
-      company: job.companyName || "Unknown",
-      location: job.jobGeo || "Remote",
-      salary: job.annualSalaryMin
-        ? `$${Math.round(job.annualSalaryMin / 1000)}k - $${Math.round((job.annualSalaryMax || job.annualSalaryMin) / 1000)}k`
-        : "",
-      job_type: job.jobType || "Full-time",
-      source: "Jobicy",
-      posted_date: job.pubDate ? new Date(job.pubDate).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
-      apply_url: job.url || "",
-      description: (job.jobDescription || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
-    }));
-    console.log(`Jobicy: fetched ${jobs.length} jobs`);
-    return jobs;
+    if (base.ok) {
+      const data = await base.json();
+      allJobs.push(...(data.jobs || []).map(mapJobicyJob));
+    }
+
+    // Per-industry calls with a small delay to avoid rate limiting
+    for (const industry of JOBICY_INDUSTRIES) {
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&industry=${industry}`, {
+          signal: AbortSignal.timeout(15000),
+          headers: { "User-Agent": "JobMatch/1.0" },
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data.jobs) allJobs.push(...data.jobs.map(mapJobicyJob));
+      } catch { /* skip failed industry */ }
+    }
+
+    console.log(`Jobicy: fetched ${allJobs.length} jobs across ${JOBICY_INDUSTRIES.length + 1} calls`);
+    return allJobs;
   } catch (e: any) {
     console.error("Jobicy error:", e.message);
     return [];
@@ -739,16 +769,22 @@ async function fetchRemoteJobs(category: string): Promise<any[]> {
   } catch { return []; }
 }
 
-async function fetchRemotive(): Promise<any[]> {
+const REMOTIVE_CATEGORIES = [
+  "software-dev", "customer-support", "design", "marketing", "sales",
+  "product", "business", "data", "devops-sysadmin", "finance-legal",
+  "hr", "qa", "writing", "medical-health", "education",
+];
+
+async function fetchRemotiveCategory(category: string): Promise<any[]> {
   try {
-    const res = await fetch("https://remotive.com/api/remote-jobs", {
+    const res = await fetch(`https://remotive.com/api/remote-jobs?category=${category}&limit=100`, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs || !Array.isArray(data.jobs)) return [];
-    const jobs = data.jobs.map((job: any) => ({
+    return data.jobs.map((job: any) => ({
       id: `remotive_${job.id}`,
       title: job.title || "",
       company: job.company_name || "",
@@ -760,7 +796,14 @@ async function fetchRemotive(): Promise<any[]> {
       apply_url: job.url || "",
       description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
-    console.log(`Remotive: fetched ${jobs.length} jobs`);
+  } catch { return []; }
+}
+
+async function fetchRemotive(): Promise<any[]> {
+  try {
+    const results = await Promise.all(REMOTIVE_CATEGORIES.map(fetchRemotiveCategory));
+    const jobs = results.flat();
+    console.log(`Remotive: fetched ${jobs.length} jobs across ${REMOTIVE_CATEGORIES.length} categories`);
     return jobs;
   } catch (e: any) {
     console.error("Remotive error:", e.message);
