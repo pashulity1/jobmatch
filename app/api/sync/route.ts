@@ -769,22 +769,16 @@ async function fetchRemoteJobs(category: string): Promise<any[]> {
   } catch { return []; }
 }
 
-const REMOTIVE_CATEGORIES = [
-  "software-dev", "customer-support", "design", "marketing", "sales",
-  "product", "business", "data", "devops-sysadmin", "finance-legal",
-  "hr", "qa", "writing", "medical-health", "education",
-];
-
-async function fetchRemotiveCategory(category: string): Promise<any[]> {
+async function fetchRemotive(): Promise<any[]> {
   try {
-    const res = await fetch(`https://remotive.com/api/remote-jobs?category=${category}&limit=100`, {
+    const res = await fetch("https://remotive.com/api/remote-jobs", {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; JobMatch/1.0)", "Accept": "application/json" },
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.jobs || !Array.isArray(data.jobs)) return [];
-    return data.jobs.map((job: any) => ({
+    const jobs = data.jobs.map((job: any) => ({
       id: `remotive_${job.id}`,
       title: job.title || "",
       company: job.company_name || "",
@@ -796,14 +790,7 @@ async function fetchRemotiveCategory(category: string): Promise<any[]> {
       apply_url: job.url || "",
       description: (job.description || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 3000),
     }));
-  } catch { return []; }
-}
-
-async function fetchRemotive(): Promise<any[]> {
-  try {
-    const results = await Promise.all(REMOTIVE_CATEGORIES.map(fetchRemotiveCategory));
-    const jobs = results.flat();
-    console.log(`Remotive: fetched ${jobs.length} jobs across ${REMOTIVE_CATEGORIES.length} categories`);
+    console.log(`Remotive: fetched ${jobs.length} jobs`);
     return jobs;
   } catch (e: any) {
     console.error("Remotive error:", e.message);
