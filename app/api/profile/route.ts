@@ -9,12 +9,10 @@ function getServiceClient() {
 
 function getUserId(token: string): { id: string | null; debug: any } {
   try {
-    console.log("TOKEN RECEIVED:", token ? token.substring(0, 20) : "NULL");
     const parts = token.split('.');
     if (parts.length !== 3) return { id: null, debug: { error: "not a JWT, parts: " + parts.length } };
     const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
-    console.log("DECODED PAYLOAD:", JSON.stringify(payload));
     if (!payload.sub) return { id: null, debug: { error: "no sub", payload } };
     if (payload.exp && payload.exp < Date.now() / 1000) {
       return { id: null, debug: { error: "token expired", exp: payload.exp, now: Math.floor(Date.now() / 1000) } };
