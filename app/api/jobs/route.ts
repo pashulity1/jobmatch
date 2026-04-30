@@ -195,10 +195,6 @@ async function fullTextSearch(
         config: "english",
       });
 
-    for (const word of searchWords) {
-      query = query.ilike("title", `%${word}%`);
-    }
-
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
     query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
