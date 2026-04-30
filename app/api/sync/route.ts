@@ -1659,7 +1659,13 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
     description: job.description || "",
   }));
 
-  const validJobs = cleanedJobs.filter(j => j.id && j.title && j.source && !isAdTitle(j.title));
+  const validJobs = [
+    ...new Map(
+      cleanedJobs
+        .filter(j => j.id && j.title && j.source && !isAdTitle(j.title))
+        .map(j => [j.id, j])
+    ).values(),
+  ];
 
   let saved = 0, errors = 0;
   const BATCH = 50;
