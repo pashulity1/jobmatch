@@ -1031,7 +1031,7 @@ async function fetchAshby(company: string): Promise<any[]> {
   try {
     const res = await fetch(`https://api.ashbyhq.com/posting-api/job-board/${company}`,
       { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
+    if (!res.ok) { console.warn(`Ashby ${company}: ${res.status}`); return []; }
     const data = await res.json();
     if (!data.jobs) return [];
     return data.jobs.map((job: any) => ({
@@ -1043,16 +1043,16 @@ async function fetchAshby(company: string): Promise<any[]> {
       apply_url: job.applyUrl || job.jobUrl || `https://jobs.ashbyhq.com/${company}`,
       description: (job.descriptionPlain || "").substring(0, 500),
     }));
-  } catch { return []; }
+  } catch (e: any) { console.warn(`Ashby ${company} error: ${e.message}`); return []; }
 }
 
 async function fetchLever(company: string): Promise<any[]> {
   try {
     const res = await fetch(`https://api.lever.co/v0/postings/${company}?mode=json&limit=100`,
       { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
+    if (!res.ok) { console.warn(`Lever ${company}: ${res.status}`); return []; }
     const data = await res.json();
-    if (!Array.isArray(data)) return [];
+    if (!Array.isArray(data)) { console.warn(`Lever ${company}: unexpected response`, JSON.stringify(data).slice(0, 100)); return []; }
     return data.map((job: any) => ({
       id: `lv_${job.id}`, title: job.text || "",
       company: formatSlug(company), location: job.categories?.location || "Remote",
@@ -1061,7 +1061,7 @@ async function fetchLever(company: string): Promise<any[]> {
       apply_url: job.hostedUrl || `https://jobs.lever.co/${company}`,
       description: (job.descriptionPlain || "").substring(0, 500),
     }));
-  } catch { return []; }
+  } catch (e: any) { console.warn(`Lever ${company} error: ${e.message}`); return []; }
 }
 
 async function fetchSmartRecruiters(company: string): Promise<any[]> {
