@@ -1401,23 +1401,27 @@ async function fetchReed(keyword: string): Promise<any[]> {
 
 
 async function fetchMuse(): Promise<any[]> {
-  const allJobs: any[] = [];
-  const MAX_PAGES = 5;
   const apiKey = process.env.THE_MUSE_API_KEY;
-  try {
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const keyParam = apiKey ? `&api_key=${apiKey}` : "";
-      const res = await fetch(
-        `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
-        { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
-      );
-      if (!res.ok) break;
-      const data = await res.json();
-      if (!data.results || data.results.length === 0) break;
+  const keyParam = apiKey ? `&api_key=${apiKey}` : "";
 
-      for (const job of data.results) {
+  const fetchPage = async (page: number): Promise<any[]> => {
+    const res = await fetch(
+      `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
+      { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) return [];
+    return data.results;
+  };
+
+  try {
+    const pages = await Promise.all(Array.from({ length: 10 }, (_, i) => fetchPage(i)));
+    const allJobs: any[] = [];
+    for (const results of pages) {
+      for (const job of results) {
         if (!job.id || !job.name) continue;
-        const record: any = {
+        allJobs.push({
           id: `muse_${String(job.id)}`,
           title: job.name,
           company: job.company?.name || "",
@@ -1430,20 +1434,15 @@ async function fetchMuse(): Promise<any[]> {
             : "",
           apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
           description: job.categories?.[0]?.name || "",
-        };
-        allJobs.push(record);
+        });
       }
-      if (page === 0 && allJobs[0]) {
-        console.log("Muse job sample:", JSON.stringify(allJobs[0]));
-      }
-      if (page >= data.page_count - 1) break;
-      await new Promise(r => setTimeout(r, 300));
     }
+    if (allJobs[0]) console.log("Muse job sample:", JSON.stringify(allJobs[0]));
     console.log(`TheMuse: fetched ${allJobs.length} jobs`);
     return allJobs;
   } catch (e: any) {
     console.error("TheMuse error:", e.message);
-    return allJobs;
+    return [];
   }
 }
 
