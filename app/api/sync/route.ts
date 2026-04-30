@@ -1700,7 +1700,7 @@ async function runSync(source: string) {
   const seenIds = new Set<string>();
   let totalFetched = 0, totalSaved = 0, totalErrors = 0;
 
-  async function flush(jobs: any[]) {
+  async function flush(jobs: any[], label = "unknown") {
     const seen = new Set<string>();
     const fresh = jobs.filter(j => {
       if (!j.id || !j.title || seenIds.has(j.id) || seen.has(j.id)) return false;
@@ -1709,6 +1709,7 @@ async function runSync(source: string) {
     });
     fresh.forEach(j => seenIds.add(j.id));
     totalFetched += jobs.length;
+    console.log(`[sync] ${label}: raw=${jobs.length} unique=${fresh.length}`);
     if (!fresh.length) return;
     const { saved, errors } = await saveToDb(fresh);
     totalSaved += saved;
@@ -1717,73 +1718,71 @@ async function runSync(source: string) {
 
   if (source === "greenhouse" || source === "all") {
     const results = await Promise.all(GREENHOUSE_COMPANIES.map(fetchGreenhouse));
-    await flush(results.flat());
+    await flush(results.flat(), "greenhouse");
   }
   if (source === "ashby" || source === "all") {
     const results = await Promise.all(ASHBY_COMPANIES.map(fetchAshby));
-    await flush(results.flat());
+    await flush(results.flat(), "ashby");
   }
   if (source === "lever" || source === "all") {
     const results = await Promise.all(LEVER_COMPANIES.map(fetchLever));
-    await flush(results.flat());
+    await flush(results.flat(), "lever");
   }
   if (source === "smartrecruiters" || source === "all") {
     const results = await Promise.all(SMARTRECRUITERS_COMPANIES.map(fetchSmartRecruiters));
-    await flush(results.flat());
+    await flush(results.flat(), "smartrecruiters");
   }
   if (source === "recruitee" || source === "all") {
     const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
-    await flush(results.flat());
+    await flush(results.flat(), "recruitee");
   }
   if (source === "workable" || source === "all") {
     const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
-    await flush(results.flat());
+    await flush(results.flat(), "workable");
   }
   if (source === "adzuna" || source === "all") {
     const results = await Promise.all(ADZUNA_CATEGORIES.map(c => fetchAdzuna(c)));
-    await flush(results.flat());
+    await flush(results.flat(), "adzuna");
   }
   if (source === "usajobs" || source === "all") {
     const results = await Promise.all(USAJOBS_KEYWORDS.map(fetchUSAJobs));
-    await flush(results.flat());
+    await flush(results.flat(), "usajobs");
   }
   if (source === "remotejobs" || source === "all") {
     const results = await Promise.all(REMOTEJOBS_CATEGORIES.map(fetchRemoteJobs));
-    await flush(results.flat());
+    await flush(results.flat(), "remotejobs");
   }
   if (source === "remotive" || source === "arbeitnow" || source === "jobicy" || source === "themuse" || source === "all") {
-    const settled = await Promise.allSettled([
+    const [remotive, arbeitnow, jobicy, themuse] = await Promise.allSettled([
       source === "remotive"  || source === "all" ? fetchRemotive()  : Promise.resolve([]),
       source === "arbeitnow" || source === "all" ? fetchArbeitnow() : Promise.resolve([]),
       source === "jobicy"    || source === "all" ? fetchJobicy()    : Promise.resolve([]),
       source === "themuse"   || source === "all" ? fetchMuse()      : Promise.resolve([]),
     ]);
-    for (const r of settled) {
-      if (r.status === "fulfilled") await flush(r.value);
-      else console.error("Source failed:", r.reason);
-    }
+    if (remotive.status === "fulfilled") await flush(remotive.value, "remotive"); else console.error("remotive failed:", remotive.reason);
+    if (arbeitnow.status === "fulfilled") await flush(arbeitnow.value, "arbeitnow"); else console.error("arbeitnow failed:", arbeitnow.reason);
+    if (jobicy.status === "fulfilled") await flush(jobicy.value, "jobicy"); else console.error("jobicy failed:", jobicy.reason);
+    if (themuse.status === "fulfilled") await flush(themuse.value, "themuse"); else console.error("themuse failed:", themuse.reason);
   }
   if (source === "himalayas" || source === "all") {
-    await flush(await fetchHimalayas());
+    await flush(await fetchHimalayas(), "himalayas");
   }
   if (source === "reed" || source === "all") {
     const results = await Promise.all(REED_KEYWORDS.map(fetchReed));
-    await flush(results.flat());
+    await flush(results.flat(), "reed");
   }
   if (source === "jooble" || source === "all") {
     const results = await Promise.all(JOOBLE_QUERIES.map(fetchJooble));
-    await flush(results.flat());
+    await flush(results.flat(), "jooble");
   }
   if (source === "workday" || source === "all") {
     const results = await Promise.all(WORKDAY_COMPANIES.map(fetchWorkday));
-    await flush(results.flat());
+    await flush(results.flat(), "workday");
   }
-  // amazon still works
-  if (source === "amazon" || source === "all") { await flush(await fetchAmazon()); }
-  // stripe/coinbase/databricks covered by Greenhouse; others (google/meta/tesla/apple/netflix/uber/atlassian) — APIs broken
+  if (source === "amazon" || source === "all") { await flush(await fetchAmazon(), "amazon"); }
   if (source === "eightfold"  || source === "all") {
     const results = await Promise.all(EIGHTFOLD_COMPANIES.map(fetchEightfold));
-    await flush(results.flat());
+    await flush(results.flat(), "eightfold");
   }
 
   // Cleanup jobs older than 30 days
