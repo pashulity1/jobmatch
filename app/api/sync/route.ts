@@ -1416,27 +1416,31 @@ async function fetchMuse(): Promise<any[]> {
   };
 
   try {
-    const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
-    const rawJobs = pages.flat();
-    const categoryCounts: Record<string, number> = {};
-    for (const job of rawJobs) {
-      const cat = job.categories?.[0]?.name || "EMPTY";
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    }
-    console.log("Muse categories:", JSON.stringify(categoryCounts));
-
-    const EXCLUDED_CATEGORIES = new Set([
-      "Food and Hospitality Services",
-      "Healthcare",
-      "Manufacturing and Warehouse",
-      "Unknown",
+    const ALLOWED_CATEGORIES = new Set([
+      "Software Engineering", "Engineering", "Data Science", "DevOps",
+      "IT & Networking", "Product", "Design & UX", "Project Management",
+      "Marketing & Communications", "Sales & Business Development",
+      "Business Operations", "Finance", "Legal", "Human Resources & Recruiting",
+      "Customer Success", "Content & Writing",
     ]);
+    const IT_KEYWORDS = [
+      "engineer", "developer", "software", "data", "devops", "product manager",
+      "product owner", "ux", "ui", "designer", "architect", "technical",
+      "analyst", "scientist", "machine learning", "ai ", "backend", "frontend",
+      "fullstack", "mobile", "ios", "android", "cloud", "security", "qa",
+      "motion", "graphic", "brand", "creative", "copywriter", "content",
+    ];
+
+    const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
     const allJobs: any[] = [];
     for (const results of pages) {
       for (const job of results) {
         if (!job.id || !job.name) continue;
         const category = job.categories?.[0]?.name;
-        if (!category || EXCLUDED_CATEGORIES.has(category)) continue;
+        const titleLower = job.name.toLowerCase();
+        const allowed = (category && ALLOWED_CATEGORIES.has(category))
+          || IT_KEYWORDS.some(kw => titleLower.includes(kw));
+        if (!allowed) continue;
         allJobs.push({
           id: `muse_${String(job.id)}`,
           title: job.name,
