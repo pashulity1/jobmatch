@@ -1406,7 +1406,7 @@ async function fetchMuse(): Promise<any[]> {
 
   const fetchPage = async (page: number): Promise<any[]> => {
     const res = await fetch(
-      `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true&category=Design%20%26%20UX&category=Engineering&category=Data%20Science&category=Product&category=Marketing%20%26%20Communications&category=Project%20Management&category=Sales%20%26%20Business%20Development&category=Content%20%26%20Writing${keyParam}`,
+      `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
       { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
     );
     if (!res.ok) return [];
@@ -1417,10 +1417,18 @@ async function fetchMuse(): Promise<any[]> {
 
   try {
     const pages = await Promise.all(Array.from({ length: 10 }, (_, i) => fetchPage(i)));
+    const EXCLUDED_CATEGORIES = new Set([
+      "Food and Hospitality Services",
+      "Healthcare",
+      "Manufacturing and Warehouse",
+      "Unknown",
+    ]);
     const allJobs: any[] = [];
     for (const results of pages) {
       for (const job of results) {
         if (!job.id || !job.name) continue;
+        const category = job.categories?.[0]?.name;
+        if (!category || EXCLUDED_CATEGORIES.has(category)) continue;
         allJobs.push({
           id: `muse_${String(job.id)}`,
           title: job.name,
