@@ -1406,7 +1406,7 @@ async function fetchMuse(): Promise<any[]> {
 
   const fetchPage = async (page: number): Promise<any[]> => {
     const res = await fetch(
-      `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
+      `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true&category=Design%20%26%20UX&category=Engineering&category=Data%20Science&category=Product&category=Marketing%20%26%20Communications&category=Project%20Management&category=Sales%20%26%20Business%20Development&category=Content%20%26%20Writing${keyParam}`,
       { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
     );
     if (!res.ok) return [];
