@@ -1417,6 +1417,14 @@ async function fetchMuse(): Promise<any[]> {
 
   try {
     const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
+    const rawJobs = pages.flat();
+    const categoryCounts: Record<string, number> = {};
+    for (const job of rawJobs) {
+      const cat = job.categories?.[0]?.name || "EMPTY";
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    }
+    console.log("Muse categories:", JSON.stringify(categoryCounts));
+
     const EXCLUDED_CATEGORIES = new Set([
       "Food and Hospitality Services",
       "Healthcare",
