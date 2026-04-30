@@ -1697,7 +1697,12 @@ async function runSync(source: string) {
   let totalFetched = 0, totalSaved = 0, totalErrors = 0;
 
   async function flush(jobs: any[]) {
-    const fresh = jobs.filter(j => j.id && j.title && !seenIds.has(j.id));
+    const seen = new Set<string>();
+    const fresh = jobs.filter(j => {
+      if (!j.id || !j.title || seenIds.has(j.id) || seen.has(j.id)) return false;
+      seen.add(j.id);
+      return true;
+    });
     fresh.forEach(j => seenIds.add(j.id));
     totalFetched += jobs.length;
     if (!fresh.length) return;
