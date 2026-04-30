@@ -1432,30 +1432,37 @@ async function fetchMuse(): Promise<any[]> {
     ];
 
     const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
+    const rawJobs = pages.flat();
+    const allCategories = new Set<string>();
+    for (const job of rawJobs) {
+      const cat = job.categories?.[0]?.name;
+      if (cat) allCategories.add(cat);
+      else allCategories.add("EMPTY");
+    }
+    console.log("Muse all categories:", JSON.stringify([...allCategories].sort()));
+
     const allJobs: any[] = [];
-    for (const results of pages) {
-      for (const job of results) {
-        if (!job.id || !job.name) continue;
-        const category = job.categories?.[0]?.name;
-        const titleLower = job.name.toLowerCase();
-        const allowed = (category && ALLOWED_CATEGORIES.has(category))
-          || IT_KEYWORDS.some(kw => titleLower.includes(kw));
-        if (!allowed) continue;
-        allJobs.push({
-          id: `muse_${String(job.id)}`,
-          title: job.name,
-          company: job.company?.name || "",
-          location: job.locations?.[0]?.name || "Remote",
-          salary: "",
-          job_type: "Full-time",
-          source: "TheMuse",
-          posted_date: job.publication_date
-            ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-            : "",
-          apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
-          description: job.categories?.[0]?.name || "",
-        });
-      }
+    for (const job of rawJobs) {
+      if (!job.id || !job.name) continue;
+      const category = job.categories?.[0]?.name;
+      const titleLower = job.name.toLowerCase();
+      const allowed = (category && ALLOWED_CATEGORIES.has(category))
+        || IT_KEYWORDS.some(kw => titleLower.includes(kw));
+      if (!allowed) continue;
+      allJobs.push({
+        id: `muse_${String(job.id)}`,
+        title: job.name,
+        company: job.company?.name || "",
+        location: job.locations?.[0]?.name || "Remote",
+        salary: "",
+        job_type: "Full-time",
+        source: "TheMuse",
+        posted_date: job.publication_date
+          ? new Date(job.publication_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : "",
+        apply_url: job.refs?.landing_page || job.refs?.canonical_url || "",
+        description: job.categories?.[0]?.name || "",
+      });
     }
     if (allJobs[0]) console.log("Muse job sample:", JSON.stringify(allJobs[0]));
     console.log(`TheMuse: fetched ${allJobs.length} jobs`);
