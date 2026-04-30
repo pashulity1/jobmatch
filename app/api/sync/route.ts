@@ -1407,7 +1407,7 @@ async function fetchMuse(): Promise<any[]> {
   const fetchPage = async (page: number): Promise<any[]> => {
     const res = await fetch(
       `https://www.themuse.com/api/public/jobs?page=${page}&page_size=100&descending=true${keyParam}`,
-      { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(15000) }
+      { headers: { "User-Agent": "JobMatch/1.0" }, signal: AbortSignal.timeout(20000) }
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -1416,7 +1416,7 @@ async function fetchMuse(): Promise<any[]> {
   };
 
   try {
-    const pages = await Promise.all(Array.from({ length: 10 }, (_, i) => fetchPage(i)));
+    const pages = await Promise.all(Array.from({ length: 3 }, (_, i) => fetchPage(i)));
     const EXCLUDED_CATEGORIES = new Set([
       "Food and Hospitality Services",
       "Healthcare",
