@@ -1423,6 +1423,7 @@ async function fetchMuse(): Promise<any[]> {
       "Business Operations", "Finance", "Legal", "Human Resources & Recruiting",
       "Customer Success", "Content & Writing",
       "Data and Analytics", "Human Resources and Recruitment", "Product Management", "Customer Service",
+      "Education",
     ]);
     const IT_KEYWORDS = [
       "engineer", "developer", "software", "data", "devops", "product manager",
