@@ -706,20 +706,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4">
-      {/* Scoped styles for rendered HTML job descriptions */}
-      <style>{`
-        .job-description { color: #d1d5db; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; }
-        .job-description p { margin: 0.6em 0; }
-        .job-description ul, .job-description ol { padding-left: 1.5rem; margin: 0.5em 0; }
-        .job-description li { margin: 0.25em 0; }
-        .job-description h1, .job-description h2, .job-description h3 { color: #f3f4f6; font-weight: 500; margin: 1em 0 0.4em; }
-        .job-description h1 { font-size: 1.1em; }
-        .job-description h2 { font-size: 1em; }
-        .job-description h3 { font-size: 0.95em; }
-        .job-description a { color: #60a5fa; text-decoration: underline; }
-        .job-description strong, .job-description b { color: #e5e7eb; }
-        .job-description img { display: none; }
-      `}</style>
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
@@ -875,9 +861,9 @@ export default function Home() {
         {jobs.length > 0 && (
           <div className="mt-5 space-y-3 bg-[#EFF0F6] rounded-2xl p-3 -mx-1">
             <div className="flex items-center justify-between">
-              <p className="text-gray-400 text-sm">
-                <span className="text-white font-medium">{jobs.length}</span> of{" "}
-                <span className="text-white font-medium">{totalFound.toLocaleString()}</span> jobs
+              <p className="text-[rgba(41,43,45,0.5)] text-sm">
+                <span className="text-[#292B2D] font-medium">{jobs.length}</span> of{" "}
+                <span className="text-[#292B2D] font-medium">{totalFound.toLocaleString()}</span> jobs
               </p>
               {profile && (
                 <button onClick={() => setSortByMatch(!sortByMatch)}
@@ -892,7 +878,6 @@ export default function Home() {
               const gemini = geminiScores[job.id];
               const displayScore = gemini ? gemini.total : job.matchScore;
               const isLoadingMatch = matchLoading && !gemini && !!profile && !!token;
-              const isLowMatch = displayScore !== undefined && displayScore < 30;
               const ageBadge = getJobAgeBadge(job.postedAt || job.postedDate) ?? undefined;
 
               return (
@@ -944,7 +929,6 @@ export default function Home() {
                   matchLoading={isLoadingMatch}
                   matchTimedOut={matchTimedOut}
                   ageBadge={ageBadge}
-                  isLowMatch={isLowMatch}
                 />
               );
             })}
