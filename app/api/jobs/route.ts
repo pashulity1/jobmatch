@@ -194,6 +194,17 @@ async function fullTextSearch(
   const searchWords =
     coreWords.length >= Math.ceil(words.length / 2) ? coreWords : words;
 
+  // Title-first: high-precision search before falling back to full-text description search.
+  // Without this, "Motion Designer" matches jobs that merely mention those words in descriptions.
+  const titleResult = await titleSearchFallback(
+    supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff
+  );
+  const titleBody = await titleResult.json();
+  if ((titleBody.meta?.total ?? 0) > 0) {
+    return NextResponse.json({ ...titleBody, meta: { ...titleBody.meta, searchType: "title_priority" } });
+  }
+
+  // No title matches — cast a wider net via full-text (description-inclusive)
   try {
     let query = supabase
       .from("jobs")
@@ -215,14 +226,14 @@ async function fullTextSearch(
       const filtered = jobs.filter((j: any) => !isAdTitle(j.title));
       return NextResponse.json({
         jobs: filtered.map(normalizeJob),
-        meta: { total: count || 0, returned: filtered.length, offset, limit, searchType: "fulltext+title" },
+        meta: { total: count || 0, returned: filtered.length, offset, limit, searchType: "fulltext_description" },
       });
     }
 
-    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff);
+    return NextResponse.json({ jobs: [], meta: { total: 0, returned: 0, offset, limit, searchType: "no_results" } });
 
   } catch {
-    return titleSearchFallback(supabase, searchWords, locationOrString, jobType, limit, offset, freshCutoff);
+    return NextResponse.json({ jobs: [], meta: { total: 0, returned: 0, offset, limit, searchType: "error" } });
   }
 }
 
