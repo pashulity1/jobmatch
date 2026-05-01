@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { calculateMatchScore } from "@/lib/matcher";
 import { SavedJobCard } from "@/app/components/jobs/SavedJobCard";
+import { CoverLetterEditor } from "@/app/components/jobs/CoverLetterEditor";
+import { ResumeAdapterEditor } from "@/app/components/jobs/ResumeAdapterEditor";
 
 type User = { id: string; email: string };
 type Profile = {
@@ -84,6 +86,10 @@ export default function Dashboard() {
 
   // Saved jobs expand state
   const [expandedSavedJobId, setExpandedSavedJobId] = useState<string | null>(null);
+
+  // Editor overlays
+  const [editorMode, setEditorMode] = useState<null | "cover-letter" | "resume-adapt">(null);
+  const [editorJob, setEditorJob] = useState<SavedJob | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -226,6 +232,7 @@ export default function Dashboard() {
   const resumeData = profile?.resume_profile;
 
   return (
+    <>
     <main className="min-h-screen bg-gray-950 text-white">
       <div className="max-w-2xl mx-auto px-4 py-6">
 
@@ -384,8 +391,8 @@ export default function Dashboard() {
                       expandedSavedJobId === job.job_id ? null : job.job_id
                     )}
                     onUnsave={() => handleUnsaveJob(job.job_id)}
-                    onOpenCoverLetter={() => {/* TODO */}}
-                    onOpenResumeAdaptation={() => {/* TODO */}}
+                    onOpenCoverLetter={() => { setEditorJob(job); setEditorMode("cover-letter"); }}
+                    onOpenResumeAdaptation={() => { setEditorJob(job); setEditorMode("resume-adapt"); }}
                   />
                 );
               })
@@ -640,5 +647,23 @@ export default function Dashboard() {
         )}
       </div>
     </main>
+
+    {editorMode === "cover-letter" && editorJob && token && (
+      <CoverLetterEditor
+        job={editorJob}
+        resumeProfile={profile?.resume_profile ?? null}
+        token={token}
+        onBack={() => { setEditorMode(null); setEditorJob(null); }}
+      />
+    )}
+    {editorMode === "resume-adapt" && editorJob && token && (
+      <ResumeAdapterEditor
+        job={editorJob}
+        resumeProfile={profile?.resume_profile ?? null}
+        token={token}
+        onBack={() => { setEditorMode(null); setEditorJob(null); }}
+      />
+    )}
+    </>
   );
 }
