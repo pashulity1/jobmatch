@@ -14,6 +14,8 @@ export type SavedJob = {
   apply_url: string;
   created_at: string;
   description?: string;
+  logo_color?: string;    // hex color chosen by user for manually-added jobs
+  custom_job_url?: string; // original URL for manually-added jobs
 };
 
 type Status = "saved" | "in_progress" | "applied";
@@ -45,11 +47,24 @@ function getCompanyDomain(company: string): string {
   return company.toLowerCase().replace(/[^a-z0-9]/g, "") + ".com";
 }
 
-function CompanyLogo({ company }: { company: string }) {
+function CompanyLogo({ company, logoColor }: { company: string; logoColor?: string }) {
   const domain = getCompanyDomain(company);
   const initials = company.slice(0, 2).toUpperCase();
   const [imgSrc, setImgSrc] = useState(`https://logo.clearbit.com/${domain}`);
   const [failed, setFailed] = useState(0);
+
+  // Manually-added jobs have a user-chosen color — skip network logo entirely
+  if (logoColor) {
+    return (
+      <div style={{
+        width: 42, height: 42, borderRadius: 10, background: logoColor,
+        color: "#fff", display: "flex", alignItems: "center",
+        justifyContent: "center", fontSize: 14, fontWeight: 600, flexShrink: 0,
+      }}>
+        {initials}
+      </div>
+    );
+  }
 
   const handleError = () => {
     if (failed === 0) {
@@ -144,7 +159,7 @@ export function SavedJobCard({
       {/* ── COLLAPSED (always visible) ── */}
       <div style={{ padding: "14px 16px", cursor: "pointer" }} onClick={onToggle}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <CompanyLogo company={job.company} />
+          <CompanyLogo company={job.company} logoColor={job.logo_color} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <p style={{ fontSize: 15, fontWeight: 500, color: "#292B2D", margin: 0, lineHeight: 1.3 }}>

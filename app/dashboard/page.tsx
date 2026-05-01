@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { calculateMatchScore } from "@/lib/matcher";
 import { SavedJobCard } from "@/app/components/jobs/SavedJobCard";
@@ -17,6 +17,8 @@ type SavedJob = {
   id: string; job_id: string; title: string; company: string;
   location: string; salary: string; job_type: string;
   source: string; posted_date: string; apply_url: string; created_at: string; description?: string;
+  logo_color?: string;     // hex color for manually-added jobs
+  custom_job_url?: string; // original URL for manually-added jobs
 };
 type AlertPrefs = {
   positions?: string[]; locations?: string[]; levels?: string[]; formats?: string[];
@@ -51,14 +53,29 @@ const POPULAR_POSITIONS = [
   "Financial Analyst", "Accountant", "Operations Manager", "Chief of Staff",
 ];
 
+// Map between Tab display names and URL slugs
+const TAB_SLUGS: Record<Tab, string> = {
+  "Overview":   "overview",
+  "Saved Jobs": "saved-jobs",
+  "Settings":   "settings",
+  "Job Alerts": "alerts",
+};
+const SLUG_TO_TAB: Record<string, Tab> = Object.fromEntries(
+  Object.entries(TAB_SLUGS).map(([k, v]) => [v, k as Tab])
+);
+
 export default function Dashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [alertPrefs, setAlertPrefs] = useState<AlertPrefs>({});
-  const [activeTab, setActiveTab] = useState<Tab>("Overview");
+  // Initialize active tab from ?tab= URL param so links and browser back/forward work
+  const [activeTab, setActiveTab] = useState<Tab>(
+    () => SLUG_TO_TAB[searchParams.get("tab") ?? ""] ?? "Overview"
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -90,6 +107,25 @@ export default function Dashboard() {
   // Editor overlays
   const [editorMode, setEditorMode] = useState<null | "cover-letter" | "resume-adapt">(null);
   const [editorJob, setEditorJob] = useState<SavedJob | null>(null);
+
+  // Add Job from URL modal
+  const [showAddJobModal, setShowAddJobModal] = useState(false);
+  const [addJobInput, setAddJobInput] = useState("");        // URL or raw text
+  const [addJobPastedText, setAddJobPastedText] = useState(""); // LinkedIn manual paste
+  const [addJobColor, setAddJobColor] = useState("#6366f1");
+  const [addJobLoading, setAddJobLoading] = useState(false);
+  const [addJobError, setAddJobError] = useState<string | null>(null);
+
+  // Sync active tab when the ?tab= param changes (e.g. browser back/forward)
+  useEffect(() => {
+    const tab = SLUG_TO_TAB[searchParams.get("tab") ?? ""] ?? "Overview";
+    setActiveTab(tab);
+  }, [searchParams]);
+
+  // Navigate to a tab by updating the URL; the effect above keeps activeTab in sync
+  const navigateToTab = (tab: Tab) => {
+    router.push(`/dashboard?tab=${TAB_SLUGS[tab]}`);
+  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -164,6 +200,45 @@ export default function Dashboard() {
       headers: { Authorization: `Bearer ${token}` },
     });
     setSavedJobs(prev => prev.filter(j => j.job_id !== jobId));
+  };
+
+  // True when the user's input looks like a LinkedIn URL — triggers the manual-paste flow
+  const isLinkedInUrl = /linkedin\.com/i.test(addJobInput);
+
+  // Submit the Add Job modal: fetch+parse via Gemini, save to DB, prepend to list
+  const handleAddExternalJob = async () => {
+    if (!token) return;
+    setAddJobLoading(true);
+    setAddJobError(null);
+    try {
+      const body: Record<string, string> = { logo_color: addJobColor };
+      const looksLikeUrl = addJobInput.startsWith("http");
+      if (looksLikeUrl) {
+        body.url = addJobInput;
+        // For LinkedIn, the API skips fetching; it needs the user-pasted text
+        if (isLinkedInUrl) body.text = addJobPastedText;
+      } else {
+        // Treat the input as raw job description text
+        body.text = addJobInput;
+      }
+      const res = await fetch("/api/jobs/add-external", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to add job");
+      // Prepend the new job so it appears at the top of the Saved Jobs list
+      setSavedJobs(prev => [data.job, ...prev]);
+      setShowAddJobModal(false);
+      setAddJobInput("");
+      setAddJobPastedText("");
+      setAddJobColor("#6366f1");
+    } catch (e: any) {
+      setAddJobError(e.message);
+    } finally {
+      setAddJobLoading(false);
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -268,7 +343,7 @@ export default function Dashboard() {
         {/* Tabs */}
         <div className="flex gap-1 bg-gray-900 rounded-xl p-1 mb-5 border border-gray-800">
           {TABS.map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+            <button key={tab} onClick={() => navigateToTab(tab)}
               className={`flex-1 text-xs py-2 rounded-lg font-medium transition-colors ${
                 activeTab === tab ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"
               }`}>
@@ -317,16 +392,18 @@ export default function Dashboard() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800 text-center">
+              <button onClick={() => navigateToTab("Saved Jobs")}
+                className="bg-gray-900 rounded-2xl p-4 border border-gray-800 text-center hover:border-blue-700 transition-colors">
                 <p className="text-2xl font-bold text-blue-400">{savedJobs.length}</p>
                 <p className="text-xs text-gray-400 mt-1">Saved Jobs</p>
-              </div>
-              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800 text-center">
+              </button>
+              <button onClick={() => navigateToTab("Job Alerts")}
+                className="bg-gray-900 rounded-2xl p-4 border border-gray-800 text-center hover:border-green-700 transition-colors">
                 <p className="text-2xl font-bold text-green-400">
                   {instantEnabled || digestEnabled ? "On" : "Off"}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Job Alerts</p>
-              </div>
+              </button>
             </div>
 
             {/* Quick saved jobs preview */}
@@ -334,7 +411,7 @@ export default function Dashboard() {
               <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-gray-300">Recent Saved</h2>
-                  <button onClick={() => setActiveTab("Saved Jobs")}
+                  <button onClick={() => navigateToTab("Saved Jobs")}
                     className="text-xs text-blue-400 hover:text-blue-300">See all →</button>
                 </div>
                 <div className="space-y-2">
@@ -361,6 +438,20 @@ export default function Dashboard() {
         {/* ── SAVED JOBS ── */}
         {activeTab === "Saved Jobs" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "0 -1rem", padding: "0 1rem 1rem", background: "#EFF0F6" }}>
+
+            {/* Button to open the Add Job from URL modal */}
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 0 0" }}>
+              <button
+                onClick={() => { setAddJobError(null); setShowAddJobModal(true); }}
+                style={{
+                  background: "#4558C8", color: "#fff", border: "none", borderRadius: 10,
+                  padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                + Add Job from URL
+              </button>
+            </div>
+
             {savedJobs.length === 0 ? (
               <div style={{ background: "#fff", borderRadius: 14, padding: "2rem", textAlign: "center", border: "0.5px solid rgba(41,43,45,0.08)" }}>
                 <p style={{ color: "rgba(41,43,45,0.4)", fontSize: 14, marginBottom: 12 }}>Сохранённых вакансий нет</p>
@@ -663,6 +754,109 @@ export default function Dashboard() {
         token={token}
         onBack={() => { setEditorMode(null); setEditorJob(null); }}
       />
+    )}
+
+    {/* ── ADD JOB FROM URL MODAL ── */}
+    {showAddJobModal && (
+      // Full-screen dark overlay
+      <div
+        onClick={e => { if (e.target === e.currentTarget) setShowAddJobModal(false); }}
+        style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          zIndex: 1000, padding: "0 0 0 0",
+        }}
+      >
+        <div style={{
+          background: "#1a1b1e", borderRadius: "20px 20px 0 0", padding: "24px 20px 32px",
+          width: "100%", maxWidth: 560, border: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Add Job from URL</p>
+            <button
+              onClick={() => setShowAddJobModal(false)}
+              style={{ background: "none", border: "none", color: "#888", fontSize: 20, cursor: "pointer", lineHeight: 1 }}
+            >×</button>
+          </div>
+
+          {/* Main input: URL or raw job description */}
+          <label style={{ fontSize: 12, color: "#9ca3af", display: "block", marginBottom: 6 }}>
+            Paste job URL or job description text
+          </label>
+          <textarea
+            value={addJobInput}
+            onChange={e => setAddJobInput(e.target.value)}
+            placeholder="https://jobs.example.com/... or paste the full job description"
+            rows={3}
+            style={{
+              width: "100%", background: "#111", color: "#fff", border: "1px solid #333",
+              borderRadius: 10, padding: "10px 12px", fontSize: 13, resize: "vertical",
+              outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+            }}
+          />
+
+          {/* LinkedIn-specific paste area — shown only when a LinkedIn URL is detected */}
+          {isLinkedInUrl && (
+            <div style={{ marginTop: 14 }}>
+              <label style={{ fontSize: 12, color: "#f59e0b", display: "block", marginBottom: 6 }}>
+                LinkedIn blocks automatic reading. Paste the job text here:
+              </label>
+              <textarea
+                value={addJobPastedText}
+                onChange={e => setAddJobPastedText(e.target.value)}
+                placeholder="Open the LinkedIn job post → select all text → paste here"
+                rows={5}
+                style={{
+                  width: "100%", background: "#111", color: "#fff",
+                  border: "1px solid #f59e0b55", borderRadius: 10,
+                  padding: "10px 12px", fontSize: 13, resize: "vertical",
+                  outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+                }}
+              />
+            </div>
+          )}
+
+          {/* Color palette — sets the company logo background for this job card */}
+          <div style={{ marginTop: 16 }}>
+            <label style={{ fontSize: 12, color: "#9ca3af", display: "block", marginBottom: 8 }}>
+              Logo color
+            </label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {["#6366f1","#3b82f6","#10b981","#14b8a6","#f59e0b","#ef4444","#ec4899","#8b5cf6"].map(color => (
+                <button
+                  key={color}
+                  onClick={() => setAddJobColor(color)}
+                  style={{
+                    width: 30, height: 30, borderRadius: 8, background: color, border: "none",
+                    cursor: "pointer", outline: addJobColor === color ? `3px solid #fff` : "none",
+                    outlineOffset: 2,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Error message */}
+          {addJobError && (
+            <p style={{ color: "#f87171", fontSize: 12, marginTop: 12 }}>{addJobError}</p>
+          )}
+
+          {/* Submit button */}
+          <button
+            onClick={handleAddExternalJob}
+            disabled={addJobLoading || (!addJobInput.trim())}
+            style={{
+              marginTop: 20, width: "100%", background: addJobLoading ? "#374151" : "#4558C8",
+              color: "#fff", border: "none", borderRadius: 12,
+              padding: "13px 0", fontSize: 14, fontWeight: 600,
+              cursor: addJobLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            {addJobLoading ? "Parsing & saving…" : "Add Job"}
+          </button>
+        </div>
+      </div>
     )}
     </>
   );
