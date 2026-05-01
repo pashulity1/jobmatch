@@ -81,6 +81,14 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
+    // SINGLE JOB MODE — fetch by id
+    const singleId = searchParams.get("id");
+    if (singleId) {
+      const { data, error } = await supabase.from("jobs").select("*").eq("id", singleId).single();
+      if (error || !data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ job: normalizeJob(data) });
+    }
+
     // SUGGEST MODE — fast title-only search for autocomplete
     if (suggestMode && keyword) {
       const words = keyword.split(/\s+/).filter(w => w.length > 1);

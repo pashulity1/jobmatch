@@ -81,6 +81,10 @@ export default function Dashboard() {
   const [alertSuggestions, setAlertSuggestions] = useState<string[]>([]);
   const [showAlertSuggestions, setShowAlertSuggestions] = useState(false);
 
+  // Saved jobs expand state
+  const [expandedSavedJobId, setExpandedSavedJobId] = useState<string | null>(null);
+  const [jobDescriptions, setJobDescriptions] = useState<Record<string, string | null>>({});
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -368,9 +372,28 @@ export default function Dashboard() {
                       description: "",
                     })
                   : undefined;
+                const isExpanded = expandedSavedJobId === job.job_id;
+                const description = jobDescriptions[job.job_id];
+
+                const handleExpand = async () => {
+                  if (isExpanded) { setExpandedSavedJobId(null); return; }
+                  setExpandedSavedJobId(job.job_id);
+                  if (!(job.job_id in jobDescriptions)) {
+                    try {
+                      const res = await fetch(`/api/jobs?id=${encodeURIComponent(job.job_id)}`);
+                      const data = await res.json();
+                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: data.job?.description ?? null }));
+                    } catch {
+                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: null }));
+                    }
+                  }
+                };
 
                 return (
-                <div key={job.id} className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <div key={job.id}
+                  className="bg-gray-900 rounded-2xl p-4 border border-gray-800 cursor-pointer"
+                  onClick={handleExpand}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm">{job.title}</h3>
@@ -397,7 +420,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                       )}
-                      <button onClick={() => handleUnsaveJob(job.job_id)}
+                      <button onClick={e => { e.stopPropagation(); handleUnsaveJob(job.job_id); }}
                         className="text-red-400 hover:text-red-300 text-2xl leading-none mt-0.5">
                         ♥
                       </button>
@@ -405,11 +428,28 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                     <span className="text-xs text-gray-500">{job.source} · {job.posted_date}</span>
-                    <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
-                      className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl">
-                      Apply →
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">{isExpanded ? "▲" : "▼"}</span>
+                      <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl">
+                        Apply →
+                      </a>
+                    </div>
                   </div>
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-gray-800" onClick={e => e.stopPropagation()}>
+                      {description === undefined ? (
+                        <p className="text-xs text-gray-500">Loading...</p>
+                      ) : description ? (
+                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line line-clamp-6">
+                          {description}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">No description available</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 );
               })

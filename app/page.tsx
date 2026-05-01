@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateMatchScore, ResumeProfile } from "@/lib/matcher";
+import JobCard from "@/app/components/jobs/JobCard";
 
 // Quick-pick options shown in the location dropdown
 const LOCATION_QUICK_PICKS = [
@@ -22,115 +23,6 @@ type Job = {
 
 type GeminiScore = { total: number; skills: number; level: number; industry: number };
 
-function matchColor(score: number) {
-  return score >= 80 ? "#22c55e" : score >= 60 ? "#3b82f6" : score >= 40 ? "#f59e0b" : "#ef4444";
-}
-
-function matchLabel(score: number) {
-  return score >= 80 ? "STRONG MATCH" : score >= 60 ? "GOOD MATCH" : score >= 40 ? "FAIR MATCH" : "WEAK MATCH";
-}
-
-// MatchCircle — speedometer-style animation.
-// Phase 1 (loading): number counts 0→100, arc fills up, teal color, over 2s.
-// Phase 2 (score arrives): number and arc descend from current position to actual score over 0.8s.
-// If score was cached and arrives instantly: skip straight to final value, no animation.
-function MatchCircle({ score, loading, timedOut }: { score?: number; loading?: boolean; timedOut?: boolean }) {
-  const r = 17;
-  const circ = 2 * Math.PI * r; // ≈ 106.8
-
-  // displayVal drives both the arc fill and the label text (0–100)
-  const [displayVal, setDisplayVal] = useState<number>(() =>
-    score !== undefined && !loading ? score : 0
-  );
-  // "sweeping" = counting up phase; "descending" = going to real score; "done" = final
-  const [phase, setPhase] = useState<"idle" | "sweeping" | "descending" | "done">(() =>
-    score !== undefined && !loading ? "done" : "idle"
-  );
-
-  const rafRef = useRef<number | null>(null);
-  // Mirror of displayVal as a ref so score-arrival effect always reads the current live value
-  const valRef = useRef<number>(score !== undefined && !loading ? score : 0);
-
-  const cancelAnim = () => {
-    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-  };
-
-  // Phase 1: when loading starts, count up 0→100 over 2s with ease-out
-  useEffect(() => {
-    if (!loading || timedOut) return;
-    cancelAnim();
-    valRef.current = 0;
-    setDisplayVal(0);
-    setPhase("sweeping");
-    const start = performance.now();
-    const duration = 2000;
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 2); // ease-out quad: fast at start, slows near 100
-      const val = Math.round(eased * 100);
-      valRef.current = val;
-      setDisplayVal(val);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return cancelAnim;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, timedOut]);
-
-  // Phase 2: when score arrives, animate from wherever the sweep stopped down to actual score
-  useEffect(() => {
-    if (loading || score === undefined) return;
-    cancelAnim();
-    const from = valRef.current; // live value at the moment score arrived
-    const to = score;
-    // If the score was cached and came back instantly (from ≈ 0), snap without long animation
-    const duration = from > 5 ? 800 : 0;
-    setPhase("descending");
-    if (duration === 0) {
-      valRef.current = to;
-      setDisplayVal(to);
-      setPhase("done");
-      return;
-    }
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic: snappy then settles
-      const val = Math.round(from + (to - from) * eased);
-      valRef.current = val;
-      setDisplayVal(val);
-      if (t < 1) { rafRef.current = requestAnimationFrame(tick); }
-      else { setPhase("done"); }
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return cancelAnim;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, score]);
-
-  const fill = (displayVal / 100) * circ;
-  // Teal while counting up, match-color while descending / done
-  const arcColor = phase === "sweeping"
-    ? "rgba(20,184,166,0.8)"
-    : score !== undefined ? matchColor(score) : "#6b7280";
-
-  const label = timedOut && score === undefined ? "–"
-    : phase === "idle" ? "…"
-    : `${displayVal}%`;
-
-  return (
-    <svg width="42" height="42" viewBox="0 0 42 42" style={{ flexShrink: 0 }}>
-      <circle cx="21" cy="21" r={r} fill="none" stroke="#374151" strokeWidth="3.5" />
-      {/* Arc — no CSS transition needed, rAF updates every frame */}
-      <circle cx="21" cy="21" r={r} fill="none" stroke={arcColor} strokeWidth="3.5"
-        strokeDasharray={`${fill} ${circ}`} strokeLinecap="round"
-        transform="rotate(-90 21 21)"
-        style={{ transition: "stroke 0.4s ease" }} />
-      <text x="21" y="25" textAnchor="middle" fontSize="9.5" fontWeight="700" fill={arcColor}>
-        {label}
-      </text>
-    </svg>
-  );
-}
 
 const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 
@@ -160,13 +52,6 @@ function getJobAgeBadge(postedAt: string | null | undefined) {
   return { label: `⚠️ ${days}d — may be closed`, color: "red" };
 }
 
-const BADGE_CLASSES: Record<string, string> = {
-  green: "bg-green-100 text-green-700",
-  blue:  "bg-blue-100 text-blue-700",
-  gray:  "bg-gray-100 text-gray-600",
-  amber: "bg-amber-100 text-amber-700",
-  red:   "bg-red-100 text-red-700",
-};
 
 type User = {
   id: string;
@@ -183,15 +68,6 @@ function extractSalary(description: string, existing: string): string {
   return m ? m[0] : "";
 }
 
-// Decode HTML entities so Greenhouse/Lever escaped HTML renders correctly
-function decodeHtml(html: string): string {
-  return (html || "")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&").replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'").replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, "\u00a0")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)));
-}
 
 function extractLevel(description: string, title: string): string {
   const text = `${title} ${description}`.toLowerCase();
@@ -533,8 +409,6 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [freshOnly, setFreshOnly] = useState(false);
-  // Tracks which card is expanded — only one at a time
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const POPULAR_SEARCHES = [
     // Design & Creative
@@ -999,7 +873,7 @@ export default function Home() {
         {loading && <p className="mt-6 text-center text-gray-400 text-sm">Finding jobs...</p>}
 
         {jobs.length > 0 && (
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-3 bg-[#EFF0F6] rounded-2xl p-3 -mx-1">
             <div className="flex items-center justify-between">
               <p className="text-gray-400 text-sm">
                 <span className="text-white font-medium">{jobs.length}</span> of{" "}
@@ -1015,147 +889,63 @@ export default function Home() {
 
             {displayedJobs.map(job => {
               const desc = stripHtml(job.description);
-              const salaryDisplay = extractSalary(desc, job.salary);
-              const level = extractLevel(desc, job.title);
-              const yearsExp = extractYearsExp(desc);
-              const workMode = extractWorkMode(desc, job.location);
-              const locationClean = cleanLocation(job.location);
               const gemini = geminiScores[job.id];
               const displayScore = gemini ? gemini.total : job.matchScore;
               const isLoadingMatch = matchLoading && !gemini && !!profile && !!token;
               const isLowMatch = displayScore !== undefined && displayScore < 30;
-              const isExpanded = expandedId === job.id;
+              const ageBadge = getJobAgeBadge(job.postedAt || job.postedDate) ?? undefined;
 
               return (
-                <div key={job.id}
-                  onClick={() => setExpandedId(isExpanded ? null : job.id)}
-                  className={`bg-gray-900 rounded-2xl border transition-all cursor-pointer ${isLowMatch ? "opacity-40" : ""} ${isExpanded ? "border-blue-700" : "border-gray-800 hover:border-gray-600"}`}>
-
-                  {/* ── Card header (always visible) ── */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <h2 className="text-base font-semibold text-white leading-tight">{job.title}</h2>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {/* Show circle whenever: AI is scoring, timed out, or a score is ready */}
-                        {(isLoadingMatch || matchTimedOut || displayScore !== undefined) && (
-                          <MatchCircle score={displayScore} loading={isLoadingMatch} timedOut={matchTimedOut} />
-                        )}
-                        {/* Chevron — rotates when expanded */}
-                        <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                    <p className="text-blue-400 text-sm mt-0.5 font-medium">{job.company}</p>
-
-                    {/* Info row */}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5 text-xs text-gray-400">
-                      {locationClean && <span>📍 {locationClean}</span>}
-                      {job.jobType && <span>· {job.jobType}</span>}
-                      {workMode && <span className={workMode === "Remote" ? "text-green-400" : workMode === "Hybrid" ? "text-yellow-400" : ""}>· {workMode}</span>}
-                      {level && <span>· {level}</span>}
-                      {salaryDisplay && <span className="text-green-400">· {salaryDisplay}</span>}
-                      {yearsExp && <span>· {yearsExp}</span>}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                      <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
-                        {formatDate(job.postedDate) && <span>{formatDate(job.postedDate)}</span>}
-                        {(() => {
-                          const badge = getJobAgeBadge(job.postedAt || job.postedDate);
-                          return badge ? (
-                            <span className={`px-1.5 py-0.5 rounded-md font-medium ${BADGE_CLASSES[badge.color]}`}>
-                              {badge.label}
-                            </span>
-                          ) : null;
-                        })()}
-                        {displayScore !== undefined && (
-                          <span style={{ color: matchColor(displayScore) }}>· {matchLabel(displayScore)}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {/* Stop propagation so save/apply clicks don't toggle the card */}
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!user) { setShowAuthModal(true); return; }
-                            const isSaved = savedJobIds.has(job.id);
-                            if (isSaved) {
-                              const res = await fetch(`/api/saved-jobs?job_id=${job.id}`, {
-                                method: "DELETE",
-                                headers: { Authorization: `Bearer ${token}` },
-                              });
-                              if (res.ok) setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
-                            } else {
-                              const res = await fetch("/api/saved-jobs", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                                body: JSON.stringify({
-                                  job_id: job.id, title: job.title, company: job.company,
-                                  location: job.location, salary: job.salary, job_type: job.jobType,
-                                  source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
-                                }),
-                              });
-                              if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));
-                            }
-                          }}
-                          className={`text-2xl leading-none transition-colors ${savedJobIds.has(job.id) ? "text-red-400" : "text-gray-600 hover:text-gray-400"}`}
-                          title={savedJobIds.has(job.id) ? "Unsave" : "Save"}>
-                          ♥
-                        </button>
-                        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl transition-colors">
-                          Apply →
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Expanded section ── */}
-                  {isExpanded && (
-                    <div className="px-4 pb-5 border-t border-gray-800" onClick={e => e.stopPropagation()}>
-                      {isLoadingMatch && !gemini ? (
-                        <div className="flex items-center gap-2 pt-3 pb-1 text-xs text-gray-500">
-                          <svg className="animate-spin w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                          </svg>
-                          <span className="text-blue-400">AI analyzing…</span>
-                        </div>
-                      ) : gemini ? (
-                        <div className="flex gap-4 pt-3 pb-1 text-xs text-gray-400">
-                          <span>Skills: <span style={{ color: matchColor(gemini.skills) }} className="font-semibold">{gemini.skills}%</span></span>
-                          <span>Level: <span style={{ color: matchColor(gemini.level) }} className="font-semibold">{gemini.level}%</span></span>
-                          <span>Industry: <span style={{ color: matchColor(gemini.industry) }} className="font-semibold">{gemini.industry}%</span></span>
-                        </div>
-                      ) : null}
-                      {/* Prominent Apply button at top of expanded view */}
-                      <div className="flex items-center justify-between py-3">
-                        <span className="text-xs text-gray-500">Full description</span>
-                        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
-                          className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors">
-                          Apply Now →
-                        </a>
-                      </div>
-                      {job.description ? (
-                        <div
-                          className="job-description"
-                          dangerouslySetInnerHTML={{ __html: decodeHtml(job.description) }}
-                        />
-                      ) : (
-                        <p className="text-gray-500 text-sm italic">No description available.</p>
-                      )}
-                      {/* Collapse button at bottom */}
-                      <button
-                        onClick={() => setExpandedId(null)}
-                        className="mt-4 text-xs text-gray-500 hover:text-gray-300 underline transition-colors">
-                        ↑ Collapse
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <JobCard
+                  key={job.id}
+                  job={{
+                    id: job.id,
+                    title: job.title,
+                    company: job.company,
+                    location: cleanLocation(job.location),
+                    salary: extractSalary(desc, job.salary),
+                    type: job.jobType,
+                    level: extractLevel(desc, job.title),
+                    workMode: extractWorkMode(desc, job.location),
+                    yearsExp: extractYearsExp(desc),
+                    isNew: ageBadge?.color === "green",
+                    postedDate: formatDate(job.postedDate),
+                    postedAt: job.postedAt ?? undefined,
+                    source: job.source,
+                    description: job.description,
+                    applyUrl: job.applyUrl,
+                  }}
+                  isSaved={savedJobIds.has(job.id)}
+                  onSaveToggle={async (e) => {
+                    e.stopPropagation();
+                    if (!user) { setShowAuthModal(true); return; }
+                    const isSaved = savedJobIds.has(job.id);
+                    if (isSaved) {
+                      const res = await fetch(`/api/saved-jobs?job_id=${job.id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (res.ok) setSavedJobIds(prev => { const s = new Set(prev); s.delete(job.id); return s; });
+                    } else {
+                      const res = await fetch("/api/saved-jobs", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({
+                          job_id: job.id, title: job.title, company: job.company,
+                          location: job.location, salary: job.salary, job_type: job.jobType,
+                          source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
+                        }),
+                      });
+                      if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));
+                    }
+                  }}
+                  matchScore={displayScore}
+                  matchBreakdown={gemini ? { skills: gemini.skills, level: gemini.level, industry: gemini.industry } : undefined}
+                  matchLoading={isLoadingMatch}
+                  matchTimedOut={matchTimedOut}
+                  ageBadge={ageBadge}
+                  isLowMatch={isLowMatch}
+                />
               );
             })}
 
