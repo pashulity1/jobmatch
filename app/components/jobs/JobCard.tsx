@@ -335,7 +335,7 @@ export default function JobCard({
           {/* Description */}
           {job.description ? (
             <div
-              className="job-description text-[14px] font-light text-[rgba(41,43,45,0.8)] leading-relaxed"
+              className="job-description text-[14px] text-[#292B2D] leading-relaxed"
               dangerouslySetInnerHTML={{ __html: decodeHtml(job.description) }}
             />
           ) : (
