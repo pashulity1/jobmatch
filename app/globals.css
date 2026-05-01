@@ -26,14 +26,15 @@ body {
   font-family: var(--font-inter), Inter, sans-serif;
 }
 
-.job-description { color: #292B2D; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; }
+/* Job description HTML from external sources may contain inline color styles — force override */
+.job-description { color: #292B2D !important; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; }
+.job-description * { color: #292B2D !important; }
 .job-description p { margin: 0.6em 0; }
 .job-description ul, .job-description ol { padding-left: 1.5rem; margin: 0.5em 0; }
 .job-description li { margin: 0.25em 0; }
-.job-description h1, .job-description h2, .job-description h3 { color: #292B2D; font-weight: 500; margin: 1em 0 0.4em; }
+.job-description h1, .job-description h2, .job-description h3, .job-description h4 { font-weight: 500; margin: 1em 0 0.4em; }
 .job-description h1 { font-size: 1.1em; }
 .job-description h2 { font-size: 1em; }
 .job-description h3 { font-size: 0.95em; }
-.job-description a { color: #4558C8; text-decoration: underline; }
-.job-description strong, .job-description b { color: #292B2D; }
+.job-description a { color: #4558C8 !important; text-decoration: underline; }
 .job-description img { display: none; }
