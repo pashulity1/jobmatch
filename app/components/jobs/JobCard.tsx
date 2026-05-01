@@ -32,7 +32,6 @@ interface JobCardProps {
   matchLoading?: boolean;
   matchTimedOut?: boolean;
   ageBadge?: { label: string; color: string };
-  isLowMatch?: boolean;
 }
 
 // ── helpers ──────────────────────────────────────────────
@@ -220,7 +219,6 @@ export default function JobCard({
   matchLoading,
   matchTimedOut,
   ageBadge,
-  isLowMatch,
 }: JobCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -229,7 +227,7 @@ export default function JobCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl p-4 cursor-pointer transition-all ${isLowMatch ? "opacity-40" : ""}`}
+      className="bg-white rounded-2xl p-4 cursor-pointer transition-all"
       style={{
         boxShadow: expanded
           ? "0 4px 20px rgba(41,43,45,0.10)"
