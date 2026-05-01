@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { calculateMatchScore, getMatchColor, getMatchLabel } from "@/lib/matcher";
+import { calculateMatchScore } from "@/lib/matcher";
+import { SavedJobCard } from "@/app/components/jobs/SavedJobCard";
 
 type User = { id: string; email: string };
 type Profile = {
@@ -83,7 +84,6 @@ export default function Dashboard() {
 
   // Saved jobs expand state
   const [expandedSavedJobId, setExpandedSavedJobId] = useState<string | null>(null);
-  const [jobDescriptions, setJobDescriptions] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     const supabase = createClient();
@@ -353,108 +353,40 @@ export default function Dashboard() {
 
         {/* ── SAVED JOBS ── */}
         {activeTab === "Saved Jobs" && (
-          <div className="space-y-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "0 -1rem", padding: "0 1rem 1rem", background: "#EFF0F6" }}>
             {savedJobs.length === 0 ? (
-              <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800 text-center">
-                <p className="text-gray-500 text-sm mb-3">No saved jobs yet</p>
+              <div style={{ background: "#fff", borderRadius: 14, padding: "2rem", textAlign: "center", border: "0.5px solid rgba(41,43,45,0.08)" }}>
+                <p style={{ color: "rgba(41,43,45,0.4)", fontSize: 14, marginBottom: 12 }}>Сохранённых вакансий нет</p>
                 <button onClick={() => router.push("/")}
-                  className="text-blue-400 text-sm hover:text-blue-300">Browse jobs →</button>
+                  style={{ color: "#4558C8", fontSize: 14, background: "none", border: "none", cursor: "pointer" }}>
+                  Найти вакансии →
+                </button>
               </div>
             ) : (
               savedJobs.map(job => {
-                const resumeData = profile?.resume_profile;
-                const matchScore = resumeData
-                  ? calculateMatchScore(resumeData, {
+                const rd = profile?.resume_profile;
+                const matchScore = rd
+                  ? calculateMatchScore(rd, {
                       id: job.job_id, title: job.title, company: job.company,
                       location: job.location, salary: job.salary || "",
                       jobType: job.job_type, source: job.source,
                       postedDate: job.posted_date, applyUrl: job.apply_url,
-                      description: "",
+                      description: job.description || "",
                     })
                   : undefined;
-                const isExpanded = expandedSavedJobId === job.job_id;
-                const description = jobDescriptions[job.job_id];
-
-                const handleExpand = async () => {
-                  if (isExpanded) { setExpandedSavedJobId(null); return; }
-                  setExpandedSavedJobId(job.job_id);
-                  if (!(job.job_id in jobDescriptions)) {
-                    if (job.description) {
-                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: job.description ?? null }));
-                    } else {
-                      try {
-                        const res = await fetch(`/api/jobs?id=${encodeURIComponent(job.job_id)}`);
-                        const data = await res.json();
-                        setJobDescriptions(prev => ({ ...prev, [job.job_id]: data.job?.description ?? null }));
-                      } catch {
-                        setJobDescriptions(prev => ({ ...prev, [job.job_id]: null }));
-                      }
-                    }
-                  }
-                };
-
                 return (
-                <div key={job.id}
-                  className="bg-gray-900 rounded-2xl p-4 border border-gray-800 cursor-pointer"
-                  onClick={handleExpand}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{job.title}</h3>
-                      <p className="text-blue-400 text-xs mt-0.5">{job.company}</p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-400">
-                        {job.location && <span>📍 {job.location}</span>}
-                        {job.job_type && <span>· {job.job_type}</span>}
-                        {job.salary && <span className="text-green-400">· {job.salary}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {matchScore !== undefined && (
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                            style={{
-                              backgroundColor: `${getMatchColor(matchScore)}20`,
-                              color: getMatchColor(matchScore),
-                              border: `1px solid ${getMatchColor(matchScore)}40`,
-                            }}>
-                            {matchScore}%
-                          </span>
-                          <span className="text-[10px] mt-0.5" style={{ color: getMatchColor(matchScore) }}>
-                            {getMatchLabel(matchScore)}
-                          </span>
-                        </div>
-                      )}
-                      <button onClick={e => { e.stopPropagation(); handleUnsaveJob(job.job_id); }}
-                        className="text-red-400 hover:text-red-300 text-2xl leading-none mt-0.5">
-                        ♥
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                    <span className="text-xs text-gray-500">{job.source} · {job.posted_date}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600">{isExpanded ? "▲" : "▼"}</span>
-                      <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl">
-                        Apply →
-                      </a>
-                    </div>
-                  </div>
-                  {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-gray-800" onClick={e => e.stopPropagation()}>
-                      {description === undefined ? (
-                        <p className="text-xs text-gray-500">Loading...</p>
-                      ) : description ? (
-                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line line-clamp-6">
-                          {description}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-gray-500">No description available</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                  <SavedJobCard
+                    key={job.id}
+                    job={job}
+                    isExpanded={expandedSavedJobId === job.job_id}
+                    matchScore={matchScore}
+                    onToggle={() => setExpandedSavedJobId(
+                      expandedSavedJobId === job.job_id ? null : job.job_id
+                    )}
+                    onUnsave={() => handleUnsaveJob(job.job_id)}
+                    onOpenCoverLetter={() => {/* TODO */}}
+                    onOpenResumeAdaptation={() => {/* TODO */}}
+                  />
                 );
               })
             )}
