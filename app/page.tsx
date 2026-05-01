@@ -919,6 +919,7 @@ export default function Home() {
                           job_id: job.id, title: job.title, company: job.company,
                           location: job.location, salary: job.salary, job_type: job.jobType,
                           source: job.source, posted_date: job.postedDate, apply_url: job.applyUrl,
+                          description: job.description || "",
                         }),
                       });
                       if (res.ok) setSavedJobIds(prev => new Set([...prev, job.id]));

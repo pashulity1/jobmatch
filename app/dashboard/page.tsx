@@ -13,7 +13,7 @@ type Profile = {
 type SavedJob = {
   id: string; job_id: string; title: string; company: string;
   location: string; salary: string; job_type: string;
-  source: string; posted_date: string; apply_url: string; created_at: string;
+  source: string; posted_date: string; apply_url: string; created_at: string; description?: string;
 };
 type AlertPrefs = {
   positions?: string[]; locations?: string[]; levels?: string[]; formats?: string[];
@@ -379,12 +379,16 @@ export default function Dashboard() {
                   if (isExpanded) { setExpandedSavedJobId(null); return; }
                   setExpandedSavedJobId(job.job_id);
                   if (!(job.job_id in jobDescriptions)) {
-                    try {
-                      const res = await fetch(`/api/jobs?id=${encodeURIComponent(job.job_id)}`);
-                      const data = await res.json();
-                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: data.job?.description ?? null }));
-                    } catch {
-                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: null }));
+                    if (job.description) {
+                      setJobDescriptions(prev => ({ ...prev, [job.job_id]: job.description ?? null }));
+                    } else {
+                      try {
+                        const res = await fetch(`/api/jobs?id=${encodeURIComponent(job.job_id)}`);
+                        const data = await res.json();
+                        setJobDescriptions(prev => ({ ...prev, [job.job_id]: data.job?.description ?? null }));
+                      } catch {
+                        setJobDescriptions(prev => ({ ...prev, [job.job_id]: null }));
+                      }
                     }
                   }
                 };

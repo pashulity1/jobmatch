@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { job_id, title, company, location, salary, job_type, source, posted_date, apply_url } = body;
+  const { job_id, title, company, location, salary, job_type, source, posted_date, apply_url, description } = body;
 
   const db = getServiceClient();
 
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       user_id: userId, job_id, title, company, location,
       salary: salary || "", job_type: job_type || "Full-time",
       source: source || "", posted_date: posted_date || "", apply_url: apply_url || "",
+      description: description || "",
     })
     .select()
     .single();
