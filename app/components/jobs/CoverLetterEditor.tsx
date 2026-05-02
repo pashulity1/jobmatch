@@ -46,12 +46,12 @@ const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; 
         onChange={e => { setValue(e.target.value); autoGrow(e.target); }}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
         placeholder="Ask AI to change something..."
-        style={{ flex: 1, fontSize: 13, fontWeight: 300, border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", outline: "none", background: "#FFFFFF", color: "#292B2D", resize: "none", lineHeight: 1.5, fontFamily: "Inter, system-ui, sans-serif", minHeight: 80, maxHeight: 160, overflowY: "auto" }}
+        style={{ width: "100%", fontSize: 13, fontWeight: 300, border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", outline: "none", background: "#FFFFFF", color: "#292B2D", resize: "none", lineHeight: 1.5, fontFamily: "Inter, system-ui, sans-serif", minHeight: 80, maxHeight: 160, overflowY: "auto", boxSizing: "border-box" }}
       />
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button onClick={submit} disabled={!value.trim() || disabled} style={{ width: 32, height: 32, borderRadius: 9, background: "#292B2D", border: "none", cursor: !value.trim() || disabled ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: !value.trim() || disabled ? 0.35 : 1 }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M12 7L2 2l2 5-2 5 10-5z" fill="white" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
         </button>
       </div>
@@ -66,16 +66,19 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [copied, setCopied] = useState(false);
   const [toneOpen, setToneOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [resumeSelected, setResumeSelected] = useState(false);
-  const [rightWidth, setRightWidth] = useState(260);
+  const [rightWidth, setRightWidth] = useState(300);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEnd = useRef<HTMLDivElement>(null);
   const toneRef = useRef<HTMLDivElement>(null);
+  const resumeRef = useRef<HTMLDivElement>(null);
   const rightColRef = useRef<HTMLDivElement>(null);
+  const dragWidth = useRef(300);
   const STORAGE_KEY = `jm_cl_${job.job_id}`;
 
   useEffect(() => {
@@ -87,7 +90,7 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
 
   useEffect(() => {
     const saved = localStorage.getItem("editor-right-width");
-    if (saved) setRightWidth(Number(saved));
+    if (saved) { const w = parseInt(saved); setRightWidth(w); dragWidth.current = w; }
   }, []);
 
   useEffect(() => {
@@ -100,6 +103,15 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   }, [toneOpen]);
 
   useEffect(() => {
+    if (!resumeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (resumeRef.current && !resumeRef.current.contains(e.target as Node)) setResumeOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [resumeOpen]);
+
+  useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -110,6 +122,7 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   }, [letter]);
 
   const selectResume = useCallback(() => {
+    setResumeOpen(false);
     if (resumeSelected) return;
     setResumeSelected(true);
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -181,13 +194,15 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = rightColRef.current?.offsetWidth ?? 260;
+    const startWidth = dragWidth.current;
     const onMouseMove = (ev: MouseEvent) => {
-      const newWidth = Math.min(420, Math.max(200, startWidth + (startX - ev.clientX)));
-      setRightWidth(newWidth);
+      const newWidth = Math.min(window.innerWidth * 0.5, Math.max(200, startWidth + (startX - ev.clientX)));
+      const rounded = Math.round(newWidth);
+      dragWidth.current = rounded;
+      setRightWidth(rounded);
     };
     const onMouseUp = () => {
-      localStorage.setItem("editor-right-width", String(rightColRef.current?.offsetWidth ?? rightWidth));
+      localStorage.setItem("editor-right-width", String(dragWidth.current));
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
@@ -197,6 +212,8 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
 
   const TONES = ["Formal", "Friendly", "Confident", "Brief"];
   const CHIPS = ["Shorter", "More formal", "Add metrics", "In English"];
+
+  const resumeName = resumeProfile?.title || resumeProfile?.name || "Main";
 
   const AIChatPanel = () => (
     <div ref={rightColRef} style={{ width: isMobile ? "100%" : rightWidth, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6" }}>
@@ -240,9 +257,7 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
           {job.title} · Cover Letter
         </p>
         {isMobile && (
-          <button onClick={() => setDrawerOpen(true)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, padding: "6px 11px", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-            AI ✨
-          </button>
+          <button onClick={() => setDrawerOpen(true)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, padding: "6px 11px", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>AI ✨</button>
         )}
         <button onClick={handleCopy} style={{ background: "#DFF37D", border: "none", borderRadius: 8, padding: "7px 14px", color: "#292B2D", fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginLeft: isMobile ? 0 : "auto", flexShrink: 0, fontFamily: "inherit" }}>
           {copied ? "✓ Copied" : "Copy all"}
@@ -251,45 +266,63 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
 
       {/* Body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Left: editor */}
-        <div style={{ flex: 1, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Resume picker */}
-          <div style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(41,43,45,0.08)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, overflowX: "auto" }}>
-            <span style={{ fontSize: 10, color: "rgba(41,43,45,0.4)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", flexShrink: 0 }}>Resume</span>
-            {resumeProfile && (
-              <button onClick={selectResume} style={{ fontSize: 11, padding: "4px 11px", borderRadius: 7, border: resumeSelected ? "none" : "0.5px solid rgba(41,43,45,0.15)", background: resumeSelected ? "#292B2D" : "transparent", color: resumeSelected ? "#fff" : "rgba(41,43,45,0.5)", fontWeight: resumeSelected ? 500 : 400, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, fontFamily: "inherit" }}>
-                {resumeProfile.title || resumeProfile.name || "Main"}
+        {/* Left */}
+        <div style={{ flex: 1, minWidth: 320, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Toolbar row: resume dropdown + tone/rewrite */}
+          <div style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(41,43,45,0.08)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {/* Resume dropdown */}
+            <div ref={resumeRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setResumeOpen(v => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: resumeSelected ? "none" : "0.5px solid rgba(41,43,45,0.2)", background: resumeSelected ? "#292B2D" : "white", color: resumeSelected ? "white" : "#292B2D", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}>
+                {resumeSelected ? `${resumeName} ↓` : "Select resume ↓"}
               </button>
-            )}
-            <button onClick={onBack} style={{ fontSize: 11, padding: "4px 11px", borderRadius: 7, border: "0.5px dashed rgba(41,43,45,0.2)", background: "transparent", color: "rgba(41,43,45,0.35)", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, fontFamily: "inherit" }}>
-              + Add
-            </button>
-          </div>
-
-          {/* Toolbar — only after resume selected */}
-          {resumeSelected && (
-            <div style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(41,43,45,0.08)", display: "flex", gap: 8, flexShrink: 0 }}>
-              <button onClick={() => generate()} disabled={generating} style={{ fontSize: 11, fontWeight: 500, padding: "6px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: "pointer", fontFamily: "inherit", opacity: generating ? 0.4 : 1 }}>
-                Rewrite ↺
-              </button>
-              <div ref={toneRef} style={{ position: "relative" }}>
-                <button onClick={() => setToneOpen(v => !v)} style={{ fontSize: 11, fontWeight: 500, padding: "6px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: "pointer", fontFamily: "inherit" }}>
-                  Tone ↓
-                </button>
-                {toneOpen && (
-                  <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#fff", borderRadius: 10, border: "0.5px solid rgba(41,43,45,0.15)", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 100, minWidth: 140, padding: 4 }}>
-                    {TONES.map(t => (
-                      <div key={t} onMouseDown={e => { e.preventDefault(); setToneOpen(false); generate(t); }} style={{ fontSize: 12, fontWeight: 400, color: "#292B2D", padding: "8px 12px", borderRadius: 7, cursor: "pointer" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(41,43,45,0.05)")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        {t}
+              {resumeOpen && (
+                <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "white", border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: 4, zIndex: 200, minWidth: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+                  {resumeProfile && (
+                    <div onMouseDown={e => { e.preventDefault(); selectResume(); }} style={{ fontSize: 12, fontWeight: resumeSelected ? 500 : 400, color: resumeSelected ? "#4558C8" : "#292B2D", padding: "8px 12px", borderRadius: 7, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: resumeSelected ? "rgba(69,88,200,0.08)" : "transparent" }}
+                      onMouseEnter={e => { if (!resumeSelected) e.currentTarget.style.background = "rgba(41,43,45,0.05)"; }}
+                      onMouseLeave={e => { if (!resumeSelected) e.currentTarget.style.background = "transparent"; }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(41,43,45,0.07)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#292B2D" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                       </div>
-                    ))}
+                      {resumeName}
+                    </div>
+                  )}
+                  <div onMouseDown={e => { e.preventDefault(); setResumeOpen(false); onBack(); }} style={{ fontSize: 12, fontWeight: 400, color: "#4558C8", padding: "8px 12px", borderRadius: 7, cursor: "pointer", borderTop: "0.5px solid rgba(41,43,45,0.08)", marginTop: 4 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.05)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    + Add resume
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Rewrite + Tone — only after selection */}
+            {resumeSelected && (
+              <>
+                <button onClick={() => generate()} disabled={generating} style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: generating ? "default" : "pointer", fontFamily: "inherit", opacity: generating ? 0.4 : 1 }}>
+                  Rewrite ↺
+                </button>
+                <div ref={toneRef} style={{ position: "relative" }}>
+                  <button onClick={() => setToneOpen(v => !v)} style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: "pointer", fontFamily: "inherit" }}>
+                    Tone ↓
+                  </button>
+                  {toneOpen && (
+                    <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#fff", borderRadius: 10, border: "0.5px solid rgba(41,43,45,0.15)", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 100, minWidth: 140, padding: 4 }}>
+                      {TONES.map(t => (
+                        <div key={t} onMouseDown={e => { e.preventDefault(); setToneOpen(false); generate(t); }} style={{ fontSize: 12, fontWeight: 400, color: "#292B2D", padding: "8px 12px", borderRadius: 7, cursor: "pointer" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(41,43,45,0.05)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          {t}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Content */}
           <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
@@ -305,7 +338,7 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="#292B2D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <p style={{ fontSize: 14, fontWeight: 500, color: "#292B2D", lineHeight: 1.4, margin: 0 }}>No resumes yet</p>
-                <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", lineHeight: 1.6, margin: 0 }}>Upload your resume to get started.<br />We'll use it to write your cover letter<br />and adapt your experience bullets.</p>
+                <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", lineHeight: 1.6, margin: 0 }}>Upload your resume to get started.<br />We'll use it to write your cover letter.</p>
                 <button onClick={onBack} style={{ background: "#292B2D", color: "white", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, system-ui, sans-serif", marginTop: 4 }}>
                   Upload Resume →
                 </button>
@@ -335,12 +368,10 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
         {!isMobile && (
           <div
             onMouseDown={handleResizeMouseDown}
-            style={{ width: 4, background: "transparent", cursor: "col-resize", flexShrink: 0, position: "relative" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.3)")}
+            style={{ width: 8, cursor: "col-resize", flexShrink: 0, background: "transparent", position: "relative", transition: "background 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.2)")}
             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-          >
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 2, height: 32, background: "rgba(41,43,45,0.15)", borderRadius: 2 }} />
-          </div>
+          />
         )}
 
         {/* Right: AI chat (desktop) */}

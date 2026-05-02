@@ -11,7 +11,7 @@ async function callClaude(system: string, userContent: string): Promise<string> 
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: 2048,
       system,
       messages: [{ role: "user", content: userContent }],
@@ -36,25 +36,34 @@ export async function POST(req: NextRequest) {
   try {
     if (type === "generate") {
       const text = await callClaude(
-        `Ты адаптируешь резюме под конкретную вакансию.
-На основе профиля кандидата создай 3-4 буллета опыта.
-Адаптируй их под требования вакансии — конкретнее, с метриками если уместно.
-Не выдумывай факты которых нет в резюме.
+        `You are a professional resume writer adapting a candidate's experience for a specific job posting.
 
-Верни ТОЛЬКО валидный JSON без markdown-обёртки, строго в формате:
+Rules for bullets:
+- Start with a strong action verb (Led, Built, Delivered, Designed, Reduced, Grew, etc.)
+- Be specific and concrete — include tools, technologies, scale, or measurable outcomes when the original supports it
+- Mirror language from the job description naturally, don't force keywords
+- Keep each bullet to 1–2 lines — punchy, not a paragraph
+- Do NOT invent facts, metrics, or skills absent from the resume — reframe what exists
+
+Rules for the summary:
+- 2–3 sentences, written in first person (Senior X with Y years...)
+- Lead with the candidate's strongest relevant angle for THIS specific role
+- Sound human and confident, not generic or bloated with buzzwords
+
+Return ONLY valid JSON with no markdown fences, exactly:
 {
-  "summary": "адаптированное саммари 2-3 предложения",
+  "summary": "adapted 2–3 sentence summary",
   "bullets": [
     {
-      "adapted": "адаптированный буллет для этой вакансии",
-      "original": "базовый буллет из профиля",
-      "tags": ["тег-навык из вакансии"]
+      "adapted": "rewritten bullet tailored to this job",
+      "original": "original bullet from the profile",
+      "tags": ["relevant-skill-tag"]
     }
   ],
   "skills": {
-    "match": ["навыки которые есть в резюме и нужны вакансии"],
-    "add": ["навыки в вакансии но нет в резюме — стоит добавить"],
-    "neutral": ["навыки в резюме но не релевантны этой вакансии"]
+    "match": ["skills present in resume AND required by job"],
+    "add": ["skills in job posting but missing from resume — worth highlighting or adding"],
+    "neutral": ["skills in resume but not relevant to this role"]
   }
 }`,
         `Резюме:\n${resumeText}\n\nВакансия:\n${jobDescription || "описание не указано"}\n\nДолжность: ${title} в ${company}`
@@ -70,12 +79,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (type === "rewrite-bullet") {
+      const { bulletOriginal, bulletAdapted, jobDescription: jd } = body;
+      const text = await callClaude(
+        `You rewrite a single resume bullet to better match a job description.
+Rules:
+- Only use information present in the original bullet — do NOT invent facts or metrics
+- Start with a strong action verb
+- Mirror language from the job description naturally
+- 1–2 lines max
+- Return ONLY the rewritten bullet text, nothing else`,
+        `Original bullet: "${bulletOriginal}"\nCurrent adapted: "${bulletAdapted}"\nJob description context: "${(jd || "").slice(0, 800)}"`
+      );
+      return NextResponse.json({ bullet: text.trim() });
+    }
+
     if (type === "chat") {
       const text = await callClaude(
-        `Ты редактируешь адаптированное резюме.
-Ответь 1-2 предложения: что изменил и почему.
-Затем верни обновлённый JSON в тегах <resume>...</resume>
-Формат JSON такой же как при начальной генерации.`,
+        `You are editing an adapted resume. Apply the user's request precisely.
+
+Respond with 1–2 sentences explaining what you changed and why, then return the full updated JSON inside <resume>...</resume> tags. Same JSON format as the original generation. Keep the quality bar high — strong action verbs, specific language, no filler.`,
         `Текущая версия:\n${JSON.stringify(currentJSON, null, 2)}\n\nЗапрос: ${userMessage}`
       );
 
