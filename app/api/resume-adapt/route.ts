@@ -36,37 +36,47 @@ export async function POST(req: NextRequest) {
   try {
     if (type === "generate") {
       const text = await callClaude(
-        `You are a professional resume writer adapting a candidate's experience for a specific job posting.
+        `You are writing an adapted resume for a job application. Your goal is to tell a human story — not stuff keywords.
 
-Rules for bullets:
-- Start with a strong action verb (Led, Built, Delivered, Designed, Reduced, Grew, etc.)
-- Be specific and concrete — include tools, technologies, scale, or measurable outcomes when the original supports it
-- Mirror language from the job description naturally, don't force keywords
-- Keep each bullet to 1–2 lines — punchy, not a paragraph
-- Do NOT invent facts, metrics, or skills absent from the resume — reframe what exists
+Process:
+1. Read the job description carefully. Identify the 3–5 most important requirements, responsibilities, and outcomes the employer cares about.
+2. Read the candidate's resume experience (focus on the last 2 employers).
+3. For each key job requirement, find the closest matching experience from the resume.
+4. Write a bullet that connects that experience to the requirement as a human story:
+   - Start with a strong action verb
+   - Include a specific result or metric if present in the resume
+   - Sound natural — NOT a keyword list
+   - Do NOT list tools as the subject (tools are context, not the story)
+   - Do NOT invent facts not present in the resume
 
-Rules for the summary:
-- 2–3 sentences, written in first person (Senior X with Y years...)
-- Lead with the candidate's strongest relevant angle for THIS specific role
-- Sound human and confident, not generic or bloated with buzzwords
+BAD (keyword stuffing): "Utilized Cinema 4D, Redshift, Houdini, and AI tools to animate motion graphics."
+GOOD (human story): "Delivered full-cycle motion graphics for global campaigns — from concept through 3D animation — cutting revision rounds by aligning with creative directors upfront."
+
+Rules:
+- Maximum 2 lines per bullet
+- Only adapt bullets from the last 2 employers
+- If no clear match exists for a job requirement, skip it — do not fabricate
+- Tags must come from JOB DESCRIPTION keywords only, not from the resume
 
 Return ONLY valid JSON with no markdown fences, exactly:
 {
-  "summary": "adapted 2–3 sentence summary",
+  "summary": "adapted 2–3 sentence summary, first person, human and confident",
   "bullets": [
     {
-      "adapted": "rewritten bullet tailored to this job",
-      "original": "original bullet from the profile",
-      "tags": ["relevant-skill-tag"]
+      "id": "b1",
+      "adapted": "human-written bullet text",
+      "original": "exact original text from resume",
+      "wasAdapted": true,
+      "tags": ["1-2 tags from job description keywords only"]
     }
   ],
   "skills": {
     "match": ["skills present in resume AND required by job"],
-    "add": ["skills in job posting but missing from resume — worth highlighting or adding"],
+    "add": ["skills in job posting but missing from resume — worth adding"],
     "neutral": ["skills in resume but not relevant to this role"]
   }
 }`,
-        `Резюме:\n${resumeText}\n\nВакансия:\n${jobDescription || "описание не указано"}\n\nДолжность: ${title} в ${company}`
+        `Job description:\n"""\n${jobDescription || "not provided"}\n"""\n\nCandidate resume (last 2 employers focus):\n"""\n${resumeText}\n"""\n\nRole: ${title} at ${company}`
       );
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -82,14 +92,20 @@ Return ONLY valid JSON with no markdown fences, exactly:
     if (type === "rewrite-bullet") {
       const { bulletOriginal, bulletAdapted, jobDescription: jd } = body;
       const text = await callClaude(
-        `You rewrite a single resume bullet to better match a job description.
+        `Rewrite a single resume bullet to address the most relevant requirement in the job description.
+
+Process:
+1. Read the job description. Identify the single most relevant requirement this bullet should address.
+2. Rewrite the bullet to tell a human story connecting the original experience to that requirement.
+
 Rules:
-- Only use information present in the original bullet — do NOT invent facts or metrics
 - Start with a strong action verb
-- Mirror language from the job description naturally
-- 1–2 lines max
+- Include a result or metric if present in the original bullet
+- Sound natural — not a keyword list
+- Do NOT invent facts not in the original
+- Maximum 2 lines
 - Return ONLY the rewritten bullet text, nothing else`,
-        `Original bullet: "${bulletOriginal}"\nCurrent adapted: "${bulletAdapted}"\nJob description context: "${(jd || "").slice(0, 800)}"`
+        `Job description:\n"""\n${(jd || "").slice(0, 1000)}\n"""\n\nOriginal bullet: "${bulletOriginal}"\nCurrent version: "${bulletAdapted}"`
       );
       return NextResponse.json({ bullet: text.trim() });
     }

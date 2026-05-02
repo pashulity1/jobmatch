@@ -52,7 +52,7 @@ const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; 
   };
 
   return (
-    <div style={{ padding: "10px 12px 14px", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, borderTop: "0.5px solid rgba(41,43,45,0.08)" }}>
+    <div style={{ padding: "10px 12px 14px", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, minHeight: 120, borderTop: "0.5px solid rgba(41,43,45,0.08)" }}>
       <textarea
         ref={textareaRef}
         value={value}
@@ -137,8 +137,8 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEnd = useRef<HTMLDivElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
-  const rightColRef = useRef<HTMLDivElement>(null);
-  const dragWidth = useRef(300);
+  const rightWidthRef = useRef(300);
+  const containerRef = useRef<HTMLDivElement>(null);
   const STORAGE_KEY = `jm_ra_${job.job_id}`;
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
 
   useEffect(() => {
     const saved = localStorage.getItem("editor-right-width");
-    if (saved) { const w = parseInt(saved); setRightWidth(w); dragWidth.current = w; }
+    if (saved) { const w = parseInt(saved); setRightWidth(w); rightWidthRef.current = w; }
   }, []);
 
   useEffect(() => {
@@ -292,18 +292,24 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = dragWidth.current;
+    const startWidth = rightWidthRef.current;
+
     const onMouseMove = (ev: MouseEvent) => {
-      const newWidth = Math.min(window.innerWidth * 0.5, Math.max(200, startWidth + (startX - ev.clientX)));
-      const rounded = Math.round(newWidth);
-      dragWidth.current = rounded;
-      setRightWidth(rounded);
+      const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth;
+      const delta = startX - ev.clientX;
+      const next = Math.min(containerWidth * 0.5, Math.max(220, startWidth + delta));
+      rightWidthRef.current = next;
+      const rightEl = document.getElementById("editor-right-col");
+      if (rightEl) rightEl.style.width = next + "px";
     };
+
     const onMouseUp = () => {
-      localStorage.setItem("editor-right-width", String(dragWidth.current));
+      setRightWidth(rightWidthRef.current);
+      localStorage.setItem("editor-right-width", String(Math.round(rightWidthRef.current)));
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
+
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   };
@@ -312,7 +318,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
   const resumeName = resumeProfile?.title || resumeProfile?.name || "Main";
 
   const AIChatPanel = () => (
-    <div ref={rightColRef} style={{ width: isMobile ? "100%" : rightWidth, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6" }}>
+    <div id="editor-right-col" style={{ width: isMobile ? "100%" : rightWidth, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6", height: "100%", overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 8 }}>
         {messages.map((m, i) =>
           m.role === "ai" ? (
@@ -361,7 +367,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div ref={containerRef} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Left */}
         <div style={{ flex: 1, minWidth: 320, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Toolbar row: resume dropdown */}
@@ -483,9 +489,9 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
         {!isMobile && (
           <div
             onMouseDown={handleResizeMouseDown}
-            style={{ width: 8, cursor: "col-resize", flexShrink: 0, background: "transparent", position: "relative", transition: "background 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.2)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            style={{ width: 4, cursor: "col-resize", flexShrink: 0, background: "rgba(69,88,200,0.25)", transition: "background 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#4558C8")}
+            onMouseLeave={e => (e.currentTarget.style.background = "rgba(69,88,200,0.25)")}
           />
         )}
 

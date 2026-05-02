@@ -39,14 +39,14 @@ const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; 
   };
 
   return (
-    <div style={{ padding: "10px 12px 14px", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, borderTop: "0.5px solid rgba(41,43,45,0.08)" }}>
+    <div style={{ padding: "10px 12px 14px", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, minHeight: 120, borderTop: "0.5px solid rgba(41,43,45,0.08)" }}>
       <textarea
         ref={textareaRef}
         value={value}
         onChange={e => { setValue(e.target.value); autoGrow(e.target); }}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
         placeholder="Ask AI to change something..."
-        style={{ width: "100%", fontSize: 13, fontWeight: 300, border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", outline: "none", background: "#FFFFFF", color: "#292B2D", resize: "none", lineHeight: 1.5, fontFamily: "Inter, system-ui, sans-serif", minHeight: 80, maxHeight: 160, overflowY: "auto", boxSizing: "border-box" }}
+        style={{ width: "100%", fontSize: 13, fontWeight: 300, border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", outline: "none", background: "#FFFFFF", color: "#292B2D", resize: "none", lineHeight: 1.5, fontFamily: "Inter, system-ui, sans-serif", minHeight: 80, maxHeight: 200, overflowY: "auto", boxSizing: "border-box" }}
       />
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button onClick={submit} disabled={!value.trim() || disabled} style={{ width: 32, height: 32, borderRadius: 9, background: "#292B2D", border: "none", cursor: !value.trim() || disabled ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: !value.trim() || disabled ? 0.35 : 1 }}>
@@ -65,20 +65,19 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   const [generating, setGenerating] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [copied, setCopied] = useState(false);
-  const [toneOpen, setToneOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [resumeSelected, setResumeSelected] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<string | null>(null);
   const [rightWidth, setRightWidth] = useState(300);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEnd = useRef<HTMLDivElement>(null);
-  const toneRef = useRef<HTMLDivElement>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
-  const rightColRef = useRef<HTMLDivElement>(null);
-  const dragWidth = useRef(300);
+  const rightWidthRef = useRef(300);
+  const containerRef = useRef<HTMLDivElement>(null);
   const STORAGE_KEY = `jm_cl_${job.job_id}`;
 
   useEffect(() => {
@@ -90,17 +89,8 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
 
   useEffect(() => {
     const saved = localStorage.getItem("editor-right-width");
-    if (saved) { const w = parseInt(saved); setRightWidth(w); dragWidth.current = w; }
+    if (saved) { const w = parseInt(saved); setRightWidth(w); rightWidthRef.current = w; }
   }, []);
-
-  useEffect(() => {
-    if (!toneOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (toneRef.current && !toneRef.current.contains(e.target as Node)) setToneOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [toneOpen]);
 
   useEffect(() => {
     if (!resumeOpen) return;
@@ -117,7 +107,7 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
 
   useEffect(() => {
     if (editorRef.current && letter && editorRef.current.innerText !== letter) {
-      editorRef.current.innerText = letter;
+      editorRef.current.textContent = letter;
     }
   }, [letter]);
 
@@ -127,32 +117,44 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
     setResumeSelected(true);
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      setLetter(saved);
-      setMessages([{ role: "ai", text: "Loaded saved draft. Edit the text on the left or ask me to change something." }]);
-    } else {
-      generate();
+      try {
+        const decoded = decodeURIComponent(saved);
+        setLetter(decoded);
+        setMessages([{ role: "ai", text: "Loaded saved draft. Edit the text on the left or ask me to change something." }]);
+      } catch {
+        setLetter(saved);
+        setMessages([{ role: "ai", text: "Loaded saved draft." }]);
+      }
     }
-  }, [resumeSelected]);
+    // No auto-generate — wait for tone selection
+  }, [resumeSelected, STORAGE_KEY]);
 
-  const generate = async (tone?: string) => {
+  const generate = async (tone: string) => {
     if (!resumeProfile) return;
     setGenerating(true);
     try {
       const res = await fetch("/api/cover-letter", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json; charset=utf-8", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "generate", resumeText: formatResume(resumeProfile), jobDescription: job.description || "", company: job.company, title: job.title, tone }),
       });
       const data = await res.json();
       if (data.letter) {
         setLetter(data.letter);
-        localStorage.setItem(STORAGE_KEY, data.letter);
+        localStorage.setItem(STORAGE_KEY, encodeURIComponent(data.letter));
         setMessages([{ role: "ai", text: "Written a cover letter based on your resume and the job description. Edit the text on the left or ask me to change something." }]);
       }
     } catch {
       setMessages(prev => [...prev, { role: "ai", text: "Error generating. Please try again." }]);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const selectTone = (tone: string) => {
+    setSelectedTone(tone);
+    if (resumeSelected && !letter) {
+      generate(tone);
     }
   };
 
@@ -164,11 +166,14 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
     try {
       const res = await fetch("/api/cover-letter", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json; charset=utf-8", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "chat", currentLetter, userMessage: msg }),
       });
       const data = await res.json();
-      if (data.letter) { setLetter(data.letter); localStorage.setItem(STORAGE_KEY, data.letter); }
+      if (data.letter) {
+        setLetter(data.letter);
+        localStorage.setItem(STORAGE_KEY, encodeURIComponent(data.letter));
+      }
       if (data.explanation) setMessages(prev => [...prev, { role: "ai", text: data.explanation }]);
     } catch {
       setMessages(prev => [...prev, { role: "ai", text: "Error updating." }]);
@@ -188,35 +193,40 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
   const handleInput = () => {
     const text = editorRef.current?.innerText || "";
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => localStorage.setItem(STORAGE_KEY, text), 2000);
+    saveTimer.current = setTimeout(() => localStorage.setItem(STORAGE_KEY, encodeURIComponent(text)), 2000);
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = dragWidth.current;
+    const startWidth = rightWidthRef.current;
+
     const onMouseMove = (ev: MouseEvent) => {
-      const newWidth = Math.min(window.innerWidth * 0.5, Math.max(200, startWidth + (startX - ev.clientX)));
-      const rounded = Math.round(newWidth);
-      dragWidth.current = rounded;
-      setRightWidth(rounded);
+      const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth;
+      const delta = startX - ev.clientX;
+      const next = Math.min(containerWidth * 0.5, Math.max(220, startWidth + delta));
+      rightWidthRef.current = next;
+      const rightEl = document.getElementById("editor-right-col");
+      if (rightEl) rightEl.style.width = next + "px";
     };
+
     const onMouseUp = () => {
-      localStorage.setItem("editor-right-width", String(dragWidth.current));
+      setRightWidth(rightWidthRef.current);
+      localStorage.setItem("editor-right-width", String(Math.round(rightWidthRef.current)));
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
+
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  const TONES = ["Formal", "Friendly", "Confident", "Brief"];
+  const TONES = ["Professional", "Confident", "Friendly", "Concise"];
   const CHIPS = ["Shorter", "More formal", "Add metrics", "In English"];
-
   const resumeName = resumeProfile?.title || resumeProfile?.name || "Main";
 
   const AIChatPanel = () => (
-    <div ref={rightColRef} style={{ width: isMobile ? "100%" : rightWidth, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6" }}>
+    <div id="editor-right-col" style={{ width: isMobile ? "100%" : rightWidth, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6", height: "100%", overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 8 }}>
         {messages.map((m, i) =>
           m.role === "ai" ? (
@@ -265,11 +275,11 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div ref={containerRef} style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Left */}
-        <div style={{ flex: 1, minWidth: 320, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Toolbar row: resume dropdown + tone/rewrite */}
-          <div style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(41,43,45,0.08)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 300, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Toolbar */}
+          <div style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(41,43,45,0.08)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
             {/* Resume dropdown */}
             <div ref={resumeRef} style={{ position: "relative" }}>
               <button
@@ -298,29 +308,36 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
               )}
             </div>
 
-            {/* Rewrite + Tone — only after selection */}
-            {resumeSelected && (
-              <>
-                <button onClick={() => generate()} disabled={generating} style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: generating ? "default" : "pointer", fontFamily: "inherit", opacity: generating ? 0.4 : 1 }}>
-                  Rewrite ↺
-                </button>
-                <div ref={toneRef} style={{ position: "relative" }}>
-                  <button onClick={() => setToneOpen(v => !v)} style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: "pointer", fontFamily: "inherit" }}>
-                    Tone ↓
-                  </button>
-                  {toneOpen && (
-                    <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#fff", borderRadius: 10, border: "0.5px solid rgba(41,43,45,0.15)", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 100, minWidth: 140, padding: 4 }}>
-                      {TONES.map(t => (
-                        <div key={t} onMouseDown={e => { e.preventDefault(); setToneOpen(false); generate(t); }} style={{ fontSize: 12, fontWeight: 400, color: "#292B2D", padding: "8px 12px", borderRadius: 7, cursor: "pointer" }}
-                          onMouseEnter={e => (e.currentTarget.style.background = "rgba(41,43,45,0.05)")}
-                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                          {t}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
+            {/* Tone buttons — shown after resume selected */}
+            {resumeSelected && TONES.map(t => (
+              <button
+                key={t}
+                onClick={() => selectTone(t)}
+                style={{
+                  fontSize: 11,
+                  fontWeight: selectedTone === t ? 500 : 400,
+                  padding: "5px 10px",
+                  borderRadius: 8,
+                  border: selectedTone === t
+                    ? "0.5px solid rgba(41,43,45,0.2)"
+                    : "0.5px dashed rgba(238,94,55,0.5)",
+                  background: selectedTone === t ? "rgba(41,43,45,0.06)" : "transparent",
+                  color: selectedTone === t ? "#292B2D" : "rgba(41,43,45,0.5)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >{t}</button>
+            ))}
+
+            {/* Rewrite — only after both selected */}
+            {resumeSelected && selectedTone && (
+              <button
+                onClick={() => generate(selectedTone)}
+                disabled={generating}
+                style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, border: "0.5px solid rgba(41,43,45,0.15)", background: "transparent", color: "#292B2D", cursor: generating ? "default" : "pointer", fontFamily: "inherit", opacity: generating ? 0.4 : 1, whiteSpace: "nowrap" }}>
+                Rewrite ↺
+              </button>
             )}
           </div>
 
@@ -344,13 +361,22 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
                 </button>
               </div>
             ) : !resumeSelected ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "40px 24px", textAlign: "center", height: "100%" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "40px 24px", textAlign: "center", height: "100%" }}>
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.2 }}>
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#292B2D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   <polyline points="14 2 14 8 20 8" stroke="#292B2D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <p style={{ fontSize: 14, fontWeight: 500, color: "#292B2D", lineHeight: 1.4, margin: 0 }}>Select a resume above —</p>
-                <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", lineHeight: 1.6, margin: 0 }}>I'll write a cover letter tailored to this job.</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#292B2D", lineHeight: 1.4, margin: 0 }}>Select a resume and writing tone above —</p>
+                <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", lineHeight: 1.6, margin: 0 }}>I'll write your cover letter once both are chosen.</p>
+              </div>
+            ) : resumeSelected && !selectedTone && !letter ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "40px 24px", textAlign: "center", height: "100%" }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.2 }}>
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#292B2D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="14 2 14 8 20 8" stroke="#292B2D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#292B2D", lineHeight: 1.4, margin: 0 }}>Select a resume and writing tone above —</p>
+                <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", lineHeight: 1.6, margin: 0 }}>I'll write your cover letter once both are chosen.</p>
               </div>
             ) : (
               <div
@@ -368,9 +394,9 @@ export function CoverLetterEditor({ job, resumeProfile, token, onBack }: Props) 
         {!isMobile && (
           <div
             onMouseDown={handleResizeMouseDown}
-            style={{ width: 8, cursor: "col-resize", flexShrink: 0, background: "transparent", position: "relative", transition: "background 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.2)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            style={{ width: 4, cursor: "col-resize", flexShrink: 0, background: "rgba(69,88,200,0.25)", transition: "background 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#4558C8")}
+            onMouseLeave={e => (e.currentTarget.style.background = "rgba(69,88,200,0.25)")}
           />
         )}
 
