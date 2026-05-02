@@ -38,8 +38,15 @@ function stripHtml(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -133,31 +140,38 @@ export function SavedJobCard({
   };
 
   const description = job.description ? stripHtml(job.description) : "";
-  const savedDate = new Date(job.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  const savedDate = new Date(job.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short" });
   const isRemote = /remote/i.test(job.job_type || "") || /remote/i.test(job.location || "");
   const level = LEVEL_KEYWORDS.find(l => job.title.includes(l));
 
   const STATUS_BTNS: { key: Status; label: string }[] = [
-    { key: "saved", label: "Сохранено" },
-    { key: "in_progress", label: "В процессе" },
-    { key: "applied", label: "Откликнулся" },
+    { key: "saved", label: "Saved" },
+    { key: "in_progress", label: "In Progress" },
+    { key: "applied", label: "Applied" },
   ];
 
   const activeStyle = (key: Status): React.CSSProperties => {
     if (status !== key) return {};
-    if (key === "saved") return { background: "#fff", color: "#292B2D", border: "0.5px solid rgba(41,43,45,0.35)" };
-    if (key === "in_progress") return { background: "#4558C8", color: "#fff", border: "none" };
-    return { background: "#292B2D", color: "#DFF37D", border: "none" };
+    if (key === "saved") return { background: "rgba(41,43,45,0.07)", color: "#292B2D", border: "0.5px solid rgba(41,43,45,0.25)", fontWeight: 500 };
+    if (key === "in_progress") return { background: "#4558C8", color: "#fff", border: "none", fontWeight: 500 };
+    return { background: "#292B2D", color: "#DFF37D", border: "none", fontWeight: 500 };
   };
+
+  const stripColor = status === "in_progress" ? "#4558C8" : status === "applied" ? "#DFF37D" : "rgba(41,43,45,0.15)";
 
   return (
     <div style={{
       background: "#fff", borderRadius: 14,
       border: isExpanded ? "0.5px solid rgba(41,43,45,0.2)" : "0.5px solid rgba(41,43,45,0.08)",
-      overflow: "hidden", transition: "border-color 0.15s",
+      overflow: "hidden", transition: "border-color 0.15s", position: "relative",
     }}>
+      {/* Status strip */}
+      <div style={{
+        position: "absolute", right: 0, top: 0, bottom: 0, width: 8,
+        borderRadius: "0 14px 14px 0", background: stripColor, zIndex: 1,
+      }} />
       {/* ── COLLAPSED (always visible) ── */}
-      <div style={{ padding: "14px 16px", cursor: "pointer" }} onClick={onToggle}>
+      <div style={{ padding: "14px 20px 14px 16px", cursor: "pointer" }} onClick={onToggle}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <CompanyLogo company={job.company} logoColor={job.logo_color} />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -195,7 +209,7 @@ export function SavedJobCard({
                   Match {matchScore}%
                 </Tag>
               )}
-              <Tag bg="transparent" color="rgba(41,43,45,0.3)">Сохранено {savedDate}</Tag>
+              <Tag bg="transparent" color="rgba(41,43,45,0.3)">Saved {savedDate}</Tag>
             </div>
           </div>
         </div>
@@ -206,7 +220,7 @@ export function SavedJobCard({
         <div onClick={e => e.stopPropagation()}>
 
           {/* STATUS */}
-          <Section label="Статус">
+          <Section label="STATUS">
             <div style={{ display: "flex", gap: 6 }}>
               {STATUS_BTNS.map(({ key, label }) => (
                 <button key={key} onClick={() => handleStatus(key)} style={{
@@ -223,7 +237,7 @@ export function SavedJobCard({
           </Section>
 
           {/* DOCUMENTS */}
-          <Section label="Документы">
+          <Section label="DOCUMENTS">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {/* Cover Letter */}
               <DocCard onClick={() => onOpenCoverLetter(job)}
@@ -237,9 +251,9 @@ export function SavedJobCard({
                   </svg>
                 }
                 title="Cover Letter"
-                badge={coverLetterReady ? "Готово" : "Не начато"}
+                badge={coverLetterReady ? "Done" : "Not started"}
                 badgeReady={coverLetterReady}
-                cta={coverLetterReady ? "Открыть →" : "Начать →"}
+                cta={coverLetterReady ? "Open →" : "Start →"}
                 ctaColor="#4558C8"
               />
 
@@ -252,10 +266,10 @@ export function SavedJobCard({
                     <path d="M3 15c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="#7c4dba" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
                 }
-                title="Адаптация резюме"
-                badge={resumeAdapted ? "Готово" : "Не начато"}
+                title="Resume Adaptation"
+                badge={resumeAdapted ? "Done" : "Not started"}
                 badgeReady={resumeAdapted}
-                cta={resumeAdapted ? "Открыть →" : "Начать →"}
+                cta={resumeAdapted ? "Open →" : "Start →"}
                 ctaColor="#7c4dba"
               />
 
@@ -268,10 +282,10 @@ export function SavedJobCard({
                     <path d="M13 2l3 3-5 5H8V7l5-5z" stroke="#4a6300" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 }
-                title="Вакансия"
-                badge="Сохранено"
+                title="Job Posting"
+                badge="Saved"
                 badgeReady={true}
-                cta="Открыть →"
+                cta="Open →"
                 ctaColor="#4a6300"
                 ctaHref={job.apply_url}
               />
@@ -280,37 +294,33 @@ export function SavedJobCard({
 
           {/* DESCRIPTION */}
           {description && (
-            <Section label="Описание вакансии" right={
+            <Section label="JOB DESCRIPTION" right={
               job.apply_url
                 ? <a href={job.apply_url} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 10, color: "#4558C8", textDecoration: "none" }}>
-                    Оригинал →
+                    Original →
                   </a>
                 : undefined
             }>
-              <p style={{
-                fontSize: 11, fontWeight: 300, color: "rgba(41,43,45,0.6)",
-                lineHeight: 1.65, margin: "0 0 4px",
+              <div style={{
                 overflow: "hidden",
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical" as const,
-                ...(descExpanded ? {} : { WebkitLineClamp: 4 } as any),
+                ...(descExpanded ? {} : { maxHeight: "6.8em" } as any),
               }}>
-                {description}
-              </p>
+                <FormattedDescription text={description} />
+              </div>
               {description.length > 250 && (
                 <button onClick={() => setDescExpanded(!descExpanded)} style={{
                   fontSize: 11, color: "#4558C8", background: "none",
-                  border: "none", cursor: "pointer", padding: 0,
+                  border: "none", cursor: "pointer", padding: "4px 0 0",
                 }}>
-                  {descExpanded ? "Свернуть ↑" : "Читать полностью →"}
+                  {descExpanded ? "Collapse ↑" : "Read more →"}
                 </button>
               )}
             </Section>
           )}
 
           {/* NOTES */}
-          <Section label="Заметки">
+          <Section label="NOTES">
             <div style={{
               background: "rgba(41,43,45,0.02)", borderRadius: 10,
               padding: "11px 13px", border: "0.5px solid rgba(41,43,45,0.07)",
@@ -318,7 +328,7 @@ export function SavedJobCard({
               <textarea
                 value={notes}
                 onChange={e => handleNotes(e.target.value)}
-                placeholder="Контакт рекрутера, детали интервью, впечатления..."
+                placeholder="Recruiter contact, interview details, impressions..."
                 rows={3}
                 style={{
                   width: "100%", fontSize: 12, fontWeight: 300, color: "#292B2D",
@@ -328,7 +338,7 @@ export function SavedJobCard({
                 }}
               />
             </div>
-            <p style={{ fontSize: 10, color: "rgba(41,43,45,0.25)", margin: "4px 0 0" }}>только для вас</p>
+            <p style={{ fontSize: 10, color: "rgba(41,43,45,0.25)", margin: "4px 0 0" }}>only you can see this</p>
           </Section>
 
           {/* APPLY */}
@@ -336,15 +346,15 @@ export function SavedJobCard({
             {showApplyPrompt ? (
               <div style={{ paddingTop: 12, display: "flex", gap: 8, alignItems: "center" }}>
                 <p style={{ fontSize: 12, color: "rgba(41,43,45,0.6)", flex: 1, margin: 0 }}>
-                  Обновить статус на «Откликнулся»?
+                  Update status to Applied?
                 </p>
                 <button onClick={() => { handleStatus("applied"); setShowApplyPrompt(false); }}
                   style={{ fontSize: 12, color: "#4558C8", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                  Да
+                  Yes
                 </button>
                 <button onClick={() => setShowApplyPrompt(false)}
                   style={{ fontSize: 12, color: "rgba(41,43,45,0.4)", background: "none", border: "none", cursor: "pointer" }}>
-                  Нет
+                  No
                 </button>
               </div>
             ) : (
@@ -356,7 +366,7 @@ export function SavedJobCard({
                   borderRadius: 10, padding: 13, fontSize: 14, fontWeight: 500,
                   cursor: "pointer", textDecoration: "none",
                 }}>
-                Откликнуться →
+                Apply →
               </a>
             )}
           </div>
@@ -394,6 +404,42 @@ function Section({ label, children, right }: {
         {right}
       </div>
       <div style={{ paddingBottom: 12 }}>{children}</div>
+    </div>
+  );
+}
+
+const SECTION_HEADERS = [
+  "key responsibilities", "responsibilities", "requirements", "qualifications",
+  "nice to have", "nice-to-have", "about the role", "what you'll do",
+  "what you will do", "who you are", "benefits", "what we offer",
+  "skills", "experience", "education", "about us", "about the company",
+];
+
+function FormattedDescription({ text }: { text: string }) {
+  const lines = text.split(/\n+/).filter(l => l.trim());
+  return (
+    <div style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.7)", lineHeight: 1.7 }}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        const lower = trimmed.toLowerCase().replace(/:$/, "");
+        if (SECTION_HEADERS.some(h => lower === h || lower.startsWith(h + ":"))) {
+          return (
+            <span key={i} style={{
+              fontSize: 12, fontWeight: 500, color: "#292B2D",
+              display: "block", marginTop: i === 0 ? 0 : 10, marginBottom: 2,
+            }}>
+              {trimmed}
+            </span>
+          );
+        }
+        const colonMatch = trimmed.match(/^([A-Za-z][A-Za-z\s/]{1,30}):\s(.+)$/);
+        if (colonMatch) {
+          return (
+            <div key={i}><em style={{ fontStyle: "italic" }}>{colonMatch[1]}:</em> {colonMatch[2]}</div>
+          );
+        }
+        return <div key={i}>{trimmed}</div>;
+      })}
     </div>
   );
 }

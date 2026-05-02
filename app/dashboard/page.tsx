@@ -116,9 +116,10 @@ function DashboardContent() {
   const [showAddJobModal, setShowAddJobModal] = useState(false);
   const [addJobInput, setAddJobInput] = useState("");        // URL or raw text
   const [addJobPastedText, setAddJobPastedText] = useState(""); // LinkedIn manual paste
-  const [addJobColor, setAddJobColor] = useState("#6366f1");
+  const [addJobColor, setAddJobColor] = useState("#4558C8");
   const [addJobLoading, setAddJobLoading] = useState(false);
   const [addJobError, setAddJobError] = useState<string | null>(null);
+  const [showColorPalette, setShowColorPalette] = useState(false);
 
   // Sync active tab when the ?tab= param changes (e.g. browser back/forward)
   useEffect(() => {
@@ -762,88 +763,101 @@ function DashboardContent() {
 
     {/* ── ADD JOB FROM URL MODAL ── */}
     {showAddJobModal && (
-      // Full-screen dark overlay
       <div
-        onClick={e => { if (e.target === e.currentTarget) setShowAddJobModal(false); }}
+        onClick={e => { if (e.target === e.currentTarget) { setShowAddJobModal(false); setShowColorPalette(false); } }}
         style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "flex-end", justifyContent: "center",
-          zIndex: 1000, padding: "0 0 0 0",
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, padding: 16,
         }}
       >
         <div style={{
-          background: "#1a1b1e", borderRadius: "20px 20px 0 0", padding: "24px 20px 32px",
-          width: "100%", maxWidth: 560, border: "1px solid rgba(255,255,255,0.08)",
+          background: "#fff", borderRadius: 16, padding: 24,
+          width: "100%", maxWidth: 400,
         }}>
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Add Job from URL</p>
-            <button
-              onClick={() => setShowAddJobModal(false)}
-              style={{ background: "none", border: "none", color: "#888", fontSize: 20, cursor: "pointer", lineHeight: 1 }}
-            >×</button>
-          </div>
+          {/* Title + subtitle */}
+          <p style={{ fontSize: 18, fontWeight: 500, color: "#292B2D", margin: "0 0 4px" }}>Add Job</p>
+          <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.5)", margin: "0 0 16px" }}>
+            Paste a job URL or job description text
+          </p>
 
-          {/* Main input: URL or raw job description */}
-          <label style={{ fontSize: 12, color: "#9ca3af", display: "block", marginBottom: 6 }}>
-            Paste job URL or job description text
-          </label>
+          {/* Main textarea */}
           <textarea
             value={addJobInput}
             onChange={e => setAddJobInput(e.target.value)}
             placeholder="https://jobs.example.com/... or paste the full job description"
             rows={3}
             style={{
-              width: "100%", background: "#111", color: "#fff", border: "1px solid #333",
-              borderRadius: 10, padding: "10px 12px", fontSize: 13, resize: "vertical",
-              outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+              width: "100%", fontSize: 13, fontWeight: 300,
+              border: "0.5px solid rgba(41,43,45,0.2)", borderRadius: 10,
+              padding: "10px 13px", outline: "none", resize: "none",
+              fontFamily: "Inter, system-ui, sans-serif", color: "#292B2D",
+              marginBottom: 16, boxSizing: "border-box",
             }}
           />
 
-          {/* LinkedIn-specific paste area — shown only when a LinkedIn URL is detected */}
+          {/* LinkedIn-specific paste area */}
           {isLinkedInUrl && (
-            <div style={{ marginTop: 14 }}>
-              <label style={{ fontSize: 12, color: "#f59e0b", display: "block", marginBottom: 6 }}>
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 12, color: "#f59e0b", margin: "0 0 6px" }}>
                 LinkedIn blocks automatic reading. Paste the job text here:
-              </label>
+              </p>
               <textarea
                 value={addJobPastedText}
                 onChange={e => setAddJobPastedText(e.target.value)}
                 placeholder="Open the LinkedIn job post → select all text → paste here"
-                rows={5}
+                rows={4}
                 style={{
-                  width: "100%", background: "#111", color: "#fff",
-                  border: "1px solid #f59e0b55", borderRadius: 10,
-                  padding: "10px 12px", fontSize: 13, resize: "vertical",
-                  outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+                  width: "100%", fontSize: 13, fontWeight: 300, color: "#292B2D",
+                  border: "0.5px solid rgba(245,158,11,0.4)", borderRadius: 10,
+                  padding: "10px 13px", outline: "none", resize: "none",
+                  fontFamily: "Inter, system-ui, sans-serif", boxSizing: "border-box",
                 }}
               />
             </div>
           )}
 
-          {/* Color palette — sets the company logo background for this job card */}
-          <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: 12, color: "#9ca3af", display: "block", marginBottom: 8 }}>
+          {/* Color row: label + gradient swatch + palette dots (single line) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(41,43,45,0.6)", whiteSpace: "nowrap", flexShrink: 0 }}>
               Logo color
-            </label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {["#6366f1","#3b82f6","#10b981","#14b8a6","#f59e0b","#ef4444","#ec4899","#8b5cf6"].map(color => (
-                <button
-                  key={color}
-                  onClick={() => setAddJobColor(color)}
-                  style={{
-                    width: 30, height: 30, borderRadius: 8, background: color, border: "none",
-                    cursor: "pointer", outline: addJobColor === color ? `3px solid #fff` : "none",
-                    outlineOffset: 2,
-                  }}
-                />
-              ))}
-            </div>
+            </span>
+            <div
+              onClick={() => setShowColorPalette(p => !p)}
+              style={{
+                width: 26, height: 26, borderRadius: 7, cursor: "pointer", flexShrink: 0,
+                background: "conic-gradient(#EE5E37, #DFF37D, #4558C8, #D9B8F3, #22c55e, #EE5E37)",
+                border: "1.5px solid rgba(41,43,45,0.15)",
+              }}
+            />
+            {showColorPalette && (
+              <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "nowrap" }}>
+                {[
+                  { c: "#4558C8" },
+                  { c: "#EE5E37" },
+                  { c: "#E05E8A" },
+                  { c: "#DFF37D", border: "0.5px solid rgba(41,43,45,0.15)" },
+                  { c: "#D9B8F3", border: "0.5px solid rgba(41,43,45,0.15)" },
+                  { c: "#292B2D" },
+                  { c: "#f59e0b" },
+                  { c: "#22c55e" },
+                ].map(({ c, border }) => (
+                  <div
+                    key={c}
+                    onClick={() => setAddJobColor(c)}
+                    style={{
+                      width: 22, height: 22, borderRadius: 6, cursor: "pointer", flexShrink: 0,
+                      background: c, border: addJobColor === c ? "2px solid #292B2D" : (border || "2px solid transparent"),
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Error message */}
           {addJobError && (
-            <p style={{ color: "#f87171", fontSize: 12, marginTop: 12 }}>{addJobError}</p>
+            <p style={{ color: "#ef4444", fontSize: 12, margin: "0 0 12px" }}>{addJobError}</p>
           )}
 
           {/* Submit button */}
@@ -851,10 +865,11 @@ function DashboardContent() {
             onClick={handleAddExternalJob}
             disabled={addJobLoading || (!addJobInput.trim())}
             style={{
-              marginTop: 20, width: "100%", background: addJobLoading ? "#374151" : "#4558C8",
-              color: "#fff", border: "none", borderRadius: 12,
-              padding: "13px 0", fontSize: 14, fontWeight: 600,
+              width: "100%", background: addJobLoading ? "rgba(41,43,45,0.3)" : "#4558C8",
+              color: "#fff", border: "none", borderRadius: 10,
+              padding: 13, fontSize: 14, fontWeight: 500,
               cursor: addJobLoading ? "not-allowed" : "pointer",
+              fontFamily: "Inter, system-ui, sans-serif",
             }}
           >
             {addJobLoading ? "Parsing & saving…" : "Add Job"}
