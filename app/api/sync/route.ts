@@ -133,21 +133,20 @@ const ASHBY_COMPANIES = [
 
 
 const LEVER_COMPANIES = [
-  // Verified Lever companies
-  "cognite", "mercury", "watershed", "gem", "loom", "miro",
-  "verkada", "hex", "descript", "modal", "together",
-  "plaid", "chime", "marqeta", "ginkgo", "recursion",
-  "flexport", "project44", "faire", "airbyte", "cortex",
-  "lumos", "sardine", "replit", "codeium", "enablecomp",
-  "harness", "samsara", "culture-amp", "lattice",
-  "productboard", "kandji", "mosyle",
-  "lyft", "dropbox", "duolingo",
-  "anduril", "joby",
-  "gong", "outreach", "salesloft",
-  "figma", "webflow",
-  "navan", "expensify",
-  "braze", "amplitude",
-  "benchling", "zipline", "recursion",
+  "binance", "secureframe", "mistral", "arcadia", "fundrise", "ro",
+  "palantir", "veeva", "gopuff", "spotify", "quartzy", "plivo",
+  "caremessage", "hive", "nimblerx", "mashgin", "tesorio", "picktrace",
+  "tovala", "copia", "superside", "netomi", "thunkable", "emburse",
+  "hush", "meesho", "snappr", "skyways", "vergesense", "pyka",
+  "evry-health", "plexus", "super", "captivateiq", "duffel", "mytos",
+  "fintual", "culdesac", "zippi", "glide", "shiru", "revel", "fampay",
+  "teleo", "porter", "eternal", "handoff", "h1", "nimbus", "postera",
+  "synapticure", "doola", "skio", "finch", "verifiable", "smartcuts",
+  "gridware", "marcopolo", "tractian", "marqvision", "bloom", "epsilon3",
+  "tag", "jupe", "mable", "aleph", "bolster", "toku", "proper",
+  "fleetzero", "tendo", "maverickx", "unify", "layup", "alloy", "suger",
+  "prosper", "newton", "plume", "distro", "unusual", "revi", "blue",
+  "articulate",
 ];
 
 const SMARTRECRUITERS_COMPANIES = [
