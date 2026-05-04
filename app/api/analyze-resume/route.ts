@@ -64,10 +64,22 @@ Return ONLY a JSON object with no markdown, no explanation, just raw JSON:
   "skills": ["skill1", "skill2", ...],
   "industries": ["industry1", "industry2", ...],
   "keywords": ["keyword1", "keyword2", ...],
-  "summary": "2-3 sentence professional summary"
+  "summary": "2-3 sentence professional summary",
+  "work_experience": [
+    {
+      "company": "Company Name",
+      "title": "Job Title",
+      "dates": "Month Year – Month Year or Present",
+      "bullets": [
+        "exact bullet text from resume as written",
+        "another bullet"
+      ]
+    }
+  ]
 }
 
-For keywords: extract ALL important terms including job titles, technologies, tools, methodologies, soft skills. Include variations (e.g. "React" and "ReactJS"). Be generous - include 30-50 keywords minimum.`,
+For keywords: extract ALL important terms including job titles, technologies, tools, methodologies, soft skills. Include variations (e.g. "React" and "ReactJS"). Be generous - include 30-50 keywords minimum.
+For work_experience: extract ALL positions in chronological order (newest first). Copy bullet text EXACTLY as written in the resume — do not paraphrase or summarize. Include every bullet point, achievement, and responsibility listed.`,
               },
             ],
           },

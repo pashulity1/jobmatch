@@ -171,10 +171,11 @@ Candidate resume (use last 2 employers only for bullets):
 """
 ${resumeText}
 """`,
-        3500
+        4096
       );
       const result = extractJSON(text);
       if (!result) return NextResponse.json({ error: "No JSON in response", raw: text.slice(0, 200) }, { status: 500 });
+      if (!result.summary) result.summary = "";
       return NextResponse.json({ result: { ...result, requirements } });
     }
 

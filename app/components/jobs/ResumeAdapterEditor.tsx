@@ -43,13 +43,24 @@ function normalizeBullets(bullets: any[]): Bullet[] {
 
 function formatResume(p: any): string {
   if (!p) return "";
-  return [
+  const lines: string[] = [
     `${p.name || ""} — ${p.title || ""} (${p.level || ""}, ${p.years_experience || 0} years experience)`,
     `Summary: ${p.summary || ""}`,
     `Skills: ${(p.skills || []).join(", ")}`,
-    `Industries: ${(p.industries || []).join(", ")}`,
-    `Keywords: ${(p.keywords || []).slice(0, 30).join(", ")}`,
-  ].join("\n");
+  ];
+
+  const exp: any[] = p.work_experience || [];
+  if (exp.length > 0) {
+    lines.push("\nWORK EXPERIENCE:");
+    exp.forEach((job: any) => {
+      lines.push(`\n${job.company} | ${job.title} | ${job.dates || ""}`);
+      (job.bullets || []).forEach((b: string) => lines.push(`• ${b}`));
+    });
+  } else {
+    lines.push(`Keywords: ${(p.keywords || []).slice(0, 30).join(", ")}`);
+  }
+
+  return lines.join("\n");
 }
 
 const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; disabled: boolean }) => {
