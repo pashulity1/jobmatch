@@ -176,6 +176,17 @@ const RECRUITEE_COMPANIES = [
   "mayflower", "sparkles",
 ];
 
+const PERSONIO_COMPANIES = [
+  "personio", "sandbox", "treatwell", "linear", "pitch", "june", "neon",
+  "payhawk", "arcus", "alchemy", "bright", "resolve", "teleport", "joy",
+  "feather", "station", "atlas", "legacy", "tandem", "flow", "motion",
+  "powerus", "bik", "atmos", "phoenix", "fable", "machine26", "kaya",
+  "dot", "dots", "haddock", "gauss", "cotera", "voize", "argo", "pina",
+  "julius", "blitz", "drip", "cosine", "fabius", "invitris", "linc",
+  "contour", "craftwork", "langdock", "sonia", "open", "omnidock", "keye",
+  "pinch", "cactus", "nucleo", "everest", "clicks", "mayflower",
+];
+
 const WORKABLE_COMPANIES = [
   "notion", "typeform", "hotjar", "workable", "intercom",
   "surfe", "learnworlds", "brafton", "filestage", "contractbook",
@@ -438,6 +449,34 @@ async function fetchRecruitee(company: string): Promise<any[]> {
       apply_url: job.careers_url || `https://${company}.recruitee.com/o/${job.slug}`,
       description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 500),
     }));
+  } catch { return []; }
+}
+
+async function fetchPersonio(company: string): Promise<any[]> {
+  try {
+    const res = await fetch(`https://${company}.jobs.personio.de/xml?language=en`,
+      { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const positions = xml.match(/<position>([\s\S]*?)<\/position>/g) || [];
+    return positions.map((block: string) => {
+      const get = (tag: string) => { const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`)); return m ? m[1].replace(/<[^>]+>/g, "").trim() : ""; };
+      const id = get("id");
+      const city = block.match(/<office>[\s\S]*?<city>([\s\S]*?)<\/city>/)?.[1]?.trim() || "";
+      const country = block.match(/<office>[\s\S]*?<country>([\s\S]*?)<\/country>/)?.[1]?.trim() || "";
+      return {
+        id: `ps_${id}`,
+        title: get("name"),
+        company: formatSlug(company),
+        location: [city, country].filter(Boolean).join(", ") || "Remote",
+        salary: "",
+        job_type: get("employmentType") || "Full-time",
+        source: "Personio",
+        posted_date: get("createdAt") ? new Date(get("createdAt")).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "",
+        apply_url: `https://${company}.jobs.personio.de/job/${id}`,
+        description: get("recruitingCategory"),
+      };
+    });
   } catch { return []; }
 }
 
@@ -1106,6 +1145,10 @@ async function runSync(source: string) {
   if (source === "recruitee" || source === "all") {
     const results = await Promise.all(RECRUITEE_COMPANIES.map(fetchRecruitee));
     await flush(results.flat(), "recruitee");
+  }
+  if (source === "personio" || source === "all") {
+    const results = await Promise.all(PERSONIO_COMPANIES.map(fetchPersonio));
+    await flush(results.flat(), "personio");
   }
   if (source === "workable" || source === "all") {
     const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
