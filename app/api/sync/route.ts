@@ -167,17 +167,13 @@ const SMARTRECRUITERS_COMPANIES = [
 ];
 
 const RECRUITEE_COMPANIES = [
-  "gitlab", "remote", "hotjar", "typeform", "pitch",
-  "contentful", "personio", "pipefy", "getstream",
-  "factorial", "kenjo", "taxfix", "n26", "sumup",
-  "ecosia", "blinkist", "wooga", "omio", "tier",
-  "moonpay", "bitwarden",
-  // New additions
-  "teamwork", "basecamp", "clickup", "todoist",
-  "miro", "whimsical", "lucid", "creately",
-  "storyblok", "sanity", "prismic",
-  "lokalise", "phrase", "crowdin", "transifex",
-  "appcues", "userpilot", "intercom", "chameleon",
+  "personio", "mangopay", "adikteev", "dance", "unu", "accenture",
+  "bamboohr", "clever", "grid", "arcus", "assembly", "snapmagic",
+  "reach", "soundboks", "poppy", "expo", "nimble", "ixora", "hiresweet",
+  "bego", "jeeves", "atomic", "axiomai", "bloom", "bolster", "star",
+  "escape", "upfront", "serra", "coba", "basalt", "parallel", "spark",
+  "terra", "surge", "ember", "friday", "zero", "fulcrum", "everest",
+  "mayflower", "sparkles",
 ];
 
 const WORKABLE_COMPANIES = [
