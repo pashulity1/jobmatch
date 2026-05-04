@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages: [
           {
             role: "user",
@@ -101,8 +101,15 @@ For work_experience: extract ALL positions in chronological order (newest first)
       const clean = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       profile = JSON.parse(clean);
     } catch {
-      console.error("Failed to parse profile JSON:", text);
-      return NextResponse.json({ error: "Failed to parse resume" }, { status: 500 });
+      // Try extracting valid JSON substring if response was truncated
+      try {
+        const m = text.match(/\{[\s\S]*/);
+        if (m) profile = JSON.parse(m[0]);
+      } catch {}
+      if (!profile) {
+        console.error("Failed to parse profile JSON:", text.slice(0, 300));
+        return NextResponse.json({ error: "Failed to parse resume" }, { status: 500 });
+      }
     }
 
     // Save resume_json to profiles table if user is authenticated
