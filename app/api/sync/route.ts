@@ -152,20 +152,17 @@ const LEVER_COMPANIES = [
 const BAMBOOHR_COMPANIES: string[] = [];
 
 const SMARTRECRUITERS_COMPANIES = [
-  "Filmless", "Warner-Bros-Discovery", "NBCUniversal",
-  "Publicis", "WPP", "Dentsu", "BBDO", "Ogilvy", "McCann",
-  "Ubisoft", "ElectronicArts", "RiotGames",
-  "Zalando", "Klarna", "Revolut", "N26", "SumUp",
-  "Delivery-Hero", "Wolt", "Personio",
-  // New additions
-  "Bosch", "Siemens", "SAP", "Deutsche-Bank",
-  "IKEA", "Lidl", "Aldi", "Carrefour",
-  "Philips", "Unilever", "Nestle", "Danone",
-  "Spotify", "King", "Unity", "Paradox-Interactive",
-  "Adyen", "Mollie", "Buckaroo", "MultiSafepay",
-  "TomTom", "HERE", "HERE-Technologies",
-  "Booking", "Trivago", "GetYourGuide",
-  "Auto1", "Heycar", "Mobile-de",
+  "uber", "freshworks", "newrelic", "bigcommerce", "hootsuite", "docusign",
+  "netskope", "workato", "palantir", "servicenow", "lyra", "jitterbit",
+  "beyondtrust", "hibob", "smartrecruiters", "continental", "lvmh",
+  "rolandberger", "hackerrank", "clerky", "kamcord", "zenefits", "42",
+  "bellabeat", "tempo", "wayup", "lumi", "voiq", "onechronos", "innov8",
+  "alemhealth", "cocusocial", "zyper", "excepgen", "wren", "skill-lync",
+  "vouch", "actiondesk", "lokal", "hiresweet", "pahamify", "electroneek",
+  "yassir", "bukuwarung", "statiq", "modernloop", "queenly", "dashlabsai",
+  "kodo", "flextock", "unschool", "manara", "navattic", "vendease",
+  "bloom", "mable", "homeroom", "agency", "shaped", "finku", "juicebox",
+  "slauthio", "kombo", "trigo", "movley", "mosaic",
 ];
 
 const RECRUITEE_COMPANIES = [
