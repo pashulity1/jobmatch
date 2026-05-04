@@ -61,15 +61,13 @@ export async function GET(req: NextRequest) {
   const fresh = searchParams.get("fresh") === "true";
   const datePosted = searchParams.get("datePosted") || "";
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
   function getDateCutoff(): string {
     if (datePosted === "Last 24h") return new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "3 days")  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Week")    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    if (datePosted === "Month")   return thirtyDaysAgo;
-    if (fresh) return thirtyDaysAgo;
-    return ninetyDaysAgo;
+    // Hard 30-day limit — always, no exceptions
+    return thirtyDaysAgo;
   }
   const dateCutoff = getDateCutoff();
 

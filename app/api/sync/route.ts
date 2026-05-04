@@ -1104,24 +1104,42 @@ function isAdTitle(title: string): boolean {
 
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const cleanedJobs = jobs.map(job => ({
-    id: job.id,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    salary: job.salary || "",
-    job_type: job.job_type || job.jobType || "",
-    source: job.source,
-    posted_date: job.posted_date || job.postedDate || null,
-    apply_url: job.apply_url || job.applyUrl || "",
-    description: job.description || "",
-  }));
+  const cleanedJobs = jobs.map(job => {
+    // Parse human-readable posted_date ("May 2025") into ISO timestamp for DB filtering
+    let posted_at: string | null = null;
+    const rawDate = job.posted_date || job.postedDate || "";
+    if (rawDate) {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2000) {
+        posted_at = parsed.toISOString();
+      }
+    }
+    return {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      salary: job.salary || "",
+      job_type: job.job_type || job.jobType || "",
+      source: job.source,
+      posted_date: rawDate || null,
+      posted_at,
+      apply_url: job.apply_url || job.applyUrl || "",
+      description: job.description || "",
+    };
+  });
 
   const validJobs = [
     ...new Map(
       cleanedJobs
-        .filter(j => j.id && j.title && j.source && !isAdTitle(j.title))
+        .filter(j => {
+          if (!j.id || !j.title || !j.source || isAdTitle(j.title)) return false;
+          // Hard 30-day limit at write time: skip jobs with explicitly old posting dates
+          if (j.posted_at && new Date(j.posted_at) < thirtyDaysAgo) return false;
+          return true;
+        })
         .map(j => [j.id, j])
     ).values(),
   ];
@@ -1248,13 +1266,20 @@ async function runSync(source: string) {
     await flush(results.flat(), "eightfold");
   }
 
-  // Cleanup jobs older than 30 days
+  // Hard 30-day cleanup: delete by posted_at first, then fall back to created_at for undated jobs
   try {
     const supabase = getSupabaseAdmin();
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { error, count } = await supabase.from("jobs").delete({ count: "exact" }).lt("created_at", cutoff);
-    if (error) console.error("[sync] cleanup error:", error.message);
-    else console.log(`[sync] cleanup — deleted ${count ?? 0} old jobs`);
+
+    const { error: e1, count: c1 } = await supabase.from("jobs").delete({ count: "exact" })
+      .lt("posted_at", cutoff).not("posted_at", "is", null);
+    if (e1) console.error("[sync] cleanup (posted_at) error:", e1.message);
+
+    const { error: e2, count: c2 } = await supabase.from("jobs").delete({ count: "exact" })
+      .is("posted_at", null).lt("created_at", cutoff);
+    if (e2) console.error("[sync] cleanup (created_at) error:", e2.message);
+
+    console.log(`[sync] cleanup — deleted ${(c1 ?? 0) + (c2 ?? 0)} old jobs (${c1 ?? 0} by date, ${c2 ?? 0} by insert time)`);
   } catch (e: any) {
     console.error("[sync] cleanup fatal:", e.message);
   }
