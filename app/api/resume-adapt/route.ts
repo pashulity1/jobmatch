@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-async function callClaude(system: string, userContent: string): Promise<string> {
+async function callClaude(system: string, userContent: string, maxTokens = 2048): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -12,15 +12,21 @@ async function callClaude(system: string, userContent: string): Promise<string> 
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+      max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: userContent }],
     }),
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}`);
   const data = await res.json();
   return data.content?.[0]?.text || "";
+}
+
+function extractJSON(text: string) {
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch { return null; }
 }
 
 export async function POST(req: NextRequest) {
@@ -34,40 +40,73 @@ export async function POST(req: NextRequest) {
   const { type, resumeText, jobDescription, title, company, currentJSON, userMessage } = body;
 
   try {
-    if (type === "generate") {
+    // ─── STEP 1: extract requirements ───────────────────────────────────────
+    if (type === "extract-requirements") {
       const text = await callClaude(
-        `You are writing an adapted resume for a job application. Your goal is to tell a human story — not stuff keywords.
+        `Read this job description carefully.
+Extract the 5-7 most important things this employer is looking for.
+For each, write a short label and what evidence would satisfy it.
 
-Process:
-1. Read the job description carefully. Identify the 3–5 most important requirements, responsibilities, and outcomes the employer cares about.
-2. Read the candidate's resume experience (focus on the last 2 employers).
-3. For each key job requirement, find the closest matching experience from the resume.
-4. Write a bullet that connects that experience to the requirement as a human story:
-   - Start with a strong action verb
-   - Include a specific result or metric if present in the resume
-   - Sound natural — NOT a keyword list
-   - Do NOT list tools as the subject (tools are context, not the story)
-   - Do NOT invent facts not present in the resume
+Return ONLY valid JSON, no markdown fences:
+{
+  "requirements": [
+    {
+      "id": "r1",
+      "label": "short label",
+      "what_employer_wants": "description of what evidence satisfies this"
+    }
+  ]
+}`,
+        `Job description:\n"""\n${jobDescription || "not provided"}\n"""`
+      );
+      const parsed = extractJSON(text);
+      if (!parsed) return NextResponse.json({ error: "Requirements extraction failed", raw: text.slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ requirements: parsed.requirements || [] });
+    }
 
-BAD (keyword stuffing): "Utilized Cinema 4D, Redshift, Houdini, and AI tools to animate motion graphics."
-GOOD (human story): "Delivered full-cycle motion graphics for global campaigns — from concept through 3D animation — cutting revision rounds by aligning with creative directors upfront."
+    // ─── STEP 2: match requirements → bullets ───────────────────────────────
+    if (type === "generate") {
+      const { requirements } = body;
+      const text = await callClaude(
+        `You are writing adapted resume bullets for a job application.
+
+For each employer requirement:
+1. Find the closest real experience from the resume that serves as proof
+2. Write ONE bullet that ANSWERS the requirement using that experience
+3. The bullet should make the hiring manager think "this person has done exactly what we need"
+4. Start with an action verb
+5. Include a specific result or metric IF it exists in the resume — do not invent
+6. Maximum 2 lines
+7. Sound like a human, not a keyword list
+
+BAD (keyword stuffing):
+"Utilized Cinema 4D, Redshift, Houdini, Unreal Engine, and AI-assisted design tools to animate compelling motion graphics."
+
+GOOD (answers the requirement with real proof):
+"Built scalable motion libraries and broadcast packages for Wargaming's YouTube channel — standardized templates adopted across a 35-person production team, cutting episode turnaround time while maintaining visual consistency."
 
 Rules:
-- Maximum 2 lines per bullet
-- Only adapt bullets from the last 2 employers
-- If no clear match exists for a job requirement, skip it — do not fabricate
-- Tags must come from JOB DESCRIPTION keywords only, not from the resume
+- If no resume experience matches a requirement — set matched: false, omit adapted text
+- Do NOT adapt bullets from employers older than the last 2
+- Tags must come from the JOB DESCRIPTION, not from the resume
+- Employer field: write the company name from the resume this bullet is based on
 
-Return ONLY valid JSON with no markdown fences, exactly:
+Also write a 2-3 sentence professional summary (first person, confident, human — not a keyword list).
+
+Return ONLY valid JSON, no markdown fences:
 {
-  "summary": "adapted 2–3 sentence summary, first person, human and confident",
+  "summary": "adapted 2–3 sentence summary",
   "bullets": [
     {
       "id": "b1",
-      "adapted": "human-written bullet text",
-      "original": "exact original text from resume",
+      "requirementId": "r1",
+      "requirementLabel": "Build Motion Systems",
+      "adapted": "bullet text here",
+      "original": "exact original text from resume this is based on",
+      "employer": "Wargaming",
+      "matched": true,
       "wasAdapted": true,
-      "tags": ["1-2 tags from job description keywords only"]
+      "tags": ["motion systems", "scalable"]
     }
   ],
   "skills": {
@@ -76,55 +115,50 @@ Return ONLY valid JSON with no markdown fences, exactly:
     "neutral": ["skills in resume but not relevant to this role"]
   }
 }`,
-        `Job description:\n"""\n${jobDescription || "not provided"}\n"""\n\nCandidate resume (last 2 employers focus):\n"""\n${resumeText}\n"""\n\nRole: ${title} at ${company}`
+        `Employer requirements:\n${JSON.stringify(requirements, null, 2)}\n\nCandidate resume (last 2 employers only):\n"""\n${resumeText}\n"""\n\nRole: ${title} at ${company}`,
+        3000
       );
-
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return NextResponse.json({ error: "No JSON in response", raw: text.slice(0, 200) }, { status: 500 });
-      try {
-        const result = JSON.parse(jsonMatch[0]);
-        return NextResponse.json({ result });
-      } catch {
-        return NextResponse.json({ error: "Failed to parse JSON", raw: text.slice(0, 200) }, { status: 500 });
-      }
+      const result = extractJSON(text);
+      if (!result) return NextResponse.json({ error: "No JSON in response", raw: text.slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ result: { ...result, requirements } });
     }
 
+    // ─── REWRITE SINGLE BULLET ───────────────────────────────────────────────
     if (type === "rewrite-bullet") {
-      const { bulletOriginal, bulletAdapted, jobDescription: jd } = body;
+      const { bulletOriginal, bulletAdapted, requirementLabel, what_employer_wants } = body;
       const text = await callClaude(
-        `Rewrite a single resume bullet to address the most relevant requirement in the job description.
+        `Rewrite a single resume bullet to better answer what the employer is looking for.
+Use only facts from the original resume text.
+Start with an action verb. Max 2 lines. Sound human, not like a keyword list.
+Return only the bullet text, nothing else.`,
+        `The employer is looking for: "${requirementLabel || "relevant experience"}"
+What they specifically want: "${what_employer_wants || ""}"
 
-Process:
-1. Read the job description. Identify the single most relevant requirement this bullet should address.
-2. Rewrite the bullet to tell a human story connecting the original experience to that requirement.
+Original resume text this bullet is based on:
+"${bulletOriginal}"
 
-Rules:
-- Start with a strong action verb
-- Include a result or metric if present in the original bullet
-- Sound natural — not a keyword list
-- Do NOT invent facts not in the original
-- Maximum 2 lines
-- Return ONLY the rewritten bullet text, nothing else`,
-        `Job description:\n"""\n${(jd || "").slice(0, 1000)}\n"""\n\nOriginal bullet: "${bulletOriginal}"\nCurrent version: "${bulletAdapted}"`
+Current adapted version:
+"${bulletAdapted}"`
       );
       return NextResponse.json({ bullet: text.trim() });
     }
 
+    // ─── CHAT ────────────────────────────────────────────────────────────────
     if (type === "chat") {
       const text = await callClaude(
         `You are editing an adapted resume. Apply the user's request precisely.
 
-Respond with 1–2 sentences explaining what you changed and why, then return the full updated JSON inside <resume>...</resume> tags. Same JSON format as the original generation. Keep the quality bar high — strong action verbs, specific language, no filler.`,
-        `Текущая версия:\n${JSON.stringify(currentJSON, null, 2)}\n\nЗапрос: ${userMessage}`
+Respond with 1–2 sentences explaining what you changed, then return the full updated JSON inside <resume>...</resume> tags.
+Same JSON format as original. Keep quality high: strong action verbs, specific language, no filler.`,
+        `Current version:\n${JSON.stringify(currentJSON, null, 2)}\n\nRequest: ${userMessage}`,
+        3000
       );
 
       const resumeMatch = text.match(/<resume>([\s\S]*?)<\/resume>/);
       let updatedJSON = null;
       if (resumeMatch) {
-        try {
-          const jm = resumeMatch[1].match(/\{[\s\S]*\}/);
-          if (jm) updatedJSON = JSON.parse(jm[0]);
-        } catch {}
+        const jm = resumeMatch[1].match(/\{[\s\S]*\}/);
+        if (jm) try { updatedJSON = JSON.parse(jm[0]); } catch {}
       }
       const explanation = text.replace(/<resume>[\s\S]*?<\/resume>/, "").trim();
       return NextResponse.json({ explanation, result: updatedJSON });
