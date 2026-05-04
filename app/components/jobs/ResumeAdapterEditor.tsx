@@ -22,7 +22,8 @@ type Bullet = {
   tags: string[];
 };
 type Skills = { match: string[]; add: string[]; neutral: string[] };
-type AdaptedResume = { requirements: Requirement[]; summary: string; bullets: Bullet[]; skills: Skills };
+type MatchAssessment = { skills_match: string[]; experience_match: string[]; gaps: string[]; recruiter_questions: string[]; match_percent: number; recommendation: "apply" | "skip" };
+type AdaptedResume = { requirements: Requirement[]; summary: string; bullets: Bullet[]; skills: Skills; gaps?: string[]; match_assessment?: MatchAssessment };
 type Msg = { role: "ai" | "user"; text: string };
 type LoadingStep = "" | "analyzing" | "matching";
 
@@ -223,30 +224,45 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
     if (!resumeProfile) return;
     setLoadingStep("analyzing");
     try {
-      // Step 1: extract requirements
+      const resumeText = formatResume(resumeProfile);
+
+      // Step 1: analyze job + extract requirements
       const res1 = await fetch("/api/resume-adapt", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: "extract-requirements", jobDescription: job.description || "" }),
+        body: JSON.stringify({ type: "extract-requirements", jobDescription: job.description || "", resumeText }),
       });
       const data1 = await res1.json();
       const requirements: Requirement[] = data1.requirements || [];
+      const key_phrases: string[] = data1.key_phrases || [];
+      const match_assessment: MatchAssessment | undefined = data1.match_assessment;
 
-      // Step 2: match to resume
+      // Step 2: generate adapted bullets
       setLoadingStep("matching");
       const res2 = await fetch("/api/resume-adapt", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: "generate", requirements, resumeText: formatResume(resumeProfile), jobDescription: job.description || "", title: job.title, company: job.company }),
+        body: JSON.stringify({ type: "generate", requirements, key_phrases, resumeText, jobDescription: job.description || "", title: job.title, company: job.company }),
       });
       const data2 = await res2.json();
 
       if (data2.result) {
-        const result: AdaptedResume = { ...data2.result, requirements, bullets: normalizeBullets(data2.result.bullets || []) };
+        const result: AdaptedResume = {
+          ...data2.result,
+          requirements,
+          bullets: normalizeBullets(data2.result.bullets || []),
+          match_assessment,
+        };
         setAdapted(result);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
         const n = requirements.length;
-        setMessages([{ role: "ai", text: `Analyzed the job description and found ${n} key requirement${n !== 1 ? "s" : ""}.\nAdapted bullets from your last 2 employers to address them.\n\nEach bullet answers a specific employer requirement — shown in small text above it.\nEdit any bullet directly, or click Rewrite to get a new version for that requirement.` }]);
+        const pct = match_assessment?.match_percent;
+        const gaps = data2.result.gaps || [];
+        let intro = `Analyzed ${n} key requirement${n !== 1 ? "s" : ""} from the job description.`;
+        if (pct) intro += `\nMatch estimate: ${pct}%.`;
+        if (gaps.length) intro += `\n\nNot covered (no match in resume): ${gaps.join(", ")}.`;
+        intro += `\n\nEach bullet answers a specific requirement. Edit directly or click Rewrite.`;
+        setMessages([{ role: "ai", text: intro }]);
       } else {
         setMessages(prev => [...prev, { role: "ai", text: "Error generating. Please try again." }]);
       }
@@ -409,6 +425,11 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
         <p style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 400, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {job.title} · Resume
         </p>
+        {adapted?.match_assessment?.match_percent && (
+          <span style={{ fontSize: 10, fontWeight: 500, padding: "3px 8px", borderRadius: 20, background: adapted.match_assessment.match_percent >= 70 ? "rgba(223,243,125,0.15)" : "rgba(255,255,255,0.08)", color: adapted.match_assessment.match_percent >= 70 ? "#DFF37D" : "rgba(255,255,255,0.5)", border: `0.5px solid ${adapted.match_assessment.match_percent >= 70 ? "rgba(223,243,125,0.3)" : "rgba(255,255,255,0.1)"}`, whiteSpace: "nowrap", flexShrink: 0 }}>
+            {adapted.match_assessment.match_percent}% match
+          </span>
+        )}
         {isMobile && (
           <button onClick={() => setDrawerOpen(true)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, padding: "6px 11px", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>AI ✨</button>
         )}

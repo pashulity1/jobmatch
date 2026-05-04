@@ -29,6 +29,17 @@ function extractJSON(text: string) {
   try { return JSON.parse(m[0]); } catch { return null; }
 }
 
+const WRITING_RULES = `
+WRITING RULES (follow strictly):
+- Never use these words: leveraged, spearheaded, seamlessly, robust, transformative, elevate, navigate challenges, streamline, dynamic, cutting-edge, innovative, passionate
+- Never use em-dashes (—) in bullets or summary. Use commas, periods, or colons instead.
+- Write like a human, not a corporate document. Short sentences beat long ones.
+- Specific details beat general words.
+- Start every bullet with an action verb: Designed, Built, Won, Executed, Produced, Edited, Animated, Collaborated, Integrated, Created
+- Real numbers only: 50K+ views, 12 editors, 500+ events. Never invent percentages or metrics.
+- No bullet should repeat words or context from another bullet. Each one tells a different story.
+`;
+
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,12 +51,26 @@ export async function POST(req: NextRequest) {
   const { type, resumeText, jobDescription, title, company, currentJSON, userMessage } = body;
 
   try {
-    // ─── STEP 1: extract requirements ───────────────────────────────────────
+    // ─── STEP 1: analyze job + extract requirements ──────────────────────────
     if (type === "extract-requirements") {
       const text = await callClaude(
-        `Read this job description carefully.
-Extract the 5-7 most important things this employer is looking for.
-For each, write a short label and what evidence would satisfy it.
+        `You are a senior recruiter and resume strategist. Analyze the job description and candidate's resume together.
+
+Do three things:
+
+1. Extract 5-7 core requirements the employer is looking for. For each: a short label and what specific evidence would satisfy it.
+
+2. Assess the match between the resume and this role:
+   - Which hard skills match
+   - Which experience areas match
+   - What gaps or missing skills will a recruiter notice
+   - Overall match percent (40-85%, be honest)
+   - Recommendation: "apply" or "skip"
+
+3. Extract key phrases from the job description that should appear (rephrased, not copied) in the resume:
+   - Specific terminology the employer uses
+   - Action-oriented phrases from requirements
+   - Surface/channel types they mention
 
 Return ONLY valid JSON, no markdown fences:
 {
@@ -53,56 +78,74 @@ Return ONLY valid JSON, no markdown fences:
     {
       "id": "r1",
       "label": "short label",
-      "what_employer_wants": "description of what evidence satisfies this"
+      "what_employer_wants": "what evidence satisfies this"
     }
-  ]
+  ],
+  "match_assessment": {
+    "skills_match": ["AE matches", "C4D matches"],
+    "experience_match": ["social content production matches"],
+    "gaps": ["no product UI motion shown", "video shooting not in resume"],
+    "recruiter_questions": ["Will they be able to shoot on-location?"],
+    "match_percent": 72,
+    "recommendation": "apply"
+  },
+  "key_phrases": ["scale across surfaces", "platform-specific assets", "motion design systems"]
 }`,
-        `Job description:\n"""\n${jobDescription || "not provided"}\n"""`
+        `Job description:\n"""\n${jobDescription || "not provided"}\n"""\n\nCandidate resume:\n"""\n${resumeText || "not provided"}\n"""`
       );
       const parsed = extractJSON(text);
-      if (!parsed) return NextResponse.json({ error: "Requirements extraction failed", raw: text.slice(0, 200) }, { status: 500 });
-      return NextResponse.json({ requirements: parsed.requirements || [] });
+      if (!parsed) return NextResponse.json({ error: "Analysis failed", raw: text.slice(0, 200) }, { status: 500 });
+      return NextResponse.json({
+        requirements: parsed.requirements || [],
+        match_assessment: parsed.match_assessment || null,
+        key_phrases: parsed.key_phrases || [],
+      });
     }
 
-    // ─── STEP 2: match requirements → bullets ───────────────────────────────
+    // ─── STEP 2: generate adapted resume content ─────────────────────────────
     if (type === "generate") {
-      const { requirements } = body;
+      const { requirements, key_phrases } = body;
       const text = await callClaude(
-        `You are writing adapted resume bullets for a job application.
+        `You are a professional resume writer adapting a candidate's resume for a specific job.
+${WRITING_RULES}
 
-For each employer requirement:
-1. Find the closest real experience from the resume that serves as proof
-2. Write ONE bullet that ANSWERS the requirement using that experience
-3. The bullet should make the hiring manager think "this person has done exactly what we need"
-4. Start with an action verb
-5. Include a specific result or metric IF it exists in the resume — do not invent
-6. Maximum 2 lines
-7. Sound like a human, not a keyword list
+BULLET FORMULA (XYZ): achievement + metric (if real) + how it was done.
+- The first 2-3 bullets must be the most relevant to THIS specific job.
+- Maximum 8 bullets per employer position.
+- Pull concrete specifics from the resume: competition wins, named brands, view counts, team sizes.
+- If the resume mentions a collaboration with named franchises or brands, use those names.
+- Mirror key phrases from the job description (listed below), but rephrase — never copy verbatim.
 
-BAD (keyword stuffing):
-"Utilized Cinema 4D, Redshift, Houdini, Unreal Engine, and AI-assisted design tools to animate compelling motion graphics."
+SUMMARY FORMULA: role + years + specific experience with real numbers + core tools + what makes them different.
+- 4-5 sentences max.
+- Tailor it to THIS company's mission and language.
+- Do not repeat information that's already in the bullets.
+- Do not start with "I am" or "My name is".
 
-GOOD (answers the requirement with real proof):
-"Built scalable motion libraries and broadcast packages for Wargaming's YouTube channel — standardized templates adopted across a 35-person production team, cutting episode turnaround time while maintaining visual consistency."
+GAPS: For any requirement that has no match in the resume, mark matched: false. Do not invent experience to fill gaps.
 
-Rules:
-- If no resume experience matches a requirement — set matched: false, omit adapted text
-- Do NOT adapt bullets from employers older than the last 2
-- Tags must come from the JOB DESCRIPTION, not from the resume
-- Employer field: write the company name from the resume this bullet is based on
+For each requirement:
+1. Find the best real experience from the resume that answers it.
+2. Write ONE bullet that makes the hiring manager think: "this person has done exactly what we need."
+3. Use the XYZ formula.
+4. If no experience matches, set matched: false and omit adapted text.
 
-Also write a 2-3 sentence professional summary (first person, confident, human — not a keyword list).
+BAD bullet (generic, repetitive, keyword-stuffed):
+"Designed and animated 2D/3D motion graphics across digital and social surfaces for global gaming campaigns, using After Effects and Cinema 4D."
+
+GOOD bullet (specific, tells a story, answers the requirement):
+"Won an internal rebranding competition to design the full broadcast identity for a Wargaming YouTube channel, building openers, episode templates, and recurring graphic systems from scratch. Became the permanent format running at 50K+ views per episode."
 
 Return ONLY valid JSON, no markdown fences:
 {
-  "summary": "adapted 2–3 sentence summary",
+  "summary": "4-5 sentence summary",
   "bullets": [
     {
       "id": "b1",
       "requirementId": "r1",
       "requirementLabel": "Build Motion Systems",
-      "adapted": "bullet text here",
-      "original": "exact original text from resume this is based on",
+      "adapted": "bullet text",
+      "original": "exact text from resume this is based on",
       "employer": "Wargaming",
       "matched": true,
       "wasAdapted": true,
@@ -111,12 +154,24 @@ Return ONLY valid JSON, no markdown fences:
   ],
   "skills": {
     "match": ["skills present in resume AND required by job"],
-    "add": ["skills in job posting but missing from resume — worth adding"],
+    "add": ["skills in job posting but missing from resume — worth adding if honest"],
     "neutral": ["skills in resume but not relevant to this role"]
-  }
+  },
+  "gaps": ["requirement labels with no resume match"]
 }`,
-        `Employer requirements:\n${JSON.stringify(requirements, null, 2)}\n\nCandidate resume (last 2 employers only):\n"""\n${resumeText}\n"""\n\nRole: ${title} at ${company}`,
-        3000
+        `Role: ${title} at ${company}
+
+Key phrases from this job description to mirror (rephrase, don't copy):
+${(key_phrases || []).map((p: string) => `- ${p}`).join("\n")}
+
+Employer requirements:
+${JSON.stringify(requirements, null, 2)}
+
+Candidate resume (use last 2 employers only for bullets):
+"""
+${resumeText}
+"""`,
+        3500
       );
       const result = extractJSON(text);
       if (!result) return NextResponse.json({ error: "No JSON in response", raw: text.slice(0, 200) }, { status: 500 });
@@ -128,8 +183,9 @@ Return ONLY valid JSON, no markdown fences:
       const { bulletOriginal, bulletAdapted, requirementLabel, what_employer_wants } = body;
       const text = await callClaude(
         `Rewrite a single resume bullet to better answer what the employer is looking for.
-Use only facts from the original resume text.
-Start with an action verb. Max 2 lines. Sound human, not like a keyword list.
+${WRITING_RULES}
+Use only facts from the original resume text. Never invent metrics.
+XYZ formula: achievement + metric (if real) + how.
 Return only the bullet text, nothing else.`,
         `The employer is looking for: "${requirementLabel || "relevant experience"}"
 What they specifically want: "${what_employer_wants || ""}"
@@ -147,9 +203,9 @@ Current adapted version:
     if (type === "chat") {
       const text = await callClaude(
         `You are editing an adapted resume. Apply the user's request precisely.
-
-Respond with 1–2 sentences explaining what you changed, then return the full updated JSON inside <resume>...</resume> tags.
-Same JSON format as original. Keep quality high: strong action verbs, specific language, no filler.`,
+${WRITING_RULES}
+Respond with 1-2 sentences explaining what you changed, then return the full updated JSON inside <resume>...</resume> tags.
+Same JSON format as original. No invented facts or metrics.`,
         `Current version:\n${JSON.stringify(currentJSON, null, 2)}\n\nRequest: ${userMessage}`,
         3000
       );
