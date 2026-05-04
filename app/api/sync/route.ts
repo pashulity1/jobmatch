@@ -149,6 +149,8 @@ const LEVER_COMPANIES = [
   "articulate",
 ];
 
+const BAMBOOHR_COMPANIES: string[] = [];
+
 const SMARTRECRUITERS_COMPANIES = [
   "Filmless", "Warner-Bros-Discovery", "NBCUniversal",
   "Publicis", "WPP", "Dentsu", "BBDO", "Ogilvy", "McCann",
@@ -449,6 +451,46 @@ async function fetchRecruitee(company: string): Promise<any[]> {
       apply_url: job.careers_url || `https://${company}.recruitee.com/o/${job.slug}`,
       description: (job.description || "").replace(/<[^>]+>/g, "").substring(0, 500),
     }));
+  } catch { return []; }
+}
+
+async function fetchBambooHR(company: string): Promise<any[]> {
+  try {
+    const res = await fetch(`https://${company}.bamboohr.com/jobs/embed2.php`,
+      { signal: AbortSignal.timeout(8000), headers: { "Accept": "text/html" } });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const jobs: any[] = [];
+    const rowRegex = /<li[^>]*class="[^"]*BambooHR-ATS-Department-Item[^"]*"[\s\S]*?<\/li>/g;
+    let deptBlock: RegExpExecArray | null;
+    while ((deptBlock = rowRegex.exec(html)) !== null) {
+      const block = deptBlock[0];
+      const deptMatch = block.match(/<span[^>]*class="[^"]*BambooHR-ATS-Department-Item-departmentName[^"]*"[^>]*>([\s\S]*?)<\/span>/);
+      const dept = deptMatch ? deptMatch[1].replace(/<[^>]+>/g, "").trim() : "";
+      const jobRegex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>/g;
+      let jobMatch: RegExpExecArray | null;
+      while ((jobMatch = jobRegex.exec(block)) !== null) {
+        const href = jobMatch[1];
+        const title = jobMatch[2].replace(/<[^>]+>/g, "").trim();
+        const location = jobMatch[3].replace(/<[^>]+>/g, "").trim();
+        const idMatch = href.match(/\/(\d+)\//);
+        const jobId = idMatch ? idMatch[1] : href.split("/").filter(Boolean).pop() || "";
+        if (!title) continue;
+        jobs.push({
+          id: `bhr_${company}_${jobId}`,
+          title,
+          company: formatSlug(company),
+          location: location || "Remote",
+          salary: "",
+          job_type: "Full-time",
+          source: "BambooHR",
+          posted_date: "",
+          apply_url: `https://${company}.bamboohr.com/jobs/${jobId}`,
+          description: dept,
+        });
+      }
+    }
+    return jobs;
   } catch { return []; }
 }
 
@@ -1149,6 +1191,10 @@ async function runSync(source: string) {
   if (source === "personio" || source === "all") {
     const results = await Promise.all(PERSONIO_COMPANIES.map(fetchPersonio));
     await flush(results.flat(), "personio");
+  }
+  if (source === "bamboohr" || source === "all") {
+    const results = await Promise.all(BAMBOOHR_COMPANIES.map(fetchBambooHR));
+    await flush(results.flat(), "bamboohr");
   }
   if (source === "workable" || source === "all") {
     const results = await Promise.all(WORKABLE_COMPANIES.map(fetchWorkable));
