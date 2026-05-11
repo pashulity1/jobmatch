@@ -71,9 +71,9 @@ export async function GET(req: NextRequest) {
   }
   const dateCutoff = getDateCutoff();
 
-  // Apply date filter: posted_at when set, fallback to created_at for jobs without posting date
+  // posted_at must exist and be within cutoff — no fallback to created_at
   function applyDateFilter(q: any, cutoff: string) {
-    return q.or(`posted_at.gte.${cutoff},and(posted_at.is.null,created_at.gte.${cutoff})`);
+    return q.gte("posted_at", cutoff).not("posted_at", "is", null);
   }
 
   try {
@@ -214,7 +214,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
+    query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -264,7 +264,7 @@ async function titleSearchFallback(
 
   if (locationOrString) query = query.or(locationOrString);
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-  query = query.or(`posted_at.gte.${freshCutoff},and(posted_at.is.null,created_at.gte.${freshCutoff})`);
+  query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
