@@ -212,6 +212,8 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
   const [resumeSelected, setResumeSelected] = useState(false);
   const [chatGenerating, setChatGenerating] = useState(false);
   const [chatInputHeight, setChatInputHeight] = useState(160);
+  const [summaryCmd, setSummaryCmd] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
   const [fontSize, setFontSize] = useState(12);
   const [fontFamily, setFontFamily] = useState("Inter, system-ui, sans-serif");
@@ -364,6 +366,27 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
       }
     } catch {}
     finally { setRewritingBullet(null); }
+  };
+
+  const rewriteSummaryWithCommand = async (command: string) => {
+    if (!adapted || !command.trim()) return;
+    setSummaryLoading(true);
+    const currentText = summaryRef.current?.innerText || adapted.summary || "";
+    try {
+      const res = await fetch("/api/resume-adapt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: "rewrite-bullet", bulletOriginal: currentText, bulletAdapted: currentText, userCommand: command }),
+      });
+      const data = await res.json();
+      if (data.bullet) {
+        if (summaryRef.current) summaryRef.current.innerText = data.bullet;
+        const updated = { ...adapted, summary: data.bullet };
+        setAdapted(updated);
+        saveAdapted(updated);
+      }
+    } catch {}
+    finally { setSummaryLoading(false); setSummaryCmd(""); }
   };
 
   const rewriteBulletWithCommand = async (bulletId: string, command: string) => {
@@ -522,6 +545,10 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
         .orig-btn:hover { color:#292B2D; }
         .bullet-command { display:none; padding:4px 9px 7px; gap:5px; align-items:center; border-top:0.5px solid rgba(69,88,200,0.1); background:rgba(69,88,200,0.02); }
         .bullet-item:focus-within .bullet-command { display:flex; }
+        .summary-wrap { border-radius:6px; border:1.5px solid transparent; transition:border-color 0.15s; }
+        .summary-wrap:focus-within { border-color:#4558C8; }
+        .summary-command { display:none; padding:5px 10px 7px; gap:5px; align-items:center; border-top:0.5px solid rgba(69,88,200,0.12); background:rgba(69,88,200,0.02); }
+        .summary-wrap:focus-within .summary-command { display:flex; }
         .r-summary { font-weight:300; line-height:1.75; color:#292B2D; padding:8px 10px; border-radius:6px; outline:none; border:1.5px solid transparent; cursor:text; transition:border-color 0.15s, background 0.15s; }
         .r-summary:hover { background:rgba(69,88,200,0.03); border-color:rgba(69,88,200,0.2); }
         .r-summary:focus { background:rgba(69,88,200,0.04); border-color:#4558C8; }
@@ -654,9 +681,32 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
                 {/* Summary */}
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 500, color: "#292B2D", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: "1.5px solid #292B2D", paddingBottom: 2, marginBottom: 8 }}>Professional Summary</div>
-                  <div ref={summaryRef} contentEditable suppressContentEditableWarning className="r-summary"
-                    onInput={() => { if (adapted && summaryRef.current) saveAdapted({ ...adapted, summary: summaryRef.current.innerText }); }}
-                    style={{ fontSize: "inherit" }} />
+                  <div className="summary-wrap">
+                    {summaryLoading ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 10px", color: "rgba(41,43,45,0.4)", fontSize: 12 }}>
+                        <div style={{ width: 14, height: 14, border: "2px solid rgba(69,88,200,0.2)", borderTopColor: "#4558C8", borderRadius: "50%", animation: "spin 0.6s linear infinite", flexShrink: 0 }} />
+                        Rewriting...
+                      </div>
+                    ) : (
+                      <div ref={summaryRef} contentEditable suppressContentEditableWarning className="r-summary"
+                        onInput={() => { if (adapted && summaryRef.current) saveAdapted({ ...adapted, summary: summaryRef.current.innerText }); }}
+                        style={{ fontSize: "inherit" }} />
+                    )}
+                    <div className="summary-command">
+                      <input
+                        value={summaryCmd}
+                        onChange={e => setSummaryCmd(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { rewriteSummaryWithCommand(summaryCmd); } }}
+                        placeholder="Tell AI what to change..."
+                        disabled={summaryLoading}
+                        style={{ flex: 1, fontSize: 11, fontWeight: 300, border: "0.5px solid rgba(69,88,200,0.25)", borderRadius: 6, padding: "4px 8px", outline: "none", fontFamily: "inherit", color: "#292B2D", background: "white" }}
+                      />
+                      <button onClick={() => rewriteSummaryWithCommand(summaryCmd)} disabled={!summaryCmd.trim() || summaryLoading}
+                        style={{ fontSize: 10, fontWeight: 500, color: "white", background: summaryCmd.trim() && !summaryLoading ? "#4558C8" : "rgba(69,88,200,0.3)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: summaryCmd.trim() && !summaryLoading ? "pointer" : "default", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                        Apply ↺
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Bullets */}
