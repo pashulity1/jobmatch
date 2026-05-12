@@ -116,11 +116,16 @@ BULLET FORMULA (XYZ): achievement + metric (if real) + how it was done.
 - If the resume mentions a collaboration with named franchises or brands, use those names.
 - Mirror key phrases from the job description (listed below), but rephrase — never copy verbatim.
 
-SUMMARY FORMULA: role + years + specific experience with real numbers + core tools + what makes them different.
-- 4-5 sentences max.
-- Tailor it to THIS company's mission and language.
-- Do not repeat information that's already in the bullets.
+SUMMARY FORMULA: role + years of total experience + one or two concrete achievements with real numbers + core tools + what makes this candidate different from others.
+- 4-5 sentences max. Write it as a standalone paragraph — a recruiter reading ONLY the summary should get a clear picture.
+- CRITICAL: The summary must NOT repeat or rephrase any bullet. It is an introduction, not a digest of the bullets.
+- Tailor the framing to THIS company's mission and language.
 - Do not start with "I am" or "My name is".
+
+BULLET COUNT PER EMPLOYER:
+- Most recent employer: 5-7 bullets.
+- Second employer: 2-3 bullets minimum — do not leave them with only 1.
+- Each bullet tells a different story. No repeated context words between bullets.
 
 GAPS: For any requirement that has no match in the resume, mark matched: false. Do not invent experience to fill gaps.
 

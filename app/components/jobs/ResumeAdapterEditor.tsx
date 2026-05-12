@@ -360,6 +360,66 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
 
   const toggleOriginal = (id: string) => setShowOriginal(prev => ({ ...prev, [id]: !prev[id] }));
 
+  const printResume = () => {
+    if (!adapted) return;
+    const summary = summaryRef.current?.innerText || adapted.summary || "";
+    const matchedBullets = adapted.bullets.filter(b => b.matched !== false);
+    const byEmployer: Record<string, Bullet[]> = {};
+    matchedBullets.forEach(b => {
+      const key = b.employer || "";
+      if (!byEmployer[key]) byEmployer[key] = [];
+      byEmployer[key].push(b);
+    });
+
+    const employerHtml = Object.entries(byEmployer).map(([emp, bs]) => `
+      <div class="employer">
+        ${emp ? `<div class="employer-name">${emp}</div>` : ""}
+        <ul>${bs.map(b => `<li>${b.adapted.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</li>`).join("")}</ul>
+      </div>
+    `).join("");
+
+    const skillsMatch = (adapted.skills?.match || []).join(", ");
+    const skillsAdd = (adapted.skills?.add || []).join(", ");
+    const contact = [resumeProfile?.title, resumeProfile?.location, resumeProfile?.email].filter(Boolean).join("  ·  ");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${resumeProfile?.name || "Resume"}</title>
+<style>
+  @page { margin: 16mm 20mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: ${fontFamily}; font-size: ${fontSize}pt; color: #111; line-height: 1.55; background: white; }
+  .name { font-size: 18pt; font-weight: 600; text-align: center; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .contact { font-size: 8.5pt; color: #555; text-align: center; margin-bottom: 22px; }
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #111; border-bottom: 1pt solid #111; padding-bottom: 2px; margin-bottom: 9px; }
+  .summary { font-size: ${fontSize}pt; line-height: 1.65; color: #111; }
+  .employer { margin-bottom: 12px; }
+  .employer-name { font-size: ${fontSize}pt; font-weight: 600; margin-bottom: 5px; }
+  ul { padding-left: 14px; }
+  li { margin-bottom: 3px; line-height: 1.5; }
+  .skills { font-size: ${Math.max(fontSize - 1, 9)}pt; color: #333; line-height: 1.6; }
+  .skills-add { color: #555; margin-top: 3px; }
+</style>
+</head>
+<body>
+  <div class="name">${(resumeProfile?.name || "").replace(/</g, "&lt;")}</div>
+  ${contact ? `<div class="contact">${contact}</div>` : ""}
+  ${summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary">${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div></div>` : ""}
+  <div class="section"><div class="section-title">Experience</div>${employerHtml}</div>
+  ${skillsMatch ? `<div class="section"><div class="section-title">Skills</div><div class="skills">${skillsMatch}</div>${skillsAdd ? `<div class="skills skills-add">Worth adding: ${skillsAdd}</div>` : ""}</div>` : ""}
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (win) {
+      win.document.documentElement.innerHTML = html;
+      setTimeout(() => win.print(), 400);
+    }
+  };
+
   const bulletsByEmployer = adapted
     ? adapted.bullets.filter(b => b.matched !== false).reduce((acc, b) => {
         const key = b.employer || "";
@@ -588,7 +648,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
           {adapted && (
             <div className="no-print" style={{ padding: "10px 16px", borderTop: "0.5px solid rgba(41,43,45,0.08)", display: "flex", gap: 8, background: "white", flexShrink: 0, height: 52 }}>
               <button onClick={() => { if (adapted) localStorage.setItem(STORAGE_KEY, JSON.stringify(adapted)); }} style={{ flex: 1, fontSize: 13, padding: 9, borderRadius: 10, border: "0.5px solid rgba(41,43,45,0.2)", background: "transparent", color: "#292B2D", cursor: "pointer", fontFamily: "inherit" }}>Save draft</button>
-              <button onClick={() => window.print()} style={{ flex: 1, fontSize: 13, fontWeight: 500, padding: 9, borderRadius: 10, border: "none", background: "#292B2D", color: "white", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Download PDF</button>
+              <button onClick={printResume} style={{ flex: 1, fontSize: 13, fontWeight: 500, padding: 9, borderRadius: 10, border: "none", background: "#292B2D", color: "white", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Download PDF</button>
             </div>
           )}
         </div>
