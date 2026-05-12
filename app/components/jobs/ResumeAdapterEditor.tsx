@@ -55,7 +55,9 @@ function formatResume(p: any): string {
   return lines.join("\n");
 }
 
-const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; disabled?: boolean }) => {
+const ChatInput = memo(({ onSend, disabled, height, onHeightChange }: {
+  onSend: (text: string) => void; disabled?: boolean; height: number; onHeightChange: (h: number) => void;
+}) => {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -63,35 +65,66 @@ const ChatInput = memo(({ onSend, disabled }: { onSend: (text: string) => void; 
     if (!value.trim() || disabled) return;
     onSend(value.trim());
     setValue("");
-    if (ref.current) ref.current.style.height = "auto";
+  };
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = height;
+    const handle = e.currentTarget as HTMLElement;
+    handle.style.background = "#4558C8";
+    const onMove = (ev: MouseEvent) => onHeightChange(Math.max(120, Math.min(420, startH + (startY - ev.clientY))));
+    const onUp = () => { handle.style.background = ""; document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   };
 
   return (
-    <div style={{ padding: "10px 12px 12px", borderTop: "0.5px solid rgba(41,43,45,0.08)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 7, background: "#EFF0F6", minHeight: 130 }}>
-      <textarea
-        ref={ref}
-        value={value}
-        placeholder="Ask AI to change something..."
-        disabled={disabled}
-        onChange={e => { setValue(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 220) + "px"; }}
-        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-        style={{ width: "100%", minHeight: 90, maxHeight: 220, background: "#FFFFFF", color: "#292B2D", border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", fontSize: 13, fontWeight: 300, lineHeight: 1.55, fontFamily: "Inter, system-ui, sans-serif", outline: "none", resize: "vertical", overflowY: "auto", boxSizing: "border-box" }}
-      />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 10, color: "rgba(41,43,45,0.3)", fontFamily: "Inter, sans-serif" }}>Enter to send · Shift+Enter new line</span>
-        <button onClick={send} disabled={!value.trim() || disabled} style={{ width: 32, height: 32, borderRadius: 9, background: value.trim() && !disabled ? "#292B2D" : "rgba(41,43,45,0.15)", border: "none", cursor: value.trim() && !disabled ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", flexShrink: 0 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-        </button>
+    <div style={{ height, flexShrink: 0, display: "flex", flexDirection: "column", background: "#EFF0F6" }}>
+      {/* Drag handle */}
+      <div onMouseDown={handleDragStart} style={{ height: 5, cursor: "ns-resize", background: "rgba(69,88,200,0.2)", flexShrink: 0, transition: "background 0.15s" }}
+        onMouseEnter={e => (e.currentTarget.style.background = "rgba(69,88,200,0.5)")}
+        onMouseLeave={e => (e.currentTarget.style.background = "rgba(69,88,200,0.2)")} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7, padding: "8px 12px 10px", borderTop: "0.5px solid rgba(41,43,45,0.08)" }}>
+        <textarea
+          ref={ref}
+          value={value}
+          placeholder="Ask AI to change something..."
+          disabled={disabled}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+          style={{ flex: 1, width: "100%", background: "#FFFFFF", color: "#292B2D", border: "0.5px solid rgba(41,43,45,0.15)", borderRadius: 10, padding: "10px 12px", fontSize: 13, fontWeight: 300, lineHeight: 1.55, fontFamily: "Inter, system-ui, sans-serif", outline: "none", resize: "none", overflowY: "auto", boxSizing: "border-box" }}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span style={{ fontSize: 10, color: "rgba(41,43,45,0.3)", fontFamily: "Inter, sans-serif" }}>Enter to send · Shift+Enter new line</span>
+          <button onClick={send} disabled={!value.trim() || disabled} style={{ width: 32, height: 32, borderRadius: 9, background: value.trim() && !disabled ? "#292B2D" : "rgba(41,43,45,0.15)", border: "none", cursor: value.trim() && !disabled ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+          </button>
+        </div>
       </div>
     </div>
   );
 });
 ChatInput.displayName = "ChatInput";
 
-function BulletItem({ bullet, onChange, onRewrite, rewriting, showOrig, onToggleOrig }: {
+function BulletItem({ bullet, onChange, onRewrite, onInlineRewrite, rewriting, showOrig, onToggleOrig }: {
   bullet: Bullet; onChange: (b: Bullet) => void; onRewrite: (id: string) => void;
+  onInlineRewrite: (id: string, cmd: string) => Promise<void>;
   rewriting: boolean; showOrig: boolean; onToggleOrig: () => void;
 }) {
+  const [cmd, setCmd] = useState("");
+  const [inlineLoading, setInlineLoading] = useState(false);
+
+  const applyCmd = async () => {
+    if (!cmd.trim() || inlineLoading) return;
+    setInlineLoading(true);
+    await onInlineRewrite(bullet.id, cmd.trim());
+    setCmd("");
+    setInlineLoading(false);
+  };
+
+  const busy = rewriting || inlineLoading;
+
   return (
     <div className="bullet-item" style={{ marginBottom: 4 }}>
       {showOrig && bullet.requirementLabel && (
@@ -99,7 +132,7 @@ function BulletItem({ bullet, onChange, onRewrite, rewriting, showOrig, onToggle
       )}
       <div className="bullet-main">
         <div className="bullet-dot" />
-        {rewriting ? (
+        {busy ? (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0" }}>
             <div style={{ width: 16, height: 16, border: "2px solid rgba(69,88,200,0.2)", borderTopColor: "#4558C8", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
           </div>
@@ -115,10 +148,25 @@ function BulletItem({ bullet, onChange, onRewrite, rewriting, showOrig, onToggle
       </div>
       <div className="bullet-actions">
         {bullet.tags.map(tag => <span key={tag} className="btag">{tag}</span>)}
-        <button className="rewrite-btn" onClick={() => onRewrite(bullet.id)} disabled={rewriting}>↺ Rewrite</button>
+        <button className="rewrite-btn" onClick={() => onRewrite(bullet.id)} disabled={busy}>↺ Rewrite</button>
         {bullet.wasAdapted && (
           <button className="orig-btn" onClick={onToggleOrig}>{showOrig ? "hide original ↑" : "show original ↓"}</button>
         )}
+      </div>
+      {/* Inline AI command — visible on focus-within via CSS */}
+      <div className="bullet-command">
+        <input
+          value={cmd}
+          onChange={e => setCmd(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") applyCmd(); }}
+          placeholder="Tell AI what to change..."
+          disabled={busy}
+          style={{ flex: 1, fontSize: 11, fontWeight: 300, border: "0.5px solid rgba(69,88,200,0.25)", borderRadius: 6, padding: "4px 8px", outline: "none", fontFamily: "inherit", color: "#292B2D", background: "white" }}
+        />
+        <button onClick={applyCmd} disabled={!cmd.trim() || busy}
+          style={{ fontSize: 10, fontWeight: 500, color: "white", background: cmd.trim() && !busy ? "#4558C8" : "rgba(69,88,200,0.3)", border: "none", borderRadius: 6, padding: "4px 10px", cursor: cmd.trim() && !busy ? "pointer" : "default", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+          Apply ↺
+        </button>
       </div>
       {showOrig && bullet.wasAdapted && (
         <div style={{ padding: "6px 9px 7px", background: "rgba(41,43,45,0.02)", borderTop: "0.5px dashed rgba(41,43,45,0.1)", fontSize: 10, fontWeight: 300, color: "rgba(41,43,45,0.4)", lineHeight: 1.55, fontStyle: "italic" }}>
@@ -163,6 +211,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
   const [resumeOpen, setResumeOpen] = useState(false);
   const [resumeSelected, setResumeSelected] = useState(false);
   const [chatGenerating, setChatGenerating] = useState(false);
+  const [chatInputHeight, setChatInputHeight] = useState(160);
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
   const [fontSize, setFontSize] = useState(12);
   const [fontFamily, setFontFamily] = useState("Inter, system-ui, sans-serif");
@@ -317,6 +366,25 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
     finally { setRewritingBullet(null); }
   };
 
+  const rewriteBulletWithCommand = async (bulletId: string, command: string) => {
+    if (!adapted) return;
+    const bullet = adapted.bullets.find(b => b.id === bulletId);
+    if (!bullet) return;
+    try {
+      const res = await fetch("/api/resume-adapt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: "rewrite-bullet", bulletOriginal: bullet.original, bulletAdapted: bullet.adapted, requirementLabel: bullet.requirementLabel, userCommand: command }),
+      });
+      const data = await res.json();
+      if (data.bullet) {
+        const updated = { ...adapted, bullets: adapted.bullets.map(b => b.id === bulletId ? { ...b, adapted: data.bullet, wasAdapted: true } : b) };
+        setAdapted(updated);
+        saveAdapted(updated);
+      }
+    } catch {}
+  };
+
   const sendChat = useCallback(async (msg: string) => {
     if (!msg || chatGenerating || !adapted) return;
     setMessages(prev => [...prev, { role: "user", text: msg }]);
@@ -452,6 +520,8 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
         .rewrite-btn:disabled { opacity:0.5; cursor:default; }
         .orig-btn { font-size:10px; color:rgba(41,43,45,0.3); background:none; border:none; cursor:pointer; padding:0; font-family:inherit; white-space:nowrap; }
         .orig-btn:hover { color:#292B2D; }
+        .bullet-command { display:none; padding:4px 9px 7px; gap:5px; align-items:center; border-top:0.5px solid rgba(69,88,200,0.1); background:rgba(69,88,200,0.02); }
+        .bullet-item:focus-within .bullet-command { display:flex; }
         .r-summary { font-weight:300; line-height:1.75; color:#292B2D; padding:8px 10px; border-radius:6px; outline:none; border:1.5px solid transparent; cursor:text; transition:border-color 0.15s, background 0.15s; }
         .r-summary:hover { background:rgba(69,88,200,0.03); border-color:rgba(69,88,200,0.2); }
         .r-summary:focus { background:rgba(69,88,200,0.04); border-color:#4558C8; }
@@ -607,6 +677,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
                             bullet={b}
                             onChange={bullet => updateBullet(idx, bullet)}
                             onRewrite={rewriteSingleBullet}
+                            onInlineRewrite={rewriteBulletWithCommand}
                             rewriting={rewritingBullet === b.id}
                             showOrig={!!showOriginal[b.id]}
                             onToggleOrig={() => toggleOriginal(b.id)}
@@ -676,7 +747,7 @@ export function ResumeAdapterEditor({ job, resumeProfile, token, onBack }: Props
           <div style={{ padding: "6px 10px", display: "flex", flexWrap: "wrap", gap: 4, borderTop: "0.5px solid rgba(41,43,45,0.08)", flexShrink: 0 }}>
             {CHIPS.map(c => <button key={c} onClick={() => sendChat(c)} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 20, background: "white", color: "#4558C8", border: "0.5px solid rgba(69,88,200,0.25)", cursor: "pointer", fontFamily: "inherit" }}>{c}</button>)}
           </div>
-          <ChatInput onSend={sendChat} disabled={chatGenerating} />
+          <ChatInput onSend={sendChat} disabled={chatGenerating} height={chatInputHeight} onHeightChange={setChatInputHeight} />
         </div>
 
         {/* Handle: AI → JD */}

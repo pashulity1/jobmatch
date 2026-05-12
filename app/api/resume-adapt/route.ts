@@ -186,22 +186,25 @@ ${resumeText}
 
     // ─── REWRITE SINGLE BULLET ───────────────────────────────────────────────
     if (type === "rewrite-bullet") {
-      const { bulletOriginal, bulletAdapted, requirementLabel, what_employer_wants } = body;
-      const text = await callClaude(
-        `Rewrite a single resume bullet to better answer what the employer is looking for.
+      const { bulletOriginal, bulletAdapted, requirementLabel, what_employer_wants, userCommand } = body;
+
+      const system = userCommand
+        ? `You are editing a resume bullet based on the user's instruction.
+${WRITING_RULES}
+Apply the instruction precisely. Keep ALL facts from the original resume text. Do not add claims, tools, or metrics not in the original.
+Max 2 lines. Start with an action verb. Sound human.
+Return only the bullet text, nothing else.`
+        : `Rewrite a single resume bullet to better answer what the employer is looking for.
 ${WRITING_RULES}
 Use only facts from the original resume text. Never invent metrics.
 XYZ formula: achievement + metric (if real) + how.
-Return only the bullet text, nothing else.`,
-        `The employer is looking for: "${requirementLabel || "relevant experience"}"
-What they specifically want: "${what_employer_wants || ""}"
+Return only the bullet text, nothing else.`;
 
-Original resume text this bullet is based on:
-"${bulletOriginal}"
+      const userContent = userCommand
+        ? `Original resume text (all facts must come from here):\n"${bulletOriginal}"\n\nCurrent version:\n"${bulletAdapted}"\n\nInstruction: ${userCommand}`
+        : `The employer is looking for: "${requirementLabel || "relevant experience"}"\nWhat they specifically want: "${what_employer_wants || ""}"\n\nOriginal resume text:\n"${bulletOriginal}"\n\nCurrent adapted version:\n"${bulletAdapted}"`;
 
-Current adapted version:
-"${bulletAdapted}"`
-      );
+      const text = await callClaude(system, userContent);
       return NextResponse.json({ bullet: text.trim() });
     }
 
