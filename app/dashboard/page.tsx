@@ -585,6 +585,33 @@ function DashboardContent() {
               )}
             </div>
 
+            {/* Bookmarklet */}
+            <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
+              <h2 className="text-sm font-semibold text-gray-300 mb-1">Save Jobs from Any Site</h2>
+              <p className="text-xs text-gray-500 mb-4">
+                Drag the button below to your bookmarks bar. Click it on any job posting to save it instantly.
+              </p>
+              <div className="flex items-center gap-3">
+                <a
+                  href={`javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);window.open('${typeof window !== 'undefined' ? window.location.origin : ''}/import?url='+u+'&title='+t,'_blank');})();`}
+                  onClick={e => e.preventDefault()}
+                  draggable
+                  style={{
+                    display: "inline-block", background: "#4558C8", color: "#fff",
+                    padding: "8px 16px", borderRadius: 10, fontSize: 13,
+                    fontWeight: 600, textDecoration: "none", cursor: "grab",
+                    userSelect: "none", border: "none",
+                  }}
+                >
+                  📌 Save to JobMatch
+                </a>
+                <span className="text-xs text-gray-500">← drag this to your bookmarks bar</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-3">
+                Works on LinkedIn, Greenhouse, Lever, Indeed, Workday and any other job site.
+              </p>
+            </div>
+
             <button onClick={handleSaveSettings} disabled={saving}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold py-3 rounded-xl">
               {saving ? "Saving..." : saveMsg || "Save Settings"}
