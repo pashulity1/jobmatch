@@ -121,11 +121,11 @@ export async function POST(req: NextRequest) {
     try {
       contentToParse = await fetchPageText(url);
     } catch (e: any) {
-      return NextResponse.json({ error: `Could not fetch URL: ${e.message}` }, { status: 422 });
+      return NextResponse.json({ error: `Could not fetch URL: ${e.message}`, needs_text: true }, { status: 422 });
     }
   } else {
     if (!text?.trim()) {
-      return NextResponse.json({ error: "Paste the job description text" }, { status: 400 });
+      return NextResponse.json({ error: "Paste the job description text", needs_text: true }, { status: 400 });
     }
     contentToParse = text;
   }

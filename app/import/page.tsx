@@ -48,7 +48,10 @@ function ImportContent() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to save job");
+      if (!res.ok) {
+        if (data.needs_text) { setStatus("needText"); return; }
+        throw new Error(data.error || "Failed to save job");
+      }
       setStatus("done");
       setTimeout(() => router.push("/dashboard?tab=saved-jobs"), 1800);
     } catch (e: any) {
