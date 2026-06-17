@@ -64,6 +64,36 @@ const SLUG_TO_TAB: Record<string, Tab> = Object.fromEntries(
   Object.entries(TAB_SLUGS).map(([k, v]) => [v, k as Tab])
 );
 
+function BookmarkletButton() {
+  const ref = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.setAttribute(
+        "href",
+        "javascript:(function(){location.href='https://jobmatch-nu-eight.vercel.app/import?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);})();"
+      );
+    }
+  }, []);
+  return (
+    <div className="flex items-center gap-3">
+      <a
+        ref={ref}
+        href="#"
+        draggable
+        style={{
+          display: "inline-block", background: "#4558C8", color: "#fff",
+          padding: "8px 16px", borderRadius: 10, fontSize: 13,
+          fontWeight: 600, textDecoration: "none", cursor: "grab",
+          userSelect: "none",
+        }}
+      >
+        📌 Save to JobMatch
+      </a>
+      <span className="text-xs text-gray-500">← drag this to your bookmarks bar</span>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   return <Suspense><DashboardContent /></Suspense>;
 }
@@ -591,22 +621,7 @@ function DashboardContent() {
               <p className="text-xs text-gray-500 mb-4">
                 Drag the button below to your bookmarks bar. Click it on any job posting to save it instantly.
               </p>
-              <div className="flex items-center gap-3">
-                <a
-                  href={`javascript:(function(){location.href='https://jobmatch-nu-eight.vercel.app/import?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);})();`}
-                  onClick={e => e.preventDefault()}
-                  draggable
-                  style={{
-                    display: "inline-block", background: "#4558C8", color: "#fff",
-                    padding: "8px 16px", borderRadius: 10, fontSize: 13,
-                    fontWeight: 600, textDecoration: "none", cursor: "grab",
-                    userSelect: "none", border: "none",
-                  }}
-                >
-                  📌 Save to JobMatch
-                </a>
-                <span className="text-xs text-gray-500">← drag this to your bookmarks bar</span>
-              </div>
+              <BookmarkletButton />
               <p className="text-xs text-gray-600 mt-3">
                 Works on LinkedIn, Greenhouse, Lever, Indeed, Workday and any other job site.
               </p>
