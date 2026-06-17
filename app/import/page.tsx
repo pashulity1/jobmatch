@@ -118,9 +118,9 @@ function ImportContent() {
 
         {status === "needText" && (
           <>
-            <p style={{ color: "#fff", fontSize: 16, fontWeight: 600, margin: "0 0 8px" }}>LinkedIn job</p>
+            <p style={{ color: "#fff", fontSize: 16, fontWeight: 600, margin: "0 0 8px" }}>Paste job description</p>
             <p style={{ color: "#f59e0b", fontSize: 13, marginBottom: 16 }}>
-              LinkedIn blocks automatic reading. Open the job post, select all text (Ctrl+A), and paste it below.
+              This site blocks automatic reading. Go back to the job post, select all text (Ctrl+A), copy and paste it below.
             </p>
             <textarea
               value={linkedInText}

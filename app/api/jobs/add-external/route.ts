@@ -117,17 +117,16 @@ export async function POST(req: NextRequest) {
   let contentToParse: string;
   const isLinkedIn = url ? /linkedin\.com/i.test(url) : false;
 
-  if (url && !isLinkedIn) {
+  if (text?.trim()) {
+    contentToParse = text;
+  } else if (url && !isLinkedIn) {
     try {
       contentToParse = await fetchPageText(url);
     } catch (e: any) {
       return NextResponse.json({ error: `Could not fetch URL: ${e.message}`, needs_text: true }, { status: 422 });
     }
   } else {
-    if (!text?.trim()) {
-      return NextResponse.json({ error: "Paste the job description text", needs_text: true }, { status: 400 });
-    }
-    contentToParse = text;
+    return NextResponse.json({ error: "Paste the job description text", needs_text: true }, { status: 400 });
   }
 
   // Parse job fields with Gemini
