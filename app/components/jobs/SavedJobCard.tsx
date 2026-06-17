@@ -395,7 +395,7 @@ function TrashButton({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
         transition: "color 0.15s", lineHeight: 0,
       }}
     >
-      <svg width="28" height="28" viewBox="0 0 14 14" fill="none">
+      <svg width="20" height="20" viewBox="0 0 14 14" fill="none">
         <path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 011-1h1a1 1 0 011 1v1M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9L11 3.5M5.5 6.5v3M8.5 6.5v3"
           stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
