@@ -593,7 +593,7 @@ function DashboardContent() {
               </p>
               <div className="flex items-center gap-3">
                 <a
-                  href={`javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);window.open('${typeof window !== 'undefined' ? window.location.origin : ''}/import?url='+u+'&title='+t,'_blank');})();`}
+                  href={`javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);location.href='https://jobmatch-nu-eight.vercel.app/import?url='+u+'%26title='+t;})();`}
                   onClick={e => e.preventDefault()}
                   draggable
                   style={{
