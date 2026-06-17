@@ -70,7 +70,7 @@ function BookmarkletButton() {
     if (ref.current) {
       ref.current.setAttribute(
         "href",
-        "javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);var x=encodeURIComponent((document.body.innerText||'').trim().slice(0,3000));location.href='https://jobmatch-nu-eight.vercel.app/import?url='+u+'&title='+t+'&text='+x;})();"
+        "javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);var el=document.querySelector('main,[role=\"main\"],article')||document.body;var x=encodeURIComponent((el.innerText||'').trim().slice(0,5000));location.href='https://jobmatch-nu-eight.vercel.app/import?url='+u+'&title='+t+'&text='+x;})();"
       );
     }
   }, []);
