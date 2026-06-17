@@ -8,6 +8,7 @@ function ImportContent() {
   const router = useRouter();
   const url = searchParams.get("url") || "";
   const title = searchParams.get("title") || "";
+  const pageText = searchParams.get("text") || "";
   const isLinkedIn = /linkedin\.com/i.test(url);
 
   const [status, setStatus] = useState<"checking" | "saving" | "needText" | "done" | "error">("checking");
@@ -29,7 +30,9 @@ function ImportContent() {
         return;
       }
       setToken(session.access_token);
-      if (isLinkedIn) {
+      if (pageText) {
+        saveJob(session.access_token, pageText);
+      } else if (isLinkedIn) {
         setStatus("needText");
       } else {
         saveJob(session.access_token, "");
