@@ -179,13 +179,16 @@ export function SavedJobCard({
               <p style={{ fontSize: 15, fontWeight: 500, color: "#292B2D", margin: 0, lineHeight: 1.3 }}>
                 {job.title}
               </p>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{
-                flexShrink: 0, marginTop: 3,
-                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform 0.2s ease",
-              }}>
-                <path d="M4 6l4 4 4-4" stroke="rgba(41,43,45,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{
+                  marginTop: 3,
+                  transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease",
+                }}>
+                  <path d="M4 6l4 4 4-4" stroke="rgba(41,43,45,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <TrashButton onClick={e => { e.stopPropagation(); onUnsave(); }} />
+              </div>
             </div>
             <p style={{ fontSize: 12, fontWeight: 300, color: "rgba(41,43,45,0.45)", margin: "3px 0 0", lineHeight: 1.4 }}>
               {[job.company, job.location, job.salary].filter(Boolean).join(" · ")}
@@ -377,6 +380,28 @@ export function SavedJobCard({
 }
 
 /* ── Small helpers ── */
+
+function TrashButton({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "none", border: "none", padding: 2,
+        cursor: "pointer", color: hovered ? "#ef4444" : "rgba(41,43,45,0.2)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "color 0.15s", lineHeight: 0,
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 011-1h1a1 1 0 011 1v1M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9L11 3.5M5.5 6.5v3M8.5 6.5v3"
+          stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  );
+}
 
 function Tag({ children, bg, color, border }: {
   children: React.ReactNode; bg: string; color: string; border?: string;
