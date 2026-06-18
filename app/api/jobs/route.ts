@@ -62,19 +62,18 @@ export async function GET(req: NextRequest) {
   const datePosted = searchParams.get("datePosted") || "";
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  function getDateCutoff(): string | null {
+  function getDateCutoff(): string {
     if (datePosted === "Last 24h") return new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "3 days")  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Week")    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Month")   return thirtyDaysAgo;
-    // No date filter selected — return all jobs regardless of age
-    return null;
+    // Default: show only jobs confirmed active within the last 30 days (sync time)
+    return thirtyDaysAgo;
   }
   const dateCutoff = getDateCutoff();
 
-  // Apply date filter only when the user explicitly selected one
-  function applyDateFilter(q: any, cutoff: string | null) {
-    if (!cutoff) return q;
+  // posted_at = sync time, so this reliably filters out stale jobs
+  function applyDateFilter(q: any, cutoff: string) {
     return q.gte("posted_at", cutoff).not("posted_at", "is", null);
   }
 
@@ -183,7 +182,7 @@ async function fullTextSearch(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string | null
+  freshCutoff: string
 ) {
   const LEVEL_WORDS = new Set([
     "senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head"
@@ -216,7 +215,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    if (freshCutoff) query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
+    query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -245,7 +244,7 @@ async function titleSearchFallback(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string | null
+  freshCutoff: string
 ) {
   let query = supabase.from("jobs").select("*", { count: "exact" });
 

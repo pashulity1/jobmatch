@@ -1104,18 +1104,10 @@ function isAdTitle(title: string): boolean {
 
 async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }> {
   const supabase = getSupabaseAdmin();
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const syncTime = new Date().toISOString();
 
   const cleanedJobs = jobs.map(job => {
-    // Parse human-readable posted_date ("May 2025") into ISO timestamp for DB filtering
-    let posted_at: string | null = null;
     const rawDate = job.posted_date || job.postedDate || "";
-    if (rawDate) {
-      const parsed = new Date(rawDate);
-      if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2000) {
-        posted_at = parsed.toISOString();
-      }
-    }
     return {
       id: job.id,
       title: job.title,
@@ -1125,7 +1117,10 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
       job_type: job.job_type || job.jobType || "",
       source: job.source,
       posted_date: rawDate || null,
-      posted_at,
+      // Use sync time as posted_at so the 30-day freshness filter stays valid.
+      // "Month Year" strings (e.g. "May 2026") parse to the 1st of the month and
+      // would look stale after ~18 days. Sync time means "last confirmed active".
+      posted_at: syncTime,
       apply_url: job.apply_url || job.applyUrl || "",
       description: job.description || "",
     };
@@ -1134,12 +1129,7 @@ async function saveToDb(jobs: any[]): Promise<{ saved: number; errors: number }>
   const validJobs = [
     ...new Map(
       cleanedJobs
-        .filter(j => {
-          if (!j.id || !j.title || !j.source || isAdTitle(j.title)) return false;
-          // Hard 30-day limit at write time: skip jobs with explicitly old posting dates
-          if (j.posted_at && new Date(j.posted_at) < thirtyDaysAgo) return false;
-          return true;
-        })
+        .filter(j => !(!j.id || !j.title || !j.source || isAdTitle(j.title)))
         .map(j => [j.id, j])
     ).values(),
   ];
