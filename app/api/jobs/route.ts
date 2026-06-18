@@ -62,17 +62,19 @@ export async function GET(req: NextRequest) {
   const datePosted = searchParams.get("datePosted") || "";
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  function getDateCutoff(): string {
+  function getDateCutoff(): string | null {
     if (datePosted === "Last 24h") return new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "3 days")  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     if (datePosted === "Week")    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    // Hard 30-day limit — always, no exceptions
-    return thirtyDaysAgo;
+    if (datePosted === "Month")   return thirtyDaysAgo;
+    // No date filter selected — return all jobs regardless of age
+    return null;
   }
   const dateCutoff = getDateCutoff();
 
-  // posted_at must exist and be within cutoff — no fallback to created_at
-  function applyDateFilter(q: any, cutoff: string) {
+  // Apply date filter only when the user explicitly selected one
+  function applyDateFilter(q: any, cutoff: string | null) {
+    if (!cutoff) return q;
     return q.gte("posted_at", cutoff).not("posted_at", "is", null);
   }
 
@@ -181,7 +183,7 @@ async function fullTextSearch(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string
+  freshCutoff: string | null
 ) {
   const LEVEL_WORDS = new Set([
     "senior", "junior", "lead", "staff", "principal", "sr", "jr", "mid", "head"
@@ -214,7 +216,7 @@ async function fullTextSearch(
 
     if (locationOrString) query = query.or(locationOrString);
     if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-    query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
+    if (freshCutoff) query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
 
     const { data: jobs, error, count } = await query
       .order("created_at", { ascending: false })
@@ -243,7 +245,7 @@ async function titleSearchFallback(
   jobType: string,
   limit: number,
   offset: number,
-  freshCutoff: string
+  freshCutoff: string | null
 ) {
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
@@ -264,7 +266,7 @@ async function titleSearchFallback(
 
   if (locationOrString) query = query.or(locationOrString);
   if (jobType) query = query.ilike("job_type", `%${jobType}%`);
-  query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
+  if (freshCutoff) query = query.gte("posted_at", freshCutoff).not("posted_at", "is", null);
 
   const { data: jobs, error, count } = await query
     .order("created_at", { ascending: false })
