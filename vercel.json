@@ -1,0 +1,17 @@
+{
+  "crons": [
+    { "path": "/api/sync?source=remotive",       "schedule": "0 1 * * *" },
+    { "path": "/api/sync?source=arbeitnow",      "schedule": "0 2 * * *" },
+    { "path": "/api/sync?source=himalayas",      "schedule": "0 3 * * *" },
+    { "path": "/api/sync?source=jobicy",         "schedule": "0 4 * * *" },
+    { "path": "/api/sync?source=greenhouse",     "schedule": "0 5 * * *" },
+    { "path": "/api/sync?source=ashby",          "schedule": "0 6 * * *" },
+    { "path": "/api/sync?source=lever",          "schedule": "0 7 * * *" },
+    { "path": "/api/sync?source=workable",       "schedule": "0 8 * * *" },
+    { "path": "/api/sync?source=workday",        "schedule": "0 9 * * *" },
+    { "path": "/api/sync?source=themuse",        "schedule": "0 10 * * *" },
+    { "path": "/api/sync?source=smartrecruiters","schedule": "0 11 * * *" },
+    { "path": "/api/sync?source=recruitee",      "schedule": "0 12 * * *" },
+    { "path": "/api/sync?source=personio",       "schedule": "0 13 * * *" }
+  ]
+}

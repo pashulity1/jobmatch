@@ -1285,8 +1285,11 @@ export async function GET(req: NextRequest) {
   }
   const source = searchParams.get("source") || "all";
 
-  // Fire-and-forget — respond immediately, sync runs in background
-  runSync(source).catch(e => console.error("[sync] fatal:", e));
-
-  return NextResponse.json({ started: true, source, message: "Sync running in background. Check Railway logs for progress." });
+  try {
+    await runSync(source);
+    return NextResponse.json({ done: true, source });
+  } catch (e: any) {
+    console.error("[sync] fatal:", e);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
